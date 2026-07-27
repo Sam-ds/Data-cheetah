@@ -1,0 +1,17 @@
+{
+  "name": "DataCheetah",
+  "short_name": "DataCheetah",
+  "description": "Local-first SQL data workspace. Your data never leaves your machine.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0D1117",
+  "theme_color": "#F2A01F",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
