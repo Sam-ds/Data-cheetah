@@ -14,8 +14,9 @@ export default defineConfig({
       includeAssets: ['favicon.svg'],
       manifest: false,
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,wasm}'],
-        maximumFileSizeToCacheInBytes: 10 * 1024 * 1024,
+        // Cache app shell only — DuckDB WASM is ~40MB and loads on demand
+        globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
       },
     }),
   ],
@@ -26,6 +27,23 @@ export default defineConfig({
   },
   worker: {
     format: 'es',
+    rollupOptions: {
+      output: {
+        // GitHub Pages serves .ts as video/mp2t — workers must be .js
+        entryFileNames: 'assets/[name]-[hash].js',
+        chunkFileNames: 'assets/[name]-[hash].js',
+        assetFileNames: 'assets/[name]-[hash][extname]',
+      },
+    },
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        entryFileNames: 'assets/[name]-[hash].js',
+        chunkFileNames: 'assets/[name]-[hash].js',
+        assetFileNames: 'assets/[name]-[hash][extname]',
+      },
+    },
   },
   optimizeDeps: {
     exclude: ['@duckdb/duckdb-wasm'],

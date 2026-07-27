@@ -2,19 +2,22 @@ import type { DuckDBRequest, DuckDBResponse, SqlglotRequest, SqlglotResponse } f
 import type { ColumnSchema, FileFormat } from '@/types/dataset'
 import type { ColumnProfile } from '@/types/profile'
 import type { QueryResult, SqlDiagnostic } from '@/types/query'
+// ?worker forces Vite to emit compiled .js (GitHub Pages rejects .ts as video/mp2t)
+import DuckDBWorker from '../workers/duckdb.worker.ts?worker'
+import SqlglotWorker from '../workers/sqlglot.worker.ts?worker'
 
 type PendingRequest = {
   resolve: (value: unknown) => void
   reject: (error: Error) => void
 }
 
-function createWorkerBridge(workerUrl: URL) {
+function createWorkerBridge(createWorker: () => Worker) {
   let worker: Worker | null = null
   const pending = new Map<string, PendingRequest>()
 
   function ensureWorker(): Worker {
     if (!worker) {
-      worker = new Worker(workerUrl, { type: 'module' })
+      worker = createWorker()
       worker.onmessage = (event: MessageEvent<{ id: string; type: string; payload?: { message: string } }>) => {
         const response = event.data
         const req = pending.get(response.id)
@@ -52,8 +55,8 @@ function createWorkerBridge(workerUrl: URL) {
   }
 }
 
-const duckdbBridge = createWorkerBridge(new URL('../workers/duckdb.worker.ts', import.meta.url))
-const sqlglotBridge = createWorkerBridge(new URL('../workers/sqlglot.worker.ts', import.meta.url))
+const duckdbBridge = createWorkerBridge(() => new DuckDBWorker())
+const sqlglotBridge = createWorkerBridge(() => new SqlglotWorker())
 
 async function duckdbRequest(req: Omit<DuckDBRequest, 'id'>): Promise<DuckDBResponse> {
   return duckdbBridge.send({ ...req, id: crypto.randomUUID() } as DuckDBRequest) as unknown as Promise<DuckDBResponse>
