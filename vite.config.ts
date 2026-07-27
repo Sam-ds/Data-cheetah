@@ -14,9 +14,11 @@ export default defineConfig({
       includeAssets: ['favicon.svg'],
       manifest: false,
       workbox: {
-        // Cache app shell only — DuckDB WASM is ~40MB and loads on demand
+        // Cache app shell only — DuckDB WASM (~40MB) and WebLLM (~6MB) load on demand
         globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
-        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
+        globIgnores: ['**/web-llm-*.js'],
+        // Allow slightly larger app chunks; WebLLM is split out and ignored above
+        maximumFileSizeToCacheInBytes: 8 * 1024 * 1024,
       },
     }),
   ],
@@ -42,6 +44,11 @@ export default defineConfig({
         entryFileNames: 'assets/[name]-[hash].js',
         chunkFileNames: 'assets/[name]-[hash].js',
         assetFileNames: 'assets/[name]-[hash][extname]',
+        manualChunks(id) {
+          if (id.includes('node_modules/@mlc-ai/web-llm') || id.includes('node_modules/@mlc-ai')) {
+            return 'web-llm'
+          }
+        },
       },
     },
   },
