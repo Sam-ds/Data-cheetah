@@ -42,6 +42,7 @@ Rules:
 - Compare points with AND: lat = 33.64 AND lon = -84.42 — do NOT use (lat, lon) IN (x, y)
 - Use only listed tables/columns; match sample value casing for filters
 - Prefer aggregates (COUNT, GROUP BY) over overly selective WHERE clauses
+- For “which / who has more|most|least …” questions, return the winning row only (ORDER BY metric DESC/ASC LIMIT 1), not the full breakdown
 - Prefer LIMIT 100 unless an aggregate returns few rows
 - Dates: never compare a DATE/TIMESTAMP column to a bare integer. Use DATE '1984-01-01' or EXTRACT(year FROM order_date) = 1984 — not order_date >= 1984
 - No INSERT/UPDATE/DELETE/DROP/ATTACH/COPY/CREATE`,
@@ -53,7 +54,7 @@ ${tables}
 
 Question: ${question}
 
-Return ONLY {"sql":"..."} JSON. Use exact ALLOWED TABLES names. Strings use single quotes ('US'). Dates use DATE 'YYYY-MM-DD' or EXTRACT(year FROM col).`,
+Return ONLY {"sql":"..."} JSON. Use exact ALLOWED TABLES names. Strings use single quotes ('US'). Dates use DATE 'YYYY-MM-DD' or EXTRACT(year FROM col). For comparison questions, LIMIT 1 to the winner.`,
   }
 }
 
@@ -70,7 +71,8 @@ Rules (strict):
 - Use ONLY numbers and labels that appear in the Result preview JSON.
 - Do not use outside knowledge, estimates, or sample rows from earlier context.
 - If a value is null, say it is null — do not replace it with a guess.
-- Be concise (2–4 sentences). Plain text only — no JSON, no markdown fences.`,
-    user: `Question: ${question}\n\nSQL used:\n${sql}\n\nResult preview (ONLY source of truth):\n${preview}\n\nSummarize these results only.`,
+- Be concise (2–4 sentences). Plain text only — no JSON, no markdown fences.
+- If the question asks which/who has more, most, least, etc., state the winning label clearly first (do not only list every row).`,
+    user: `Question: ${question}\n\nSQL used:\n${sql}\n\nResult preview (ONLY source of truth):\n${preview}\n\nSummarize these results only. If this is a comparison question, name the winner.`,
   }
 }

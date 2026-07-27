@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { DEFAULT_PREFERENCES } from '@/types/preferences'
 
-export type AppMode = 'home' | 'explore' | 'tools' | 'settings'
+export type AppMode = 'home' | 'explore' | 'tools' | 'settings' | 'faq' | 'license'
 
 interface WorkspaceState {
   appMode: AppMode

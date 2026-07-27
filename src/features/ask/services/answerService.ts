@@ -54,6 +54,78 @@ function formatCell(value: unknown): string {
   return String(value)
 }
 
+function asFiniteNumber(value: unknown): number | null {
+  if (typeof value === 'number' && Number.isFinite(value)) return value
+  if (typeof value === 'bigint') return Number(value)
+  if (typeof value === 'string' && value.trim() !== '' && !Number.isNaN(Number(value))) {
+    return Number(value)
+  }
+  return null
+}
+
+function isComparisonQuestion(question: string): boolean {
+  return /\b(which|who|what)\b/i.test(question) &&
+    /\b(more|most|least|fewer|greater|higher|lower|largest|smallest|top|best|worst|max|min)\b/i.test(
+      question,
+    )
+}
+
+function isAscendingComparison(question: string): boolean {
+  return /\b(least|fewer|lower|smallest|worst|min)\b/i.test(question)
+}
+
+/**
+ * For “which has more …” style questions over a label + metric breakdown,
+ * answer with the winning label instead of dumping every row.
+ */
+function tryComparisonAnswer(
+  question: string,
+  columns: string[],
+  rows: Record<string, unknown>[],
+): string | null {
+  if (!isComparisonQuestion(question) || rows.length < 2 || columns.length < 2) return null
+
+  const numericCols = columns.filter((col) =>
+    rows.every((row) => row[col] == null || asFiniteNumber(row[col]) != null),
+  )
+  const labelCols = columns.filter((col) => !numericCols.includes(col))
+  if (numericCols.length === 0 || labelCols.length === 0) return null
+
+  const metricCol =
+    numericCols.find((col) => /count|total|sum|amount|qty|quantity|num|score|value/i.test(col)) ??
+    numericCols[numericCols.length - 1]!
+  const labelCol = labelCols[0]!
+  const ascending = isAscendingComparison(question)
+
+  let best = rows[0]!
+  let bestMetric = asFiniteNumber(best[metricCol])
+  if (bestMetric == null) return null
+
+  for (let i = 1; i < rows.length; i++) {
+    const row = rows[i]!
+    const metric = asFiniteNumber(row[metricCol])
+    if (metric == null) continue
+    if (ascending ? metric < bestMetric : metric > bestMetric) {
+      best = row
+      bestMetric = metric
+    }
+  }
+
+  const winner = formatCell(best[labelCol])
+  const others = rows
+    .filter((row) => row !== best)
+    .map((row) => `${formatCell(row[labelCol])} (${formatCell(row[metricCol])})`)
+    .slice(0, 3)
+
+  if (others.length === 1) {
+    return `${winner} has the ${ascending ? 'lower' : 'higher'} ${metricCol} (${formatCell(best[metricCol])}) vs ${others[0]}.`
+  }
+  if (others.length > 1) {
+    return `${winner} leads with ${metricCol}=${formatCell(best[metricCol])} (ahead of ${others.join(', ')}).`
+  }
+  return `${winner} (${metricCol}=${formatCell(best[metricCol])}).`
+}
+
 /**
  * Prefer a deterministic one-liner for tiny result sets so the model cannot invent figures.
  * Falls back to null → caller may use the LLM for richer multi-row summaries.
@@ -74,6 +146,9 @@ export function tryDeterministicAnswer(
     const parts = columns.map((c) => `${c}=${formatCell(rows[0][c])}`)
     return `Result for “${question}”: ${parts.join(', ')}.`
   }
+
+  const comparison = tryComparisonAnswer(question, columns, rows)
+  if (comparison) return comparison
 
   if (rows.length <= 8 && columns.length <= 4) {
     const lines = rows.map((row, i) => {

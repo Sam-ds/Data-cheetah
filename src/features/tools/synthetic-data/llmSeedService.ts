@@ -1,6 +1,7 @@
 import type { ChatMessage, LlmProvider } from '@/features/ask/llm/types'
 import { FAKER_PATH_WHITELIST, normalizeFakerPath, type SchemaColumn, type SchemaPlan } from './schemaPlan'
 import { inferPlanFromSample } from './inferFromSample'
+import { applyColumnRules, type ColumnRule } from './columnRules'
 
 function extractJsonObject(text: string): unknown {
   const trimmed = text.trim()
@@ -24,6 +25,9 @@ function coercePlan(raw: unknown, fallbackSample: string, seedCount: number): Sc
       enumValues?: string[]
       min?: number
       max?: number
+      notNull?: boolean
+      not_null?: boolean
+      unique?: boolean
     }[]
     rows?: Record<string, unknown>[]
   }
@@ -64,17 +68,31 @@ function coercePlan(raw: unknown, fallbackSample: string, seedCount: number): Sc
         enumValues: Array.isArray(c.enumValues) ? c.enumValues.map(String) : undefined,
         min: typeof c.min === 'number' ? c.min : undefined,
         max: typeof c.max === 'number' ? c.max : undefined,
+        notNull:
+          typeof c.notNull === 'boolean'
+            ? c.notNull
+            : typeof c.not_null === 'boolean'
+              ? c.not_null
+              : true,
+        unique: typeof c.unique === 'boolean' ? c.unique : false,
       } satisfies SchemaColumn
     })
 
   if (columns.length === 0) {
+    if (!fallbackSample.trim()) {
+      throw new Error('Model did not return columns and no sample was provided')
+    }
     return inferPlanFromSample(fallbackSample, seedCount)
   }
 
   const rows = Array.isArray(obj.rows) ? obj.rows.slice(0, seedCount) : []
-  if (rows.length === 0) {
-    const inferred = inferPlanFromSample(fallbackSample, seedCount)
-    return { columns, rows: inferred.rows, source: 'llm' }
+  if (rows.length === 0 && fallbackSample.trim()) {
+    try {
+      const inferred = inferPlanFromSample(fallbackSample, seedCount)
+      return { columns, rows: inferred.rows, source: 'llm' }
+    } catch {
+      return { columns, rows: [], source: 'llm' }
+    }
   }
 
   return { columns, rows, source: 'llm' }
@@ -85,18 +103,36 @@ export async function seedPlanWithLlm(
   sample: string,
   context: string,
   seedCount: number,
+  onProgress?: (text: string, progress: number) => void,
+  columnRules: ColumnRule[] = [],
 ): Promise<SchemaPlan> {
   if (!provider.isReady()) {
     throw new Error('LLM is not ready. Connect a model in Settings / Ask, or generate without LLM.')
   }
 
+  const rulesHint =
+    columnRules.length > 0
+      ? `\nColumn constraints to honor in seed rows:\n${columnRules
+          .map((r) => {
+            const bits = [
+              r.unique ? 'unique' : null,
+              r.notNull === false ? 'nullable' : 'not null',
+              r.type ? `type=${r.type}` : null,
+            ].filter(Boolean)
+            return `- ${r.name}: ${bits.join(', ')}`
+          })
+          .join('\n')}`
+      : ''
+
   const system = `You help create synthetic tabular data plans for a browser app.
 Return ONLY valid JSON (no markdown) with this shape:
-{"columns":[{"name":"col","type":"string|number|integer|boolean|date","fakerPath":"<path>","notes":"...","min":0,"max":100,"enumValues":["a"]}],"rows":[{...}]}
+{"columns":[{"name":"col","type":"string|number|integer|boolean|date","fakerPath":"<path>","notes":"...","min":0,"max":100,"enumValues":["a"],"notNull":true,"unique":false}],"rows":[{...}]}
 Rules:
-- Infer columns from the sample; respect the user's context.
+- Infer columns from the sample; respect the user's context and any column constraints.
 - fakerPath MUST be one of: ${FAKER_PATH_WHITELIST.join(', ')}
 - Include exactly ${seedCount} realistic seed rows in "rows" matching the columns.
+- For unique columns, seed rows must not repeat values.
+- For notNull columns, never use null or empty strings.
 - Prefer realistic values consistent with the sample and context.
 - Do not invent SQL. Do not wrap JSON in markdown.`
 
@@ -104,11 +140,21 @@ Rules:
     { role: 'system', content: system },
     {
       role: 'user',
-      content: `Context:\n${context.trim() || '(none)'}\n\nSample data:\n${sample.trim().slice(0, 12_000)}\n\nReturn the JSON plan with ${seedCount} seed rows.`,
+      content: `Context:\n${context.trim() || '(none)'}${rulesHint}\n\nSample data:\n${sample.trim().slice(0, 12_000) || '(none — use column constraints)'}\n\nReturn the JSON plan with ${seedCount} seed rows.`,
     },
   ]
 
-  const reply = await provider.complete(messages, { temperature: 0.4 })
+  onProgress?.('Asking model for seed rows…', 0.05)
+  const reply = await provider.complete(messages, {
+    temperature: 0.4,
+    onChunk: (accumulated) => {
+      const approx = Math.min(0.95, 0.05 + accumulated.length / 8000)
+      onProgress?.(`Generating seed plan… ${Math.round(approx * 100)}%`, approx)
+    },
+  })
+  onProgress?.('Parsing seed plan…', 0.97)
   const parsed = extractJsonObject(reply)
-  return coercePlan(parsed, sample, seedCount)
+  const plan = applyColumnRules(coercePlan(parsed, sample, seedCount), columnRules)
+  onProgress?.('LLM seed ready', 1)
+  return plan
 }

@@ -44,6 +44,10 @@ export interface SchemaColumn {
   /** Optional int range */
   min?: number
   max?: number
+  /** When true (default), generated values are never null/empty */
+  notNull?: boolean
+  /** When true, values are unique across generated rows */
+  unique?: boolean
 }
 
 export interface SchemaPlan {

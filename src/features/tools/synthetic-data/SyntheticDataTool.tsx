@@ -11,6 +11,12 @@ import { inferPlanFromSample } from './inferFromSample'
 import { generateSyntheticRows } from './generateSynthetic'
 import { downloadText, rowsToCsv, rowsToFile, rowsToJson } from './exportSynthetic'
 import { seedPlanWithLlm } from './llmSeedService'
+import {
+  applyColumnRules,
+  formatColumnConstraints,
+  parseColumnRules,
+  planFromColumnRules,
+} from './columnRules'
 import type { SchemaPlan } from './schemaPlan'
 import { getAskLlmProvider, getActiveAskModelId, resetAskLlmSession } from '@/features/ask/services/llmSession'
 import { checkWebGpuSupport, probeWebGpu, resetWebGpuProbeCache } from '@/features/ask/llm/nullProvider'
@@ -29,6 +35,11 @@ import { cn } from '@/lib/utils/cn'
 const SAMPLE_PLACEHOLDER = `order_id,customer_email,quantity,order_date
 1001,john@example.com,2,2026-06-01
 1002,sarah@example.com,1,2026-06-02`
+
+const RULES_PLACEHOLDER = `order_id: unique, not null
+customer_email: unique, not null
+quantity: not null
+order_date: not null`
 
 /** Turn raw WebGPU / API errors into short actionable copy for the toast. */
 function friendlyLlmSeedError(err: unknown, askProvider: AskProviderId): string {
@@ -56,6 +67,7 @@ export function SyntheticDataTool() {
   const setEditorContent = useSqlStore((s) => s.setEditorContent)
 
   const [sample, setSample] = useState(SAMPLE_PLACEHOLDER)
+  const [columnRulesText, setColumnRulesText] = useState(RULES_PLACEHOLDER)
   const [context, setContext] = useState(
     'E-commerce orders for a small bookstore. Keep emails realistic.',
   )
@@ -69,11 +81,14 @@ export function SyntheticDataTool() {
   const [rows, setRows] = useState<Record<string, unknown>[]>([])
   const [gpuProbe, setGpuProbe] = useState<'idle' | 'ok' | 'failed'>('idle')
   const [gpuProbeReason, setGpuProbeReason] = useState<string | null>(null)
+  const [llmProgress, setLlmProgress] = useState<{ text: string; progress: number } | null>(null)
 
   useEffect(() => {
-    if (askProvider !== 'local') {
-      setGpuProbe('idle')
-      setGpuProbeReason(null)
+    if (askProvider !== 'local' || !useLlm) {
+      if (askProvider !== 'local') {
+        setGpuProbe('idle')
+        setGpuProbeReason(null)
+      }
       return
     }
     let cancelled = false
@@ -91,24 +106,23 @@ export function SyntheticDataTool() {
     return () => {
       cancelled = true
     }
-  }, [askProvider])
+  }, [askProvider, useLlm])
 
   const previewRows = useMemo(() => rows.slice(0, 50), [rows])
   const columns = plan?.columns.map((c) => c.name) ?? (previewRows[0] ? Object.keys(previewRows[0]) : [])
 
+  /** Warnings only when LLM seed is on and something actually blocks it — or GPU already failed. */
   const llmReadyHint = (() => {
+    if (askProvider === 'local' && gpuProbe === 'failed' && gpuProbeReason) {
+      return gpuProbeReason
+    }
+    if (!useLlm) return null
     if (askProvider === 'local') {
-      if (gpuProbe === 'failed' && gpuProbeReason) {
-        return gpuProbeReason
-      }
-      if (gpuProbe === 'idle') {
-        return 'Checking WebGPU…'
-      }
       const gpu = checkWebGpuSupport()
       if (!gpu.ok) {
         return `${gpu.reason} Turn off “Use LLM for seed rows”, or pick a remote model in Settings.`
       }
-      return 'Local WebLLM needs a working GPU. If seeding fails, use a remote model in Settings or turn off LLM seeding (faker still runs).'
+      return null
     }
     if (!vaultUnlocked && !isVaultUnlocked()) {
       return 'Unlock the API vault in Settings to seed with a remote model, or disable LLM seeding.'
@@ -120,9 +134,20 @@ export function SyntheticDataTool() {
     setBusy(true)
     setError(null)
     setStatus(null)
+    setLlmProgress(null)
     try {
       const seedN = Math.min(20, Math.max(3, seedCount))
       const target = Math.min(50_000, Math.max(1, targetRows))
+      const rules = parseColumnRules(columnRulesText)
+      const hasSample = sample.trim().length > 0
+      if (!hasSample && rules.length === 0) {
+        throw new Error('Paste a sample and/or column rules (name + unique / not null).')
+      }
+
+      const buildFallbackPlan = (): SchemaPlan => {
+        if (hasSample) return applyColumnRules(inferPlanFromSample(sample, seedN), rules)
+        return planFromColumnRules(rules)
+      }
 
       let nextPlan: SchemaPlan
       if (useLlm) {
@@ -143,21 +168,37 @@ export function SyntheticDataTool() {
           await resetAskLlmSession()
           const provider = getAskLlmProvider()
           if (!provider.isReady()) {
-            await provider.load(getActiveAskModelId())
+            setLlmProgress({ text: 'Loading model…', progress: 0.02 })
+            await provider.load(getActiveAskModelId(), (p) => {
+              setLlmProgress({ text: p.text, progress: p.progress })
+              setStatus(p.text)
+            })
           }
-          nextPlan = await seedPlanWithLlm(provider, sample, context, seedN)
+          nextPlan = await seedPlanWithLlm(
+            provider,
+            sample,
+            context,
+            seedN,
+            (text, progress) => {
+              setLlmProgress({ text, progress })
+              setStatus(text)
+            },
+            rules,
+          )
+          setLlmProgress(null)
         } catch (err) {
           if (askProvider === 'local') {
             resetWebGpuProbeCache()
           }
+          setLlmProgress(null)
           const friendly = friendlyLlmSeedError(err, askProvider)
           toast.message(`LLM seed skipped. ${friendly}`)
-          setStatus('Using sample inference + faker (no LLM).')
-          nextPlan = inferPlanFromSample(sample, seedN)
+          setStatus('Using sample/rules + faker (no LLM).')
+          nextPlan = buildFallbackPlan()
         }
       } else {
-        setStatus('Inferring schema from sample…')
-        nextPlan = inferPlanFromSample(sample, seedN)
+        setStatus(hasSample ? 'Inferring schema from sample…' : 'Building schema from column rules…')
+        nextPlan = buildFallbackPlan()
       }
 
       setStatus(`Generating ${target} rows with faker.js…`)
@@ -165,7 +206,7 @@ export function SyntheticDataTool() {
       setPlan(nextPlan)
       setRows(generated)
       setStatus(
-        `Done: ${generated.length} rows (${nextPlan.source === 'llm' ? 'LLM seed' : 'sample seed'} + faker).`,
+        `Done: ${generated.length} rows (${nextPlan.source === 'llm' ? 'LLM seed' : 'sample/rules'} + faker).`,
       )
       toast.success(`Generated ${generated.length.toLocaleString()} synthetic rows`)
     } catch (err) {
@@ -174,6 +215,7 @@ export function SyntheticDataTool() {
       toast.error(message)
     } finally {
       setBusy(false)
+      setLlmProgress(null)
     }
   }
 
@@ -208,12 +250,12 @@ export function SyntheticDataTool() {
   return (
     <ToolPane
       title="Generate Data"
-      description="LLM seeds a few realistic rows from your sample and context; faker.js fills the rest in the browser. Nothing is sent to a DataCheetah server."
+      description="Optional sample + column rules (unique / not null). LLM can seed a few rows; faker.js fills the rest in the browser."
       error={error}
-      warning={sizeWarning(sample, context) ?? (useLlm ? llmReadyHint : null)}
+      warning={sizeWarning(sample, columnRulesText, context) ?? llmReadyHint}
       actions={
         <>
-          <ToolActionButton onClick={() => void runGenerate()} disabled={busy || !sample.trim()}>
+          <ToolActionButton onClick={() => void runGenerate()} disabled={busy || (!sample.trim() && !columnRulesText.trim())}>
             <Wand2 className="h-3.5 w-3.5" />
             {busy ? 'Generating…' : 'Generate'}
           </ToolActionButton>
@@ -292,32 +334,62 @@ export function SyntheticDataTool() {
           </div>
         </div>
 
-        {(status || plan) && (
-          <p className="text-[11px] text-muted-foreground">
-            {status}
-            {plan && (
-              <span className="ml-2">
-                Columns: {plan.columns.map((c) => `${c.name}→${c.fakerPath}`).join(', ')}
-              </span>
+        {(status || plan || (useLlm && llmProgress)) && (
+          <div className="space-y-1.5">
+            {useLlm && llmProgress && busy && (
+              <div className="space-y-1 rounded-md border border-border/60 bg-muted/20 px-3 py-2">
+                <div className="flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
+                  <span className="truncate">{llmProgress.text}</span>
+                  <span className="shrink-0 font-mono">
+                    {Math.min(100, Math.round(llmProgress.progress * 100))}%
+                  </span>
+                </div>
+                <div className="h-1.5 overflow-hidden rounded-full bg-muted">
+                  <div
+                    className="h-full rounded-full bg-[#f2a01f] transition-[width] duration-200"
+                    style={{
+                      width: `${Math.min(100, Math.max(2, Math.round(llmProgress.progress * 100)))}%`,
+                    }}
+                  />
+                </div>
+              </div>
             )}
-          </p>
+            {(status || plan) && (
+              <p className="text-[11px] text-muted-foreground">
+                {status}
+                {plan && !busy && (
+                  <span className="ml-2">
+                    Columns:{' '}
+                    {plan.columns.map((c) => formatColumnConstraints(c)).join(', ')}
+                  </span>
+                )}
+              </p>
+            )}
+          </div>
         )}
 
         <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 lg:grid-cols-2">
           <div className="flex min-h-0 flex-col gap-3">
             <ToolTextarea
-              label="Sample (CSV or JSON)"
+              label="Sample (CSV or JSON, optional if rules define columns)"
               placeholder={SAMPLE_PLACEHOLDER}
               value={sample}
               onChange={(e) => setSample(e.target.value)}
-              className="min-h-[140px]"
+              className="min-h-[120px]"
+            />
+            <ToolTextarea
+              label="Column rules (optional — unique / not null)"
+              placeholder={RULES_PLACEHOLDER}
+              value={columnRulesText}
+              onChange={(e) => setColumnRulesText(e.target.value)}
+              className="min-h-[100px]"
             />
             <ToolTextarea
               label="Context"
               placeholder="Describe the domain, constraints, locale…"
               value={context}
               onChange={(e) => setContext(e.target.value)}
-              className="min-h-[80px]"
+              className="min-h-[72px]"
             />
           </div>
 

@@ -10,6 +10,8 @@ import { ProfilePanel } from '@/features/profiling/components/ProfilePanel'
 import { TopToolbar } from './TopToolbar'
 import { StatusBar } from '@/components/StatusBar'
 import { HomeHub } from './HomeHub'
+import { FaqPage } from './FaqPage'
+import { LicensePage } from './LicensePage'
 import { useSqlEditor } from '@/features/sql/hooks/useSqlEditor'
 import { AskPanel } from '@/features/ask'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -59,6 +61,30 @@ export function WorkspaceLayout() {
         <TopToolbar />
         <div className="min-h-0 flex-1 overflow-hidden">
           <SettingsPage />
+        </div>
+        <StatusBar />
+      </div>
+    )
+  }
+
+  if (appMode === 'faq') {
+    return (
+      <div className="flex h-full flex-col bg-white dark:bg-black">
+        <TopToolbar />
+        <div className="min-h-0 flex-1 overflow-hidden">
+          <FaqPage />
+        </div>
+        <StatusBar />
+      </div>
+    )
+  }
+
+  if (appMode === 'license') {
+    return (
+      <div className="flex h-full flex-col bg-white dark:bg-black">
+        <TopToolbar />
+        <div className="min-h-0 flex-1 overflow-hidden">
+          <LicensePage />
         </div>
         <StatusBar />
       </div>

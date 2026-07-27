@@ -2,13 +2,14 @@ import { Braces, Database, Wand2 } from 'lucide-react'
 import logo from '@/assets/logo.png'
 import { useWorkspaceStore } from '@/features/workspace/store/workspaceStore'
 import { useToolsStore } from '@/features/tools/store/toolsStore'
+import { OPEN_SOURCE_CREDITS } from '@/features/workspace/content/openSourceCredits'
 
 export function HomeHub() {
   const setAppMode = useWorkspaceStore((s) => s.setAppMode)
   const openTool = useToolsStore((s) => s.openTool)
 
   return (
-    <div className="home-stage flex h-full flex-col items-center p-8 pb-16">
+    <div className="home-stage flex h-full flex-col items-center overflow-auto p-8 pb-10">
       <div className="home-orb home-orb--amber" aria-hidden />
       <div className="home-orb home-orb--sky" aria-hidden />
       <div className="home-orb home-orb--mint" aria-hidden />
@@ -20,7 +21,7 @@ export function HomeHub() {
         <span className="home-blaze" />
       </div>
 
-      <div className="home-content flex w-full max-w-4xl flex-col items-center gap-10 text-center pt-6 sm:pt-10">
+      <div className="home-content flex w-full max-w-4xl flex-1 flex-col items-center gap-10 text-center pt-6 sm:pt-10">
         <div className="home-logo-frame">
           <img
             src={logo}
@@ -99,6 +100,50 @@ export function HomeHub() {
             </p>
           </button>
         </div>
+
+        <footer className="home-fade-up home-fade-up-delay-3 mt-auto w-full space-y-4 border-t border-neutral-200 pt-8 dark:border-border/60">
+          <div className="space-y-2">
+            <p className="text-xs font-semibold uppercase tracking-wide text-neutral-600 dark:text-muted-foreground">
+              Powered by open source
+            </p>
+            <p className="mx-auto max-w-2xl text-[11px] leading-relaxed text-neutral-700 dark:text-muted-foreground">
+              {OPEN_SOURCE_CREDITS.map((c, i) => (
+                <span key={c.name}>
+                  {i > 0 && <span className="text-neutral-400"> · </span>}
+                  <a
+                    href={c.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="underline-offset-2 hover:underline"
+                    title={c.role}
+                  >
+                    {c.name}
+                  </a>
+                </span>
+              ))}
+            </p>
+          </div>
+
+          <nav className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs">
+            <button
+              type="button"
+              onClick={() => setAppMode('faq')}
+              className="font-medium text-[#b45309] underline-offset-2 hover:underline dark:text-[#f2a01f]"
+            >
+              FAQ
+            </button>
+            <span className="text-neutral-300 dark:text-border" aria-hidden>
+              |
+            </span>
+            <button
+              type="button"
+              onClick={() => setAppMode('license')}
+              className="font-medium text-[#b45309] underline-offset-2 hover:underline dark:text-[#f2a01f]"
+            >
+              License
+            </button>
+          </nav>
+        </footer>
       </div>
     </div>
   )
