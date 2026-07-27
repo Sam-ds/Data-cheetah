@@ -6,6 +6,52 @@ import { useFileImport } from '@/features/files/hooks/useFileImport'
 import { usePreferencesStore } from '@/features/profiling/store/profileStore'
 import { hasSeenDuckDBEngine } from '@/hooks/useDuckDB'
 
+const USEFUL_FOR = [
+  {
+    title: 'Explore a CSV or Excel file fast',
+    body: 'Open sales exports, logs, or survey dumps and query them with SQL — no database setup.',
+  },
+  {
+    title: 'Keep sensitive data on your machine',
+    body: 'Finance, HR, or customer files stay in the browser. Nothing is uploaded to a server.',
+  },
+  {
+    title: 'Prototype SQL before production',
+    body: 'Try joins, filters, and aggregations locally with DuckDB before wiring a real warehouse.',
+  },
+  {
+    title: 'Quick charts and column stats',
+    body: 'See shapes in your data with auto charts and per-column profiling after you run a query.',
+  },
+]
+
+const FAQ = [
+  {
+    q: 'Does my data leave my computer?',
+    a: 'No. Files are read in your browser and queried with DuckDB WASM. There is no upload API for datasets.',
+  },
+  {
+    q: 'Why a ~10 MB download when I open a file?',
+    a: 'That is the DuckDB SQL engine (compressed). It downloads once per browser, then starts from cache. Tools like JSON formatter work without it.',
+  },
+  {
+    q: 'What happens if I refresh the page?',
+    a: 'Open datasets are cleared (they live in memory only). Theme, saved query text, and the cached engine stay. Open the file again to continue.',
+  },
+  {
+    q: 'Which file types are supported?',
+    a: 'CSV, TSV, Parquet, JSON / JSONL, and Excel (.xlsx / .xls). Nested JSON objects with a row array are unwrapped into a table when possible.',
+  },
+  {
+    q: 'Is this free to use and host?',
+    a: 'Yes for users. It is a static app — compute runs on your device. Hosting only serves app files (e.g. GitHub Pages).',
+  },
+  {
+    q: 'How is this different from DuckDB itself?',
+    a: 'DuckDB is the engine. DataCheetah is a local UI around it: file drop, SQL editor, results grid, charts, profiling, and browser tools.',
+  },
+]
+
 export function EmptyState() {
   const { handleDrop, handleFileInput, importStatus } = useFileImport()
   const duckdbStatus = usePreferencesStore((s) => s.duckdbStatus)
@@ -31,7 +77,7 @@ export function EmptyState() {
     : 'CSV · Parquet · JSON · Excel'
 
   return (
-    <div className="home-stage flex h-full flex-col items-center justify-center p-8">
+    <div className="home-stage flex h-full flex-col items-center p-8 pb-16">
       <div className="home-orb home-orb--amber" aria-hidden />
       <div className="home-orb home-orb--sky" aria-hidden />
       <div className="home-orb home-orb--mint" aria-hidden />
@@ -43,7 +89,7 @@ export function EmptyState() {
         <span className="home-blaze" />
       </div>
 
-      <div className="home-content flex w-full max-w-xl flex-col items-center gap-8 text-center">
+      <div className="home-content flex w-full max-w-2xl flex-col items-center gap-10 text-center pt-6 sm:pt-10">
         <div className="home-logo-frame">
           <img
             src={logo}
@@ -118,7 +164,50 @@ export function EmptyState() {
           </span>
         </div>
 
-        <div className="home-fade-up home-fade-up-delay-4 flex flex-col items-center gap-2">
+        <section className="home-fade-up home-fade-up-delay-4 w-full text-left">
+          <h2 className="text-sm font-semibold tracking-tight text-foreground">How it’s useful</h2>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Built for quick, private analysis without standing up a database.
+          </p>
+          <ul className="mt-4 grid gap-3 sm:grid-cols-2">
+            {USEFUL_FOR.map((item) => (
+              <li
+                key={item.title}
+                className="rounded-xl border border-border/50 bg-background/50 px-3.5 py-3 backdrop-blur-sm"
+              >
+                <p className="text-sm font-medium text-foreground">{item.title}</p>
+                <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{item.body}</p>
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        <section className="w-full text-left pb-4">
+          <h2 className="text-sm font-semibold tracking-tight text-foreground">FAQ</h2>
+          <p className="mt-1 text-xs text-muted-foreground">Common questions about privacy, size, and how it works.</p>
+          <div className="mt-4 space-y-2">
+            {FAQ.map((item) => (
+              <details
+                key={item.q}
+                className="group rounded-xl border border-border/50 bg-background/50 px-3.5 py-2.5 open:bg-background/70"
+              >
+                <summary className="cursor-pointer list-none text-sm font-medium text-foreground marker:content-none [&::-webkit-details-marker]:hidden">
+                  <span className="flex items-center justify-between gap-3">
+                    {item.q}
+                    <span className="text-muted-foreground transition group-open:rotate-45" aria-hidden>
+                      +
+                    </span>
+                  </span>
+                </summary>
+                <p className="mt-2 border-t border-border/40 pt-2 text-xs leading-relaxed text-muted-foreground">
+                  {item.a}
+                </p>
+              </details>
+            ))}
+          </div>
+        </section>
+
+        <div className="flex flex-col items-center gap-2 pb-2">
           <p className="text-xs text-muted-foreground/60">Powered by open source</p>
           <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5">
             {[

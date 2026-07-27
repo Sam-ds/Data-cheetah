@@ -28,6 +28,7 @@ import { useToolsStore, TOOL_LABELS, type ToolId } from '@/features/tools/store/
 import { exportToCsv, exportToXlsx } from '@/services/exportService'
 import { SavedQueriesDialog } from '@/features/sql/components/SavedQueriesDialog'
 import { KeyboardShortcutsDialog } from '@/components/KeyboardShortcutsDialog'
+import { goHome } from '@/features/workspace/goHome'
 
 const TOOL_MENU: ToolId[] = ['json-format', 'json-minify', 'json-compare', 'text-compare']
 
@@ -45,13 +46,19 @@ export function TopToolbar() {
   return (
     <>
       <header className="flex h-12 shrink-0 items-center gap-1 border-b bg-background px-3">
-        <div className="flex items-center pr-3">
+        <button
+          type="button"
+          onClick={goHome}
+          className="flex items-center rounded-sm pr-3 outline-none transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:ring-[#f2a01f]/40"
+          title="Back to home"
+          aria-label="DataCheetah home"
+        >
           <img
             src={logo}
             alt="DataCheetah"
             className="h-9 w-auto rounded-sm object-contain"
           />
-        </div>
+        </button>
 
         <Separator orientation="vertical" className="mx-1 h-5" />
 

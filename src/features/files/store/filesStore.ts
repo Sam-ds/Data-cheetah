@@ -9,6 +9,7 @@ interface FilesState {
   addFile: (file: RegisteredDataset) => void
   setActiveFile: (id: string | null) => void
   setImportStatus: (status: 'idle' | 'loading' | 'error', error?: string) => void
+  clearFiles: () => void
   getActiveFile: () => RegisteredDataset | null
 }
 
@@ -26,6 +27,13 @@ export const useFilesStore = create<FilesState>((set, get) => ({
     })),
   setActiveFile: (id) => set({ activeFileId: id }),
   setImportStatus: (status, error) => set({ importStatus: status, importError: error ?? null }),
+  clearFiles: () =>
+    set({
+      files: [],
+      activeFileId: null,
+      importStatus: 'idle',
+      importError: null,
+    }),
   getActiveFile: () => {
     const { files, activeFileId } = get()
     return files.find((f) => f.id === activeFileId) ?? null

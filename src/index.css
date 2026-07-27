@@ -144,7 +144,8 @@ body {
 .home-stage {
   position: relative;
   isolation: isolate;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
   /* Warm light canvas — not flat stark white */
   background:
     radial-gradient(ellipse 90% 70% at 15% 10%, rgba(242, 160, 31, 0.28), transparent 50%),
