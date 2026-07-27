@@ -1,6 +1,5 @@
 import { WorkspaceLayout } from '@/features/workspace/components/WorkspaceLayout'
 import { ToolsOverlay } from '@/features/tools/components/ToolsOverlay'
-import { useDuckDB } from '@/hooks/useDuckDB'
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts'
 import { useEffect } from 'react'
 import { usePreferencesStore } from '@/features/profiling/store/profileStore'
@@ -8,7 +7,7 @@ import { loadPreferences } from '@/services/storageService'
 import { Toaster } from 'sonner'
 
 function App() {
-  useDuckDB()
+  // DuckDB WASM loads only on first file open — keeps homepage light
   useKeyboardShortcuts()
   const setTheme = usePreferencesStore((s) => s.setTheme)
 

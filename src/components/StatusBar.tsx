@@ -5,18 +5,37 @@ import { formatDuration } from '@/lib/utils/sanitizeTableName'
 import { Shield, Circle } from 'lucide-react'
 
 export function StatusBar() {
-  const duckdbReady = usePreferencesStore((s) => s.duckdbReady)
+  const duckdbStatus = usePreferencesStore((s) => s.duckdbStatus)
   const result = useQueryStore((s) => s.result)
   const error = useQueryStore((s) => s.error)
   const activeFile = useFilesStore((s) => s.getActiveFile())
 
+  const duckdbLabel =
+    duckdbStatus === 'ready'
+      ? 'DuckDB ready'
+      : duckdbStatus === 'loading'
+        ? 'Downloading SQL engine…'
+        : duckdbStatus === 'error'
+          ? 'DuckDB failed'
+          : 'DuckDB on demand'
+
+  const duckdbColor =
+    duckdbStatus === 'ready'
+      ? 'text-green-500'
+      : duckdbStatus === 'loading'
+        ? 'text-amber-500'
+        : duckdbStatus === 'error'
+          ? 'text-destructive'
+          : 'text-muted-foreground'
+
   return (
     <footer className="flex h-[22px] shrink-0 items-center gap-3 border-t bg-muted/50 px-3 text-[11px] text-muted-foreground">
-      <span className="flex items-center gap-1">
-        <Circle
-          className={`h-2 w-2 fill-current ${duckdbReady ? 'text-green-500' : 'text-amber-500'}`}
-        />
-        DuckDB {duckdbReady ? 'ready' : 'loading...'}
+      <span
+        className="flex items-center gap-1"
+        title="SQL engine loads in your browser only when you open a file"
+      >
+        <Circle className={`h-2 w-2 fill-current ${duckdbColor}`} />
+        {duckdbLabel}
       </span>
 
       {activeFile && (

@@ -4,7 +4,8 @@ import { buildDefaultQuery } from '@/features/profiling/services/profilingServic
 import { profileTable } from '@/features/profiling/services/profilingService'
 import { useFilesStore } from '@/features/files/store/filesStore'
 import { useSqlStore } from '@/features/sql/store/sqlStore'
-import { useProfileStore } from '@/features/profiling/store/profileStore'
+import { useProfileStore, usePreferencesStore } from '@/features/profiling/store/profileStore'
+import { ensureDuckDB } from '@/hooks/useDuckDB'
 import { toast } from 'sonner'
 
 export function useFileImport() {
@@ -23,6 +24,17 @@ export function useFileImport() {
 
       setImportStatus('loading')
       try {
+        const alreadyReady = usePreferencesStore.getState().duckdbReady
+        if (!alreadyReady) {
+          toast.info('Downloading SQL engine (~10 MB) — one-time, stays in your browser', {
+            duration: 8000,
+            id: 'duckdb-download',
+          })
+        }
+
+        await ensureDuckDB()
+        toast.dismiss('duckdb-download')
+
         const dataset = await importFile(file)
         addFile(dataset)
         setEditorContent(buildDefaultQuery(dataset.tableName))
@@ -33,6 +45,7 @@ export function useFileImport() {
           .then(setProfile)
           .catch(() => setProfile(null))
       } catch (error) {
+        toast.dismiss('duckdb-download')
         const message = error instanceof Error ? error.message : 'Import failed'
         setImportStatus('error', message)
         toast.error(message)
