@@ -90,6 +90,30 @@ export function EmptyState() {
             No account
           </span>
         </div>
+
+        <div className="home-fade-up home-fade-up-delay-4 flex flex-col items-center gap-2">
+          <p className="text-xs text-muted-foreground/60">Powered by open source</p>
+          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5">
+            {[
+              { name: 'DuckDB', href: 'https://duckdb.org' },
+              { name: 'React', href: 'https://react.dev' },
+              { name: 'Monaco Editor', href: 'https://microsoft.github.io/monaco-editor/' },
+              { name: 'AG Grid', href: 'https://www.ag-grid.com' },
+              { name: 'Apache ECharts', href: 'https://echarts.apache.org' },
+              { name: 'sqlglot', href: 'https://github.com/tobymao/sqlglot' },
+            ].map(({ name, href }) => (
+              <a
+                key={name}
+                href={href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-muted-foreground/70 transition-colors hover:text-foreground"
+              >
+                {name}
+              </a>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   )

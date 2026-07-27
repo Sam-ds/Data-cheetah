@@ -266,6 +266,29 @@ More detail: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 
 ---
 
+## Acknowledgements
+
+DataCheetah is built entirely on the shoulders of open-source projects. Thank you to the teams and communities behind:
+
+| Project | What it does here |
+|---------|------------------|
+| [DuckDB](https://duckdb.org) | In-browser SQL engine via WASM — the core of everything |
+| [React](https://react.dev) | UI framework |
+| [Vite](https://vitejs.dev) | Build tooling and dev server |
+| [Monaco Editor](https://microsoft.github.io/monaco-editor/) | SQL editor with syntax highlighting and IntelliSense |
+| [AG Grid](https://www.ag-grid.com) | High-performance results table with virtual scrolling |
+| [Apache ECharts](https://echarts.apache.org) | Charts and visualisations |
+| [sqlglot](https://github.com/tobymao/sqlglot) | SQL formatting and linting (via sqlglot-ts) |
+| [Dexie.js](https://dexie.org) | IndexedDB wrapper for saved queries and file metadata |
+| [SheetJS (xlsx)](https://sheetjs.com) | Excel file parsing in the browser |
+| [Tailwind CSS](https://tailwindcss.com) | Utility-first styling |
+| [shadcn/ui](https://ui.shadcn.com) | Accessible UI component primitives |
+| [Lucide](https://lucide.dev) | Icon set |
+| [Zustand](https://github.com/pmndrs/zustand) | Lightweight state management |
+| [react-resizable-panels](https://github.com/bvaughn/react-resizable-panels) | Resizable workspace panels |
+
+---
+
 ## License
 
 MIT
