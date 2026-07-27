@@ -2,6 +2,7 @@ import { usePreferencesStore } from '@/features/profiling/store/profileStore'
 import { useQueryStore } from '@/features/sql/store/sqlStore'
 import { useFilesStore } from '@/features/files/store/filesStore'
 import { formatDuration } from '@/lib/utils/sanitizeTableName'
+import { hasSeenDuckDBEngine } from '@/hooks/useDuckDB'
 import { Shield, Circle } from 'lucide-react'
 
 export function StatusBar() {
@@ -9,12 +10,15 @@ export function StatusBar() {
   const result = useQueryStore((s) => s.result)
   const error = useQueryStore((s) => s.error)
   const activeFile = useFilesStore((s) => s.getActiveFile())
+  const seenEngine = hasSeenDuckDBEngine()
 
   const duckdbLabel =
     duckdbStatus === 'ready'
       ? 'DuckDB ready'
       : duckdbStatus === 'loading'
-        ? 'Downloading SQL engine…'
+        ? seenEngine
+          ? 'Starting SQL engine…'
+          : 'Downloading SQL engine…'
         : duckdbStatus === 'error'
           ? 'DuckDB failed'
           : 'DuckDB on demand'

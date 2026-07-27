@@ -4,16 +4,20 @@ import logo from '@/assets/logo.png'
 import { cn } from '@/lib/utils/cn'
 import { useFileImport } from '@/features/files/hooks/useFileImport'
 import { usePreferencesStore } from '@/features/profiling/store/profileStore'
+import { hasSeenDuckDBEngine } from '@/hooks/useDuckDB'
 
 export function EmptyState() {
   const { handleDrop, handleFileInput, importStatus } = useFileImport()
   const duckdbStatus = usePreferencesStore((s) => s.duckdbStatus)
   const isLoading = importStatus === 'loading'
   const isEngineLoading = duckdbStatus === 'loading'
+  const seenEngine = hasSeenDuckDBEngine()
   const [dragging, setDragging] = useState(false)
 
   const dropTitle = isEngineLoading
-    ? 'Downloading SQL engine…'
+    ? seenEngine
+      ? 'Starting SQL engine…'
+      : 'Downloading SQL engine…'
     : isLoading
       ? 'Loading dataset…'
       : dragging
@@ -21,7 +25,9 @@ export function EmptyState() {
         : 'Drop a file or click to browse'
 
   const dropHint = isEngineLoading
-    ? 'One-time ~10 MB download. Cached in your browser — your data never leaves this device.'
+    ? seenEngine
+      ? 'Using your cached engine — almost ready.'
+      : 'One-time ~10 MB download. Cached in your browser — your data never leaves this device.'
     : 'CSV · Parquet · JSON · Excel'
 
   return (
@@ -91,8 +97,9 @@ export function EmptyState() {
         <p className="home-fade-up home-fade-up-delay-2 flex max-w-md items-start gap-2 rounded-lg border border-border/60 bg-muted/40 px-3 py-2.5 text-left text-xs leading-relaxed text-muted-foreground">
           <HardDrive className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#f2a01f]" />
           <span>
-            Opening a file downloads the DuckDB SQL engine once (~10 MB). It stays in your browser
-            cache. Tools (JSON formatter, etc.) work without that download.
+            {seenEngine
+              ? 'SQL engine is cached in this browser. Opening a file starts it quickly — your data still never leaves this device.'
+              : 'Opening a file downloads the DuckDB SQL engine once (~10 MB). It stays in your browser cache. Tools (JSON formatter, etc.) work without that download.'}
           </span>
         </p>
 

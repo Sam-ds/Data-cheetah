@@ -5,7 +5,7 @@ import { profileTable } from '@/features/profiling/services/profilingService'
 import { useFilesStore } from '@/features/files/store/filesStore'
 import { useSqlStore } from '@/features/sql/store/sqlStore'
 import { useProfileStore, usePreferencesStore } from '@/features/profiling/store/profileStore'
-import { ensureDuckDB } from '@/hooks/useDuckDB'
+import { ensureDuckDB, hasSeenDuckDBEngine } from '@/hooks/useDuckDB'
 import { toast } from 'sonner'
 
 export function useFileImport() {
@@ -26,10 +26,16 @@ export function useFileImport() {
       try {
         const alreadyReady = usePreferencesStore.getState().duckdbReady
         if (!alreadyReady) {
-          toast.info('Downloading SQL engine (~10 MB) — one-time, stays in your browser', {
-            duration: 8000,
-            id: 'duckdb-download',
-          })
+          const firstTime = !hasSeenDuckDBEngine()
+          toast.info(
+            firstTime
+              ? 'Downloading SQL engine (~10 MB) — one-time, stays in your browser'
+              : 'Starting SQL engine…',
+            {
+              duration: firstTime ? 8000 : 4000,
+              id: 'duckdb-download',
+            },
+          )
         }
 
         await ensureDuckDB()
