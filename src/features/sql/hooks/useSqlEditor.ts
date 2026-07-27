@@ -57,7 +57,7 @@ export function useSqlEditor() {
       let message = err instanceof Error ? err.message : 'Query failed'
       if (/does not exist|Catalog Error|Table with name/i.test(message)) {
         message =
-          'Table not found. Datasets are in-memory only — drop or open the file again, then run the query.'
+          'Table not found. Re-open the file (or wait for local restore), then run the query again.'
       }
       setError(message)
       toast.error(message)

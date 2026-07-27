@@ -19,19 +19,48 @@ let conn: duckdb.AsyncDuckDBConnection | null = null
 const registeredTables = new Map<string, string>()
 
 /** Convert Arrow/DuckDB Row proxies into plain objects safe for postMessage. */
-function serializeValue(value: unknown): unknown {
+function formatYmdUtc(value: Date): string {
+  const y = value.getUTCFullYear()
+  const m = String(value.getUTCMonth() + 1).padStart(2, '0')
+  const d = String(value.getUTCDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
+
+function isDateOnlyArrowType(typeName: string): boolean {
+  const u = typeName.toUpperCase()
+  // Arrow Date32/Date64, DuckDB DATE — not TIMESTAMP / DateTime
+  if (u.includes('TIMESTAMP') || u.includes('DATETIME') || u.includes('TIME ZONE')) return false
+  return u.includes('DATE') || /^DATE\d*/i.test(typeName)
+}
+
+function isMidnightUtc(value: Date): boolean {
+  return (
+    value.getUTCHours() === 0 &&
+    value.getUTCMinutes() === 0 &&
+    value.getUTCSeconds() === 0 &&
+    value.getUTCMilliseconds() === 0
+  )
+}
+
+function serializeValue(value: unknown, typeName?: string): unknown {
   if (value == null) return null
   if (typeof value === 'bigint') return Number(value)
   if (typeof value === 'number' || typeof value === 'string' || typeof value === 'boolean') return value
-  if (value instanceof Date) return value.toISOString()
+  if (value instanceof Date) {
+    // DATE columns, or date-only midnight values mis-typed as TIMESTAMP by CSV auto-detect
+    if ((typeName && isDateOnlyArrowType(typeName)) || isMidnightUtc(value)) {
+      return formatYmdUtc(value)
+    }
+    return value.toISOString().replace(/\.\d{3}Z$/, 'Z')
+  }
   if (ArrayBuffer.isView(value)) {
     return Array.from(value as unknown as ArrayLike<number>)
   }
-  if (Array.isArray(value)) return value.map(serializeValue)
+  if (Array.isArray(value)) return value.map((v) => serializeValue(v, typeName))
   if (typeof value === 'object') {
     const withToJSON = value as { toJSON?: () => unknown }
     if (typeof withToJSON.toJSON === 'function') {
-      return serializeValue(withToJSON.toJSON())
+      return serializeValue(withToJSON.toJSON(), typeName)
     }
     const plain: Record<string, unknown> = {}
     for (const [key, nested] of Object.entries(value as Record<string, unknown>)) {
@@ -42,17 +71,61 @@ function serializeValue(value: unknown): unknown {
   return String(value)
 }
 
-function serializeRows(result: { schema: { fields: { name: string }[] }; toArray: () => unknown[] }): Record<string, unknown>[] {
-  const columns = result.schema.fields.map((f) => f.name)
-  return result.toArray().map((row) => {
-    const plain: Record<string, unknown> = {}
-    const record = row as Record<string, unknown>
-    for (const col of columns) {
-      plain[col] = serializeValue(record[col])
-    }
-    return plain
-  })
+type ArrowLikeResult = {
+  schema: { fields: { name: string; type?: unknown }[] }
+  numRows?: number
+  toArray: () => unknown[]
+  getChildAt?: (index: number) => { get: (row: number) => unknown } | null
 }
+
+function fieldTypeName(field: { type?: unknown }): string {
+  return field.type != null ? String(field.type) : ''
+}
+
+function serializeRows(result: ArrowLikeResult): Record<string, unknown>[] {
+  const columns = result.schema.fields.map((f) => f.name)
+  const types = result.schema.fields.map((f) => fieldTypeName(f))
+  const arrays = result.toArray()
+
+  if (arrays.length > 0) {
+    return arrays.map((row) => {
+      const plain: Record<string, unknown> = {}
+      if (Array.isArray(row)) {
+        columns.forEach((col, i) => {
+          plain[col] = serializeValue(row[i], types[i])
+        })
+        return plain
+      }
+      const record = row as Record<string, unknown> & { get?: (i: number) => unknown }
+      columns.forEach((col, i) => {
+        let value: unknown = record[col]
+        if (value === undefined && typeof record.get === 'function') {
+          value = record.get(i)
+        }
+        plain[col] = serializeValue(value, types[i])
+      })
+      return plain
+    })
+  }
+
+  // Some Arrow builds report numRows but yield an empty toArray()
+  const numRows = result.numRows ?? 0
+  if (numRows > 0 && typeof result.getChildAt === 'function') {
+    const rows: Record<string, unknown>[] = []
+    for (let r = 0; r < numRows; r++) {
+      const plain: Record<string, unknown> = {}
+      for (let c = 0; c < columns.length; c++) {
+        plain[columns[c]] = serializeValue(result.getChildAt(c)?.get(r), types[c])
+      }
+      rows.push(plain)
+    }
+    return rows
+  }
+
+  return []
+}
+
+let pendingMemoryLimit = '1GB'
 
 async function ensureDb(): Promise<duckdb.AsyncDuckDBConnection> {
   if (conn) return conn
@@ -63,22 +136,34 @@ async function ensureDb(): Promise<duckdb.AsyncDuckDBConnection> {
   db = new duckdb.AsyncDuckDB(logger, worker)
   await db.instantiate(bundle.mainModule, bundle.pthreadWorker)
   conn = await db.connect()
+  const limit = pendingMemoryLimit.replace(/'/g, '')
+  await conn.query(`SET memory_limit='${limit}'`)
   return conn
 }
 
+function sqlQuoteIdent(name: string): string {
+  return `"${name.replace(/"/g, '""')}"`
+}
+
+function sqlQuotePath(name: string): string {
+  return `'${name.replace(/'/g, "''")}'`
+}
+
 function getReadSql(fileName: string, format: FileFormat): string {
+  const path = sqlQuotePath(fileName)
   switch (format) {
     case 'csv':
-      return `SELECT * FROM read_csv_auto('${fileName}', header=true)`
+      // Prefer DATE for YYYY-MM-DD values; keep TIMESTAMP available for real datetimes
+      return `SELECT * FROM read_csv_auto(${path}, header=true, dateformat='%Y-%m-%d')`
     case 'parquet':
-      return `SELECT * FROM read_parquet('${fileName}')`
+      return `SELECT * FROM read_parquet(${path})`
     case 'json':
       if (/\.(jsonl|ndjson)$/i.test(fileName)) {
-        return `SELECT * FROM read_json_auto('${fileName}', format='newline_delimited')`
+        return `SELECT * FROM read_json_auto(${path}, format='newline_delimited')`
       }
-      return `SELECT * FROM read_json_auto('${fileName}', format='array')`
+      return `SELECT * FROM read_json_auto(${path}, format='array')`
     case 'xlsx':
-      return `SELECT * FROM read_csv_auto('${fileName}', header=true)`
+      return `SELECT * FROM read_csv_auto(${path}, header=true, dateformat='%Y-%m-%d')`
   }
 }
 
@@ -92,15 +177,19 @@ async function registerFile(
   await db!.registerFileBuffer(name, new Uint8Array(buffer))
 
   const readSql = getReadSql(name, format)
-  await connection.query(`CREATE OR REPLACE VIEW "${tableName}" AS ${readSql}`)
+  const quoted = sqlQuoteIdent(tableName)
+  // Materialize into a TABLE so queries do not depend on ephemeral file-buffer views
+  await connection.query(`DROP TABLE IF EXISTS ${quoted}`)
+  await connection.query(`DROP VIEW IF EXISTS ${quoted}`)
+  await connection.query(`CREATE TABLE ${quoted} AS ${readSql}`)
   registeredTables.set(tableName, name)
 
-  // Verify the view is queryable before reporting success
-  const countResult = await connection.query(`SELECT COUNT(*) as cnt FROM "${tableName}"`)
+  // Verify the table is queryable before reporting success
+  const countResult = await connection.query(`SELECT COUNT(*) as cnt FROM ${quoted}`)
   const countRows = serializeRows(countResult)
   const rowCount = Number(countRows[0]?.cnt ?? 0)
 
-  const schemaResult = await connection.query(`DESCRIBE "${tableName}"`)
+  const schemaResult = await connection.query(`DESCRIBE ${quoted}`)
   const schemaRows = serializeRows(schemaResult)
   const schema: ColumnSchema[] = schemaRows.map((r) => ({
     name: String(r.column_name),
@@ -229,6 +318,9 @@ self.onmessage = async (event: MessageEvent<DuckDBRequest>) => {
   try {
     switch (msg.type) {
       case 'INIT': {
+        if (msg.payload?.memoryLimit) {
+          pendingMemoryLimit = msg.payload.memoryLimit
+        }
         await ensureDb()
         respond({ id: msg.id, type: 'READY' })
         break

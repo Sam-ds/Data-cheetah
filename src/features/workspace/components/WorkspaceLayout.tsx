@@ -9,13 +9,18 @@ import { ChartPanel } from '@/features/charts/components/ChartPanel'
 import { ProfilePanel } from '@/features/profiling/components/ProfilePanel'
 import { TopToolbar } from './TopToolbar'
 import { StatusBar } from '@/components/StatusBar'
-import { EmptyState } from './EmptyState'
+import { HomeHub } from './HomeHub'
 import { useSqlEditor } from '@/features/sql/hooks/useSqlEditor'
+import { AskPanel } from '@/features/ask'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Table2, LineChart, Compass, BarChart3 } from 'lucide-react'
+import { Table2, LineChart, Compass, BarChart3, Sparkles, Loader2 } from 'lucide-react'
+import { ToolsWorkspace } from '@/features/tools/components/ToolsWorkspace'
+import { SettingsPage } from '@/features/settings/components/SettingsPage'
 
 export function WorkspaceLayout() {
   const files = useFilesStore((s) => s.files)
+  const restoringLocal = useFilesStore((s) => s.restoringLocal)
+  const appMode = useWorkspaceStore((s) => s.appMode)
   const {
     activeBottomTab,
     setActiveBottomTab,
@@ -26,11 +31,49 @@ export function WorkspaceLayout() {
   const { runQuery } = useSqlEditor()
   const hasFiles = files.length > 0
 
-  if (!hasFiles) {
+  if (appMode === 'home') {
+    return (
+      <div className="flex h-full flex-col bg-white dark:bg-black">
+        <TopToolbar />
+        <HomeHub />
+        <StatusBar />
+      </div>
+    )
+  }
+
+  if (appMode === 'tools') {
     return (
       <div className="flex h-full flex-col">
         <TopToolbar />
-        <EmptyState />
+        <div className="min-h-0 flex-1 overflow-hidden">
+          <ToolsWorkspace />
+        </div>
+        <StatusBar />
+      </div>
+    )
+  }
+
+  if (appMode === 'settings') {
+    return (
+      <div className="flex h-full flex-col">
+        <TopToolbar />
+        <div className="min-h-0 flex-1 overflow-hidden">
+          <SettingsPage />
+        </div>
+        <StatusBar />
+      </div>
+    )
+  }
+
+  // Explore mode — editor + upload sidebar even before files are loaded
+  if (restoringLocal && !hasFiles) {
+    return (
+      <div className="flex h-full flex-col">
+        <TopToolbar />
+        <div className="flex flex-1 flex-col items-center justify-center gap-3 text-sm text-muted-foreground">
+          <Loader2 className="h-8 w-8 animate-spin text-[#f2a01f]" />
+          Restoring local workspace datasets…
+        </div>
         <StatusBar />
       </div>
     )
@@ -41,7 +84,7 @@ export function WorkspaceLayout() {
       <TopToolbar />
       <div className="flex min-h-0 flex-1 overflow-hidden">
         {!sidebarCollapsed && (
-          <aside className="flex w-44 shrink-0 flex-col border-r sidebar-bg">
+          <aside className="flex w-52 shrink-0 flex-col border-r sidebar-bg">
             <FileSidebar />
           </aside>
         )}
@@ -57,7 +100,9 @@ export function WorkspaceLayout() {
                 <Panel id="explore-v3" defaultSize={32} minSize={20}>
                   <Tabs
                     value={activeRightTab}
-                    onValueChange={(v) => setActiveRightTab(v as 'explorer' | 'statistics')}
+                    onValueChange={(v) =>
+                      setActiveRightTab(v as 'explorer' | 'statistics' | 'ask')
+                    }
                     className="flex h-full flex-col"
                   >
                     <div className="flex items-center border-b bg-[var(--panel-header)] px-2">
@@ -76,6 +121,13 @@ export function WorkspaceLayout() {
                           <BarChart3 className="h-3.5 w-3.5" />
                           Stats
                         </TabsTrigger>
+                        <TabsTrigger
+                          value="ask"
+                          className="gap-1.5 data-[state=active]:shadow-none"
+                        >
+                          <Sparkles className="h-3.5 w-3.5" />
+                          Ask
+                        </TabsTrigger>
                       </TabsList>
                     </div>
                     <TabsContent value="explorer" className="mt-0 flex-1 overflow-hidden">
@@ -83,6 +135,9 @@ export function WorkspaceLayout() {
                     </TabsContent>
                     <TabsContent value="statistics" className="mt-0 flex-1 overflow-hidden">
                       <ProfilePanel embedded />
+                    </TabsContent>
+                    <TabsContent value="ask" className="mt-0 flex-1 overflow-hidden">
+                      <AskPanel />
                     </TabsContent>
                   </Tabs>
                 </Panel>

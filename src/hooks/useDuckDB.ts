@@ -22,15 +22,17 @@ function markDuckDBEngineSeen() {
   }
 }
 
-/** Load DuckDB WASM only when first needed (file import / query). */
+/** Load DuckDB WASM only when first needed (file import / query / restore). */
 export async function ensureDuckDB(): Promise<void> {
-  const { duckdbReady, duckdbStatus, setDuckdbStatus, setDuckdbReady } = usePreferencesStore.getState()
-  if (duckdbReady || duckdbStatus === 'ready') return
+  const { duckdbMemoryLimit, setDuckdbStatus, setDuckdbReady } = usePreferencesStore.getState()
+
+  if (duckdbClient.isReady()) return
 
   if (!initPromise) {
     setDuckdbStatus('loading')
+    duckdbClient.setMemoryLimitForNextInit(duckdbMemoryLimit)
     initPromise = duckdbClient
-      .init()
+      .init(duckdbMemoryLimit)
       .then(() => {
         markDuckDBEngineSeen()
         setDuckdbReady(true)
@@ -47,8 +49,17 @@ export async function ensureDuckDB(): Promise<void> {
   return initPromise
 }
 
+/** Tear down DuckDB so the next ensureDuckDB() starts a fresh engine (used by Clear local data). */
+export async function resetDuckDB(): Promise<void> {
+  duckdbClient.dispose()
+  initPromise = null
+  const { setDuckdbReady, setDuckdbStatus } = usePreferencesStore.getState()
+  setDuckdbReady(false)
+  setDuckdbStatus('idle')
+}
+
 export function useDuckDB() {
   const duckdbReady = usePreferencesStore((s) => s.duckdbReady)
   const duckdbStatus = usePreferencesStore((s) => s.duckdbStatus)
-  return { ready: duckdbReady, status: duckdbStatus, ensureDuckDB, hasSeenDuckDBEngine }
+  return { ready: duckdbReady, status: duckdbStatus, ensureDuckDB, hasSeenDuckDBEngine, resetDuckDB }
 }

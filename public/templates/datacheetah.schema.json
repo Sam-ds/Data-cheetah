@@ -1,0 +1,63 @@
+{
+  "version": 1,
+  "tables": [
+    {
+      "table": "orders",
+      "description": "Customer purchase orders from the online bookstore.",
+      "grain": "One row per order line item",
+      "notes": "Amounts are in USD. Join to books via book_id.",
+      "columns": {
+        "order_id": {
+          "description": "Unique id for the order line",
+          "role": "id"
+        },
+        "book_id": {
+          "description": "Foreign key to the books table",
+          "role": "fk",
+          "references": "books.book_id"
+        },
+        "order_date": {
+          "description": "Calendar date the order was placed (DATE, not year integer)",
+          "role": "date",
+          "examples": ["2020-01-15"]
+        },
+        "price": {
+          "description": "Line-item price paid by the customer",
+          "role": "metric",
+          "unit": "USD"
+        }
+      },
+      "relationships": [
+        {
+          "from": "book_id",
+          "toTable": "books",
+          "toColumn": "book_id",
+          "type": "many_to_one"
+        }
+      ],
+      "exampleQuestions": ["Average price of Harry Potter related orders"]
+    },
+    {
+      "table": "books",
+      "description": "Book catalog.",
+      "grain": "One row per book",
+      "notes": "",
+      "columns": {
+        "book_id": {
+          "description": "Primary key",
+          "role": "id"
+        },
+        "title": {
+          "description": "Book title",
+          "role": "dimension"
+        },
+        "author": {
+          "description": "Author name",
+          "role": "dimension"
+        }
+      },
+      "relationships": [],
+      "exampleQuestions": []
+    }
+  ]
+}

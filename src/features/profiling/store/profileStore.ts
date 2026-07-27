@@ -1,6 +1,10 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { TableProfile } from '@/types/profile'
+import type { DuckDbMemoryLimit } from '@/types/preferences'
+import type { AskProviderId } from '@/types/askSettings'
+import { DEFAULT_PREFERENCES } from '@/types/preferences'
+import { defaultRemoteModelFor } from '@/types/askSettings'
 
 interface ProfileState {
   profile: TableProfile | null
@@ -12,12 +16,25 @@ interface ProfileState {
 interface PreferencesState {
   theme: 'light' | 'dark'
   defaultRowLimit: number
+  duckdbMemoryLimit: DuckDbMemoryLimit
+  askProvider: AskProviderId
+  askRemoteModelId: string
   duckdbReady: boolean
   duckdbStatus: 'idle' | 'loading' | 'ready' | 'error'
   setTheme: (theme: 'light' | 'dark') => void
   setDefaultRowLimit: (limit: number) => void
+  setDuckdbMemoryLimit: (limit: DuckDbMemoryLimit) => void
+  setAskProvider: (provider: AskProviderId) => void
+  setAskRemoteModelId: (id: string) => void
   setDuckdbReady: (ready: boolean) => void
   setDuckdbStatus: (status: 'idle' | 'loading' | 'ready' | 'error') => void
+  hydrateFromPreferences: (p: {
+    theme?: 'light' | 'dark'
+    defaultRowLimit?: number
+    duckdbMemoryLimit?: DuckDbMemoryLimit
+    askProvider?: AskProviderId
+    askRemoteModelId?: string
+  }) => void
 }
 
 export const useProfileStore = create<ProfileState>((set) => ({
@@ -30,8 +47,11 @@ export const useProfileStore = create<ProfileState>((set) => ({
 export const usePreferencesStore = create<PreferencesState>()(
   persist(
     (set) => ({
-      theme: 'light',
-      defaultRowLimit: 10000,
+      theme: DEFAULT_PREFERENCES.theme,
+      defaultRowLimit: DEFAULT_PREFERENCES.defaultRowLimit,
+      duckdbMemoryLimit: DEFAULT_PREFERENCES.duckdbMemoryLimit,
+      askProvider: DEFAULT_PREFERENCES.askProvider,
+      askRemoteModelId: DEFAULT_PREFERENCES.askRemoteModelId,
       duckdbReady: false,
       duckdbStatus: 'idle',
       setTheme: (theme) => {
@@ -39,15 +59,33 @@ export const usePreferencesStore = create<PreferencesState>()(
         set({ theme })
       },
       setDefaultRowLimit: (limit) => set({ defaultRowLimit: limit }),
+      setDuckdbMemoryLimit: (limit) => set({ duckdbMemoryLimit: limit }),
+      setAskProvider: (provider) =>
+        set((s) => ({
+          askProvider: provider,
+          askRemoteModelId:
+            provider === 'local' ? s.askRemoteModelId : defaultRemoteModelFor(provider),
+        })),
+      setAskRemoteModelId: (id) => set({ askRemoteModelId: id }),
       setDuckdbReady: (ready) => set({ duckdbReady: ready }),
       setDuckdbStatus: (status) => set({ duckdbStatus: status }),
+      hydrateFromPreferences: (p) =>
+        set((s) => ({
+          theme: p.theme ?? s.theme,
+          defaultRowLimit: p.defaultRowLimit ?? s.defaultRowLimit,
+          duckdbMemoryLimit: p.duckdbMemoryLimit ?? s.duckdbMemoryLimit,
+          askProvider: p.askProvider ?? s.askProvider,
+          askRemoteModelId: p.askRemoteModelId ?? s.askRemoteModelId,
+        })),
     }),
     {
       name: 'datacheetah-preferences',
-      // Don't persist engine status — WASM must re-init after refresh
       partialize: (state) => ({
         theme: state.theme,
         defaultRowLimit: state.defaultRowLimit,
+        duckdbMemoryLimit: state.duckdbMemoryLimit,
+        askProvider: state.askProvider,
+        askRemoteModelId: state.askRemoteModelId,
       }),
     },
   ),

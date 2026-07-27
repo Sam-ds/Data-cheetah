@@ -17,12 +17,15 @@ Preferences → storageService → IndexedDB (Dexie)
 ```
 src/
 ├── features/          # Feature-based modules
-│   ├── workspace/     # Layout, toolbar
-│   ├── files/         # Import, sidebar
+│   ├── workspace/     # Home hub, modes (home/explore/tools), layout, toolbar
+│   ├── files/         # Import, sidebar upload
 │   ├── sql/           # Editor, results
 │   ├── explorer/      # Schema, preview
 │   ├── profiling/     # Column statistics
-│   └── charts/        # Auto charts
+│   ├── charts/        # Auto charts
+│   ├── settings/      # Settings page, encrypted secrets vault
+│   ├── tools/         # JSON / text utility pages
+│   └── ask/           # Local WebLLM + remote Ask providers
 ├── components/        # Shared UI (shadcn)
 ├── hooks/             # Global hooks
 ├── services/          # Worker facades, export, storage
@@ -49,8 +52,11 @@ src/
 | Store | Contents |
 |-------|----------|
 | `preferences` | Theme, layout, editor settings |
-| `recentFiles` | File metadata (no bytes) |
+| `recentFiles` | File metadata (legacy / companion) |
 | `savedQueries` | Named SQL queries |
+| `datasetBlobs` | Cached dataset bytes + schema (scoped by `workspaceId`) |
+| `workspaces` | Local named workspaces (on-device profiles) |
+| `secretsVault` | AES-GCM ciphertext of API keys (passphrase-derived; no plaintext) |
 
 ## Chart Inference Rules
 

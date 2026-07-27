@@ -2,11 +2,19 @@ import Dexie, { type Table } from 'dexie'
 import type { Preferences } from '@/types/preferences'
 import type { RecentFileMeta } from '@/types/dataset'
 import type { SavedQuery } from '@/types/query'
+import type { PersistedDataset } from '@/types/persistedDataset'
+import type { LocalWorkspace } from '@/types/workspace'
+import type { SecretsVaultRecord } from '@/types/secretsVault'
+
+export type { SecretsVaultRecord }
 
 export class DataCheetahDB extends Dexie {
   preferences!: Table<Preferences>
   recentFiles!: Table<RecentFileMeta>
   savedQueries!: Table<SavedQuery>
+  datasetBlobs!: Table<PersistedDataset>
+  workspaces!: Table<LocalWorkspace>
+  secretsVault!: Table<SecretsVaultRecord>
 
   constructor() {
     super('datacheetah')
@@ -14,6 +22,48 @@ export class DataCheetahDB extends Dexie {
       preferences: 'id',
       recentFiles: 'id, lastOpenedAt',
       savedQueries: 'id, name, updatedAt',
+    })
+    this.version(2).stores({
+      preferences: 'id',
+      recentFiles: 'id, lastOpenedAt',
+      savedQueries: 'id, name, updatedAt',
+      datasetBlobs: 'id, savedAt, tableName',
+    })
+    this.version(3)
+      .stores({
+        preferences: 'id',
+        recentFiles: 'id, lastOpenedAt',
+        savedQueries: 'id, name, updatedAt',
+        datasetBlobs: 'id, workspaceId, savedAt, tableName',
+        workspaces: 'id, name, updatedAt',
+      })
+      .upgrade(async (tx) => {
+        const wsTable = tx.table('workspaces')
+        const blobTable = tx.table('datasetBlobs')
+        let personal = await wsTable.toCollection().first()
+        if (!personal) {
+          const id = crypto.randomUUID()
+          personal = {
+            id,
+            name: 'Personal',
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          }
+          await wsTable.put(personal)
+        }
+        await blobTable.toCollection().modify((row: PersistedDataset) => {
+          if (!row.workspaceId) {
+            row.workspaceId = (personal as LocalWorkspace).id
+          }
+        })
+      })
+    this.version(4).stores({
+      preferences: 'id',
+      recentFiles: 'id, lastOpenedAt',
+      savedQueries: 'id, name, updatedAt',
+      datasetBlobs: 'id, workspaceId, savedAt, tableName',
+      workspaces: 'id, name, updatedAt',
+      secretsVault: 'id',
     })
   }
 }

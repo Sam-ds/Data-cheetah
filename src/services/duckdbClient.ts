@@ -13,11 +13,13 @@ type PendingRequest = {
 
 function createWorkerBridge(createWorker: () => Worker) {
   let worker: Worker | null = null
+  let generation = 0
   const pending = new Map<string, PendingRequest>()
 
   function ensureWorker(): Worker {
     if (!worker) {
       worker = createWorker()
+      generation += 1
       worker.onmessage = (event: MessageEvent<{ id: string; type: string; payload?: { message: string } }>) => {
         const response = event.data
         const req = pending.get(response.id)
@@ -51,6 +53,10 @@ function createWorkerBridge(createWorker: () => Worker) {
       worker?.terminate()
       worker = null
       pending.clear()
+      generation += 1
+    },
+    getGeneration() {
+      return generation
     },
   }
 }
@@ -68,19 +74,46 @@ async function sqlglotRequest(req: Omit<SqlglotRequest, 'id'>): Promise<SqlglotR
 
 let duckdbInitPromise: Promise<void> | null = null
 let duckdbReady = false
+let initMemoryLimit = '1GB'
+let initializedGeneration = -1
+let initEpoch = 0
 
 async function ensureDuckDBInit(): Promise<void> {
-  if (duckdbInitPromise) return duckdbInitPromise
+  if (duckdbInitPromise) {
+    try {
+      await duckdbInitPromise
+    } catch {
+      /* retry below if this epoch still needs init */
+    }
+    if (duckdbReady && initializedGeneration === duckdbBridge.getGeneration()) return
+  }
+
+  const epoch = ++initEpoch
+  duckdbReady = false
   duckdbInitPromise = (async () => {
-    await duckdbRequest({ type: 'INIT' })
+    await duckdbRequest({
+      type: 'INIT',
+      payload: { memoryLimit: initMemoryLimit },
+    } as Omit<Extract<DuckDBRequest, { type: 'INIT' }>, 'id'>)
+    if (epoch !== initEpoch) return
+    initializedGeneration = duckdbBridge.getGeneration()
     duckdbReady = true
   })()
-  return duckdbInitPromise
+
+  await duckdbInitPromise
+  if (epoch !== initEpoch || !duckdbReady) {
+    return ensureDuckDBInit()
+  }
 }
 
 export const duckdbClient = {
-  async init() {
+  async init(memoryLimit?: string) {
+    if (memoryLimit) initMemoryLimit = memoryLimit
     return ensureDuckDBInit()
+  },
+
+  setMemoryLimitForNextInit(memoryLimit: string) {
+    initMemoryLimit = memoryLimit
   },
 
   isReady() {
@@ -156,9 +189,11 @@ export const duckdbClient = {
   },
 
   dispose() {
+    initEpoch += 1
     duckdbBridge.dispose()
     duckdbInitPromise = null
     duckdbReady = false
+    initializedGeneration = -1
   },
 }
 

@@ -1,6 +1,11 @@
 import { create } from 'zustand'
 
-export type ToolId = 'json-format' | 'json-minify' | 'json-compare' | 'text-compare'
+export type ToolId =
+  | 'json-format'
+  | 'json-minify'
+  | 'json-compare'
+  | 'text-compare'
+  | 'synthetic-data'
 
 interface ToolsState {
   open: boolean
@@ -15,6 +20,7 @@ export const TOOL_LABELS: Record<ToolId, string> = {
   'json-minify': 'JSON Minifier',
   'json-compare': 'JSON Compare',
   'text-compare': 'Text Compare',
+  'synthetic-data': 'Generate Data',
 }
 
 export const useToolsStore = create<ToolsState>((set) => ({

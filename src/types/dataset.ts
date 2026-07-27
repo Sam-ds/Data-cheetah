@@ -1,3 +1,5 @@
+import type { TableSchemaDoc } from '@/types/schemaDoc'
+
 export type FileFormat = 'csv' | 'parquet' | 'json' | 'xlsx'
 
 export interface ColumnSchema {
@@ -14,6 +16,10 @@ export interface RegisteredDataset {
   schema: ColumnSchema[]
   rowCount: number
   registeredAt: Date
+  /** Optional LLM-oriented table/column descriptions */
+  schemaDoc?: TableSchemaDoc
+  /** Set when IndexedDB persist failed but import succeeded */
+  persistWarning?: string
 }
 
 export interface RecentFileMeta {

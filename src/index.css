@@ -146,20 +146,16 @@ body {
   isolation: isolate;
   overflow-x: hidden;
   overflow-y: auto;
-  /* Warm light canvas — not flat stark white */
-  background:
-    radial-gradient(ellipse 90% 70% at 15% 10%, rgba(242, 160, 31, 0.28), transparent 50%),
-    radial-gradient(ellipse 70% 55% at 90% 20%, rgba(14, 165, 233, 0.18), transparent 48%),
-    radial-gradient(ellipse 65% 50% at 60% 95%, rgba(16, 185, 129, 0.14), transparent 42%),
-    linear-gradient(165deg, #fff9f0 0%, #f4f8fc 45%, #eef7f3 100%);
+  background: #ffffff;
 }
 
 .dark .home-stage {
-  background:
-    radial-gradient(ellipse 80% 60% at 20% 20%, rgba(242, 160, 31, 0.22), transparent 55%),
-    radial-gradient(ellipse 70% 50% at 85% 15%, rgba(56, 189, 248, 0.12), transparent 50%),
-    radial-gradient(ellipse 60% 45% at 70% 90%, rgba(52, 211, 153, 0.1), transparent 45%),
-    var(--background);
+  background: #000000;
+}
+
+.home-orb,
+.home-blazes {
+  display: none;
 }
 
 .home-orb {

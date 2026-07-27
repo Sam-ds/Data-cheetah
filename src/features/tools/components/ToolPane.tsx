@@ -83,7 +83,7 @@ export const SOFT_SIZE_LIMIT = 2 * 1024 * 1024
 export function sizeWarning(...parts: string[]): string | null {
   const total = parts.reduce((sum, p) => sum + p.length, 0)
   if (total > SOFT_SIZE_LIMIT) {
-    return 'Input is larger than 2MB — processing may feel slow in the browser.'
+    return 'Input is larger than 2MB. Processing may feel slow in the browser.'
   }
   return null
 }

@@ -2,7 +2,7 @@ import type { ColumnSchema, FileFormat } from '@/types/dataset'
 import type { ColumnProfile } from '@/types/profile'
 
 export type DuckDBRequest =
-  | { id: string; type: 'INIT' }
+  | { id: string; type: 'INIT'; payload?: { memoryLimit?: string } }
   | {
       id: string
       type: 'REGISTER_FILE'

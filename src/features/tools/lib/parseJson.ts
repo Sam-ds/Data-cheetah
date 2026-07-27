@@ -105,5 +105,5 @@ export function parseJsonSafe(input: string): JsonParseResult {
 export function formatJsonParseError(prefix: string, error: JsonParseError): string {
   const parts = [`${prefix}${error.message}`]
   if (error.hint) parts.push(error.hint)
-  return parts.join(' — ')
+  return parts.join('. ')
 }

@@ -1,17 +1,13 @@
-import { useFilesStore } from '@/features/files/store/filesStore'
-import { useSqlStore, useQueryStore, DEFAULT_SQL } from '@/features/sql/store/sqlStore'
-import { useChartStore } from '@/features/charts/store/chartStore'
-import { useProfileStore } from '@/features/profiling/store/profileStore'
+import { useAskStore, resetAskLlmSession } from '@/features/ask'
 import { useToolsStore } from '@/features/tools/store/toolsStore'
+import { useWorkspaceStore } from '@/features/workspace/store/workspaceStore'
+import { lockVault } from '@/features/settings/services/secretsVault'
 
-/** Clear workspace state and return to the home empty state. */
+/** Return to the home hub. Keeps explore datasets cached for when you come back. */
 export function goHome() {
-  useFilesStore.getState().clearFiles()
-  useSqlStore.getState().setEditorContent(DEFAULT_SQL)
-  useSqlStore.getState().setDiagnostics([])
-  useQueryStore.getState().setResult(null)
-  useQueryStore.getState().setError(null)
-  useChartStore.getState().reset()
-  useProfileStore.getState().setProfile(null)
   useToolsStore.getState().close()
+  useAskStore.getState().resetSession()
+  void resetAskLlmSession()
+  lockVault()
+  useWorkspaceStore.getState().setAppMode('home')
 }

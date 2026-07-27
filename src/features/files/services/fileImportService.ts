@@ -3,6 +3,15 @@ import { duckdbClient } from '@/services/duckdbClient'
 import { db } from '@/lib/db/dexie'
 import { detectFormat, generateId, isSupportedFile, sanitizeTableName } from '@/lib/utils/sanitizeTableName'
 import { normalizeJsonForImport } from '@/features/files/services/normalizeJsonForImport'
+import {
+  findPersistedDatasetForUpdate,
+  savePersistedDataset,
+} from '@/features/files/services/datasetPersistenceService'
+import {
+  ensureDefaultWorkspace,
+  getActiveWorkspaceIdSync,
+  touchWorkspace,
+} from '@/features/workspace/services/workspaceService'
 import type { RegisteredDataset } from '@/types/dataset'
 
 async function readFileAsBuffer(file: File): Promise<ArrayBuffer> {
@@ -24,7 +33,7 @@ async function convertXlsxToCsvBuffer(file: File): Promise<{ buffer: ArrayBuffer
   return { buffer, name }
 }
 
-export async function importFile(file: File): Promise<RegisteredDataset> {
+export async function importFile(file: File): Promise<RegisteredDataset & { replaced?: boolean }> {
   const format = detectFormat(file.name)
   if (!format) {
     throw new Error(`Unsupported file format: ${file.name}`)
@@ -49,8 +58,16 @@ export async function importFile(file: File): Promise<RegisteredDataset> {
   const tableName = sanitizeTableName(file.name)
   const result = await duckdbClient.registerFile(registerName, buffer, format, tableName)
 
-  const dataset: RegisteredDataset = {
-    id: generateId(),
+  const workspace = await ensureDefaultWorkspace()
+  const workspaceId = getActiveWorkspaceIdSync() ?? workspace.id
+
+  // Same table/file in this workspace → replace (update) instead of duplicating
+  const existing = await findPersistedDatasetForUpdate(workspaceId, result.tableName, file.name)
+  const id = existing?.id ?? generateId()
+  const replaced = Boolean(existing)
+
+  const dataset: RegisteredDataset & { replaced?: boolean } = {
+    id,
     fileName: file.name,
     fileSize: file.size,
     format,
@@ -58,6 +75,8 @@ export async function importFile(file: File): Promise<RegisteredDataset> {
     schema: result.schema,
     rowCount: result.rowCount,
     registeredAt: new Date(),
+    schemaDoc: existing?.schemaDoc,
+    replaced,
   }
 
   await db.recentFiles.put({
@@ -70,6 +89,28 @@ export async function importFile(file: File): Promise<RegisteredDataset> {
     rowCount: dataset.rowCount,
     lastOpenedAt: new Date(),
   })
+
+  try {
+    await savePersistedDataset({
+      id: dataset.id,
+      workspaceId,
+      fileName: dataset.fileName,
+      registerName,
+      format: dataset.format,
+      tableName: dataset.tableName,
+      schema: dataset.schema,
+      rowCount: dataset.rowCount,
+      fileSize: dataset.fileSize,
+      buffer,
+      schemaDoc: existing?.schemaDoc,
+      savedAt: new Date(),
+    })
+    await touchWorkspace(workspaceId)
+  } catch (err) {
+    console.warn('Could not persist dataset locally', err)
+    dataset.persistWarning =
+      err instanceof Error ? err.message : 'Could not save dataset for next refresh (storage full?)'
+  }
 
   return dataset
 }

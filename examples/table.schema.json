@@ -1,0 +1,47 @@
+{
+  "version": 1,
+  "table": "orders",
+  "description": "Customer purchase orders from the online bookstore.",
+  "grain": "One row per order line item",
+  "notes": "Amounts are in USD. Use single quotes for string filters. Join to books via book_id. The DuckDB table name must match \"table\" exactly.",
+  "columns": {
+    "order_id": {
+      "description": "Unique id for the order line",
+      "role": "id",
+      "synonyms": ["id", "order number"]
+    },
+    "book_id": {
+      "description": "Foreign key to the books table",
+      "role": "fk",
+      "references": "books.book_id"
+    },
+    "order_date": {
+      "description": "Calendar date the order was placed (DATE, not year integer)",
+      "role": "date",
+      "examples": ["2020-01-15"]
+    },
+    "price": {
+      "description": "Line-item price paid by the customer",
+      "role": "metric",
+      "unit": "USD"
+    },
+    "status": {
+      "description": "Order lifecycle status",
+      "role": "dimension",
+      "examples": ["pending", "shipped", "cancelled"]
+    }
+  },
+  "relationships": [
+    {
+      "from": "book_id",
+      "toTable": "books",
+      "toColumn": "book_id",
+      "type": "many_to_one",
+      "description": "Each order line references one book"
+    }
+  ],
+  "exampleQuestions": [
+    "Average price of orders for Harry Potter books",
+    "Orders per month in 2020"
+  ]
+}

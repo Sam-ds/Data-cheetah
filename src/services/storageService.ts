@@ -5,7 +5,13 @@ import type { SavedQuery } from '@/types/query'
 
 export async function loadPreferences(): Promise<Preferences> {
   const stored = await db.preferences.get('default')
-  return stored ?? DEFAULT_PREFERENCES
+  if (!stored) return { ...DEFAULT_PREFERENCES }
+  return {
+    ...DEFAULT_PREFERENCES,
+    ...stored,
+    layout: { ...DEFAULT_PREFERENCES.layout, ...stored.layout },
+    editorSettings: { ...DEFAULT_PREFERENCES.editorSettings, ...stored.editorSettings },
+  }
 }
 
 export async function savePreferences(prefs: Partial<Preferences>): Promise<void> {
@@ -13,6 +19,8 @@ export async function savePreferences(prefs: Partial<Preferences>): Promise<void
   await db.preferences.put({
     ...current,
     ...prefs,
+    layout: { ...current.layout, ...prefs.layout },
+    editorSettings: { ...current.editorSettings, ...prefs.editorSettings },
     id: 'default',
     updatedAt: new Date(),
   })
