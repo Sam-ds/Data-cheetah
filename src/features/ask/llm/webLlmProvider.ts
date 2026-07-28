@@ -1,5 +1,5 @@
 import type { ChatMessage, LlmProvider, LoadProgress } from './types'
-import { checkWebGpuSupport, createNullProvider } from './nullProvider'
+import { checkWebGpuSupport, createNullProvider, probeWebGpu, resetWebGpuProbeCache } from './nullProvider'
 
 type MlcEngine = {
   reload: (modelId: string) => Promise<void>
@@ -38,6 +38,26 @@ export function createWebLlmProvider(): LlmProvider {
     loadedModelId = null
   }
 
+  function isModelNotLoadedError(err: unknown): boolean {
+    const message = err instanceof Error ? err.message : String(err)
+    return /model not loaded before trying to complete chatcompletionrequest/i.test(message)
+  }
+
+  function isIncompatibleGpuError(err: unknown): boolean {
+    const message = err instanceof Error ? err.message : String(err)
+    return /unable to find a compatible gpu|doesn'?t have a gpu|browser supports webgpu/i.test(message)
+  }
+
+  async function retryAfterReload<T>(work: () => Promise<T>): Promise<T> {
+    try {
+      return await work()
+    } catch (err) {
+      if (!engine || !loadedModelId || !isModelNotLoadedError(err)) throw err
+      await engine.reload(loadedModelId)
+      return work()
+    }
+  }
+
   return {
     id: 'webllm',
 
@@ -46,20 +66,34 @@ export function createWebLlmProvider(): LlmProvider {
       if (!gpu.ok) {
         throw new Error(gpu.reason)
       }
+      const probed = await probeWebGpu()
+      if (!probed.ok) {
+        throw new Error(probed.reason)
+      }
 
       onProgress?.({ text: 'Preparing WebGPU / downloading model files…', progress: 0.02 })
       await disposeEngine()
 
-      const webllm = await import('@mlc-ai/web-llm')
+      try {
+        const webllm = await import('@mlc-ai/web-llm')
 
-      engine = (await webllm.CreateMLCEngine(modelId, {
-        initProgressCallback: (report: { text?: string; progress?: number }) => {
-          onProgress?.({
-            text: report.text || 'Loading model into GPU…',
-            progress: typeof report.progress === 'number' ? report.progress : 0,
-          })
-        },
-      })) as unknown as MlcEngine
+        engine = (await webllm.CreateMLCEngine(modelId, {
+          initProgressCallback: (report: { text?: string; progress?: number }) => {
+            onProgress?.({
+              text: report.text || 'Loading model into GPU…',
+              progress: typeof report.progress === 'number' ? report.progress : 0,
+            })
+          },
+        })) as unknown as MlcEngine
+      } catch (err) {
+        resetWebGpuProbeCache()
+        if (isIncompatibleGpuError(err)) {
+          throw new Error(
+            'WebGPU became unavailable for local models. This can happen after a driver/browser reset. Refresh the page or browser, then try Load model again. If it keeps happening, switch to a remote model in Settings.',
+          )
+        }
+        throw err
+      }
 
       loadedModelId = modelId
       onProgress?.({ text: 'Model ready', progress: 1 })
@@ -86,10 +120,13 @@ export function createWebLlmProvider(): LlmProvider {
 
       // Stream when possible so the UI can show live activity
       if (opts?.onChunk) {
-        const stream = (await engine.chat.completions.create({
-          ...base,
-          stream: true,
-        })) as AsyncIterable<{ choices: { delta?: { content?: string } }[] }>
+        const stream = (await retryAfterReload(
+          async () =>
+            (await engine!.chat.completions.create({
+              ...base,
+              stream: true,
+            })) as AsyncIterable<{ choices: { delta?: { content?: string } }[] }>,
+        )) as AsyncIterable<{ choices: { delta?: { content?: string } }[] }>
 
         let accumulated = ''
         for await (const chunk of stream) {
@@ -105,10 +142,13 @@ export function createWebLlmProvider(): LlmProvider {
         return accumulated.trim()
       }
 
-      const reply = (await engine.chat.completions.create({
-        ...base,
-        stream: false,
-      })) as { choices: { message?: { content?: string } }[] }
+      const reply = (await retryAfterReload(
+        async () =>
+          (await engine!.chat.completions.create({
+            ...base,
+            stream: false,
+          })) as { choices: { message?: { content?: string } }[] },
+      )) as { choices: { message?: { content?: string } }[] }
 
       const content = reply.choices[0]?.message?.content
       if (!content?.trim()) {

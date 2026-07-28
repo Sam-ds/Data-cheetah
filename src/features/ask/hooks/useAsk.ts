@@ -12,7 +12,7 @@ import {
   resetAskLlmSession,
   unloadAskLlm,
 } from '../services/llmSession'
-import { checkWebGpuSupport } from '../llm/nullProvider'
+import { checkWebGpuSupport, probeWebGpu, resetWebGpuProbeCache } from '../llm/nullProvider'
 import { isVaultUnlocked } from '@/features/settings/services/secretsVault'
 import { useVaultSessionStore } from '@/features/settings/store/vaultSessionStore'
 import { savePreferences } from '@/services/storageService'
@@ -67,6 +67,9 @@ export function useAsk() {
   const toggleFileId = useAskStore((s) => s.toggleFileId)
 
   const [elapsedLabel, setElapsedLabel] = useState('')
+  const [webGpuState, setWebGpuState] = useState<{ ok: true } | { ok: false; reason: string }>(
+    checkWebGpuSupport(),
+  )
 
   const busy =
     phase === 'loadingModel' || phase === 'generatingInsights' || phase === 'answering'
@@ -91,6 +94,20 @@ export function useAsk() {
       /* ignore */
     }
   }, [askProvider, selectedModelId, askRemoteModelId, setModelReady])
+
+  useEffect(() => {
+    if (!isLocal) {
+      setWebGpuState({ ok: true })
+      return
+    }
+    let cancelled = false
+    void probeWebGpu().then((result) => {
+      if (!cancelled) setWebGpuState(result)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [isLocal, selectedModelId])
 
   useEffect(() => {
     if (!busy || !busyStartedAt) {
@@ -168,12 +185,15 @@ export function useAsk() {
 
   const loadModel = useCallback(async () => {
     if (isLocal) {
-      const gpu = checkWebGpuSupport()
+      resetWebGpuProbeCache()
+      const gpu = await probeWebGpu()
       if (!gpu.ok) {
+        setWebGpuState(gpu)
         setError(gpu.reason)
         toast.error(gpu.reason)
         return
       }
+      setWebGpuState(gpu)
     } else if (!isVaultUnlocked()) {
       const msg = 'Unlock the encrypted API vault in Settings before connecting a remote model.'
       setError(msg)
@@ -479,7 +499,7 @@ export function useAsk() {
     askProvider,
     askRemoteModelId,
     isLocal,
-    webGpu: checkWebGpuSupport(),
+    webGpu: webGpuState,
     vaultUnlocked,
     setSelectedModelId: selectModel,
     setAskRemoteModelId: selectRemoteModel,
