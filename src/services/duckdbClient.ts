@@ -188,6 +188,40 @@ export const duckdbClient = {
     throw new Error('Unexpected response')
   },
 
+  async dedupStats(tableName: string): Promise<{
+    tableName: string
+    totalRows: number
+    distinctRows: number
+    duplicateRows: number
+    columnCount: number
+  }> {
+    await ensureDuckDBInit()
+    const response = await duckdbRequest({
+      type: 'DEDUP_STATS',
+      payload: { tableName },
+    } as Omit<Extract<DuckDBRequest, { type: 'DEDUP_STATS' }>, 'id'>)
+    if (response.type === 'DEDUP_STATS_RESULT') {
+      return response.payload
+    }
+    throw new Error('Unexpected response')
+  },
+
+  async exportSql(
+    sql: string,
+    format: 'csv' | 'json' | 'parquet',
+    fileName?: string,
+  ): Promise<{ buffer: ArrayBuffer; fileName: string; mime: string }> {
+    await ensureDuckDBInit()
+    const response = await duckdbRequest({
+      type: 'EXPORT_SQL',
+      payload: { sql, format, fileName },
+    } as Omit<Extract<DuckDBRequest, { type: 'EXPORT_SQL' }>, 'id'>)
+    if (response.type === 'EXPORT_RESULT') {
+      return response.payload
+    }
+    throw new Error('Unexpected response')
+  },
+
   dispose() {
     initEpoch += 1
     duckdbBridge.dispose()

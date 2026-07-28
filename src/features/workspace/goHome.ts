@@ -1,13 +1,11 @@
-import { useAskStore, resetAskLlmSession } from '@/features/ask'
 import { useToolsStore } from '@/features/tools/store/toolsStore'
 import { useWorkspaceStore } from '@/features/workspace/store/workspaceStore'
-import { lockVault } from '@/features/settings/services/secretsVault'
+import { useAskStore } from '@/features/ask'
 
-/** Return to the home hub. Keeps explore datasets cached for when you come back. */
+/** Return to the home hub. Keeps explore datasets and the loaded LLM for this browser session. */
 export function goHome() {
   useToolsStore.getState().close()
-  useAskStore.getState().resetSession()
-  void resetAskLlmSession()
-  lockVault()
+  // Clear Insights/Ask UI noise only — do not unload the model or lock the vault.
+  useAskStore.getState().clearInsightUi()
   useWorkspaceStore.getState().setAppMode('home')
 }

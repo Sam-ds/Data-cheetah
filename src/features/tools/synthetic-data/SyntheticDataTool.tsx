@@ -36,10 +36,11 @@ const SAMPLE_PLACEHOLDER = `order_id,customer_email,quantity,order_date
 1001,john@example.com,2,2026-06-01
 1002,sarah@example.com,1,2026-06-02`
 
-const RULES_PLACEHOLDER = `order_id: unique, not null
-customer_email: unique, not null
-quantity: not null
-order_date: not null`
+const RULES_PLACEHOLDER = `order_id: integer, unique, not null, from 1000, to 9999
+quantity: integer, not null, from 1, to 20
+price: number, from 0.5, to 99.99
+order_date: date, from 2020-01-01, to 2026-12-31
+customer_email: string, unique, not null`
 
 /** Turn raw WebGPU / API errors into short actionable copy for the toast. */
 function friendlyLlmSeedError(err: unknown, askProvider: AskProviderId): string {
@@ -250,7 +251,7 @@ export function SyntheticDataTool() {
   return (
     <ToolPane
       title="Generate Data"
-      description="Optional sample + column rules (unique / not null). LLM can seed a few rows; faker.js fills the rest in the browser."
+      description="Optional sample + column rules (type, unique, not null, from/to). Max 50,000 rows. LLM can seed a few rows; faker.js fills the rest in the browser."
       error={error}
       warning={sizeWarning(sample, columnRulesText, context) ?? llmReadyHint}
       actions={
@@ -378,7 +379,7 @@ export function SyntheticDataTool() {
               className="min-h-[120px]"
             />
             <ToolTextarea
-              label="Column rules (optional — unique / not null)"
+              label="Column rules (optional — type, unique, not null, from/to)"
               placeholder={RULES_PLACEHOLDER}
               value={columnRulesText}
               onChange={(e) => setColumnRulesText(e.target.value)}

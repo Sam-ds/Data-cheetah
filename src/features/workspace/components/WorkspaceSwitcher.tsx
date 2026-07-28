@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Check, FolderKanban, Plus, Trash2 } from 'lucide-react'
+import { Check, Folder, Plus, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -119,7 +119,7 @@ export function WorkspaceSwitcher() {
           disabled={busy}
           title="Local workspace"
         >
-          <FolderKanban className="h-3.5 w-3.5 shrink-0" />
+          <Folder className="h-3.5 w-3.5 shrink-0 text-[#f2a01f]" />
           <span className="truncate">{active?.name ?? 'Workspace'}</span>
         </Button>
       </DropdownMenuTrigger>
@@ -136,7 +136,7 @@ export function WorkspaceSwitcher() {
             {w.id === activeId ? (
               <Check className="h-3.5 w-3.5 text-[#f2a01f]" />
             ) : (
-              <span className="w-3.5" />
+              <Folder className="h-3.5 w-3.5 shrink-0 text-[#f2a01f]/80" />
             )}
             <span className="truncate">{w.name}</span>
           </DropdownMenuItem>

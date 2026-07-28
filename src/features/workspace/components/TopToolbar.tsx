@@ -13,6 +13,7 @@ import {
   Braces,
   Home,
   Settings,
+  FolderOpen,
 } from 'lucide-react'
 import logo from '@/assets/logo.png'
 import { Button } from '@/components/ui/button'
@@ -51,13 +52,14 @@ export function TopToolbar() {
   const appMode = useWorkspaceStore((s) => s.appMode)
   const setAppMode = useWorkspaceStore((s) => s.setAppMode)
   const { runQuery, formatSql, isRunning } = useSqlEditor()
-  const { handleFileInput } = useFileImport()
+  const { handleFileInput, handleFolderInput } = useFileImport()
   const hasFiles = useFilesStore((s) => s.files.length > 0)
   const result = useQueryStore((s) => s.result)
   const { toggleSidebar } = useWorkspaceStore()
   const openTool = useToolsStore((s) => s.openTool)
   const closeTools = useToolsStore((s) => s.close)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const folderInputRef = useRef<HTMLInputElement>(null)
   const [savedOpen, setSavedOpen] = useState(false)
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
   const [clearing, setClearing] = useState(false)
@@ -149,10 +151,27 @@ export function TopToolbar() {
             <WorkspaceSwitcher />
             <Separator orientation="vertical" className="mx-1 h-5" />
 
-            <Button variant="ghost" size="sm" onClick={() => fileInputRef.current?.click()}>
-              <FileUp className="h-3.5 w-3.5" />
-              Open
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm">
+                  <FileUp className="h-3.5 w-3.5" />
+                  Open
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start">
+                <DropdownMenuItem onClick={() => fileInputRef.current?.click()}>
+                  <FileUp className="h-3.5 w-3.5" />
+                  Files…
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => folderInputRef.current?.click()}
+                  title="Read a local folder in the browser. Nothing is uploaded."
+                >
+                  <FolderOpen className="h-3.5 w-3.5 text-[#f2a01f]" />
+                  Folder (on this device)…
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <input
               ref={fileInputRef}
               type="file"
@@ -160,6 +179,19 @@ export function TopToolbar() {
               accept=".csv,.tsv,.parquet,.json,.jsonl,.xlsx,.xls,.schema.json"
               multiple
               onChange={handleFileInput}
+            />
+            <input
+              ref={(el) => {
+                folderInputRef.current = el
+                if (el) {
+                  el.setAttribute('webkitdirectory', '')
+                  el.setAttribute('directory', '')
+                }
+              }}
+              type="file"
+              className="hidden"
+              multiple
+              onChange={handleFolderInput}
             />
 
             <Button

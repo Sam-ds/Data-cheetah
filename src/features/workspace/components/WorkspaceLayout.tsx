@@ -8,12 +8,14 @@ import { DataExplorer } from '@/features/explorer/components/DataExplorer'
 import { ChartPanel } from '@/features/charts/components/ChartPanel'
 import { ProfilePanel } from '@/features/profiling/components/ProfilePanel'
 import { TopToolbar } from './TopToolbar'
+import { AppFooter } from './AppFooter'
 import { StatusBar } from '@/components/StatusBar'
 import { HomeHub } from './HomeHub'
 import { FaqPage } from './FaqPage'
 import { LicensePage } from './LicensePage'
 import { useSqlEditor } from '@/features/sql/hooks/useSqlEditor'
 import { AskPanel } from '@/features/ask'
+import { SqlAskBar } from '@/features/ask/components/SqlAskBar'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Table2, LineChart, Compass, BarChart3, Sparkles, Loader2 } from 'lucide-react'
 import { ToolsWorkspace } from '@/features/tools/components/ToolsWorkspace'
@@ -38,6 +40,7 @@ export function WorkspaceLayout() {
       <div className="flex h-full flex-col bg-white dark:bg-black">
         <TopToolbar />
         <HomeHub />
+        <AppFooter />
         <StatusBar />
       </div>
     )
@@ -50,6 +53,7 @@ export function WorkspaceLayout() {
         <div className="min-h-0 flex-1 overflow-hidden">
           <ToolsWorkspace />
         </div>
+        <AppFooter />
         <StatusBar />
       </div>
     )
@@ -62,6 +66,7 @@ export function WorkspaceLayout() {
         <div className="min-h-0 flex-1 overflow-hidden">
           <SettingsPage />
         </div>
+        <AppFooter />
         <StatusBar />
       </div>
     )
@@ -74,6 +79,7 @@ export function WorkspaceLayout() {
         <div className="min-h-0 flex-1 overflow-hidden">
           <FaqPage />
         </div>
+        <AppFooter />
         <StatusBar />
       </div>
     )
@@ -86,6 +92,7 @@ export function WorkspaceLayout() {
         <div className="min-h-0 flex-1 overflow-hidden">
           <LicensePage />
         </div>
+        <AppFooter />
         <StatusBar />
       </div>
     )
@@ -100,6 +107,7 @@ export function WorkspaceLayout() {
           <Loader2 className="h-8 w-8 animate-spin text-[#f2a01f]" />
           Restoring local workspace datasets…
         </div>
+        <AppFooter />
         <StatusBar />
       </div>
     )
@@ -152,7 +160,7 @@ export function WorkspaceLayout() {
                           className="gap-1.5 data-[state=active]:shadow-none"
                         >
                           <Sparkles className="h-3.5 w-3.5" />
-                          Ask
+                          Insights
                         </TabsTrigger>
                       </TabsList>
                     </div>
@@ -173,40 +181,44 @@ export function WorkspaceLayout() {
             <Separator />
 
             <Panel id="bottom-v3" defaultSize={58} minSize={28}>
-              <Tabs
-                value={activeBottomTab}
-                onValueChange={(v) => setActiveBottomTab(v as 'results' | 'charts')}
-                className="flex h-full flex-col"
-              >
-                <div className="flex items-center border-b bg-[var(--panel-header)] px-2">
-                  <TabsList className="h-8 bg-transparent p-0">
-                    <TabsTrigger
-                      value="results"
-                      className="gap-1.5 data-[state=active]:shadow-none"
-                    >
-                      <Table2 className="h-3.5 w-3.5" />
-                      Results
-                    </TabsTrigger>
-                    <TabsTrigger
-                      value="charts"
-                      className="gap-1.5 data-[state=active]:shadow-none"
-                    >
-                      <LineChart className="h-3.5 w-3.5" />
-                      Charts
-                    </TabsTrigger>
-                  </TabsList>
-                </div>
-                <TabsContent value="results" className="mt-0 flex-1 overflow-hidden">
-                  <ResultsGrid embedded />
-                </TabsContent>
-                <TabsContent value="charts" className="mt-0 flex-1 overflow-hidden">
-                  <ChartPanel embedded />
-                </TabsContent>
-              </Tabs>
+              <div className="flex h-full min-h-0 flex-col">
+                <SqlAskBar />
+                <Tabs
+                  value={activeBottomTab}
+                  onValueChange={(v) => setActiveBottomTab(v as 'results' | 'charts')}
+                  className="flex min-h-0 flex-1 flex-col"
+                >
+                  <div className="flex items-center border-b bg-[var(--panel-header)] px-2">
+                    <TabsList className="h-8 bg-transparent p-0">
+                      <TabsTrigger
+                        value="results"
+                        className="gap-1.5 data-[state=active]:shadow-none"
+                      >
+                        <Table2 className="h-3.5 w-3.5" />
+                        Results
+                      </TabsTrigger>
+                      <TabsTrigger
+                        value="charts"
+                        className="gap-1.5 data-[state=active]:shadow-none"
+                      >
+                        <LineChart className="h-3.5 w-3.5" />
+                        Charts
+                      </TabsTrigger>
+                    </TabsList>
+                  </div>
+                  <TabsContent value="results" className="mt-0 flex-1 overflow-hidden">
+                    <ResultsGrid embedded />
+                  </TabsContent>
+                  <TabsContent value="charts" className="mt-0 flex-1 overflow-hidden">
+                    <ChartPanel embedded />
+                  </TabsContent>
+                </Tabs>
+              </div>
             </Panel>
           </Group>
         </div>
       </div>
+      <AppFooter />
       <StatusBar />
     </div>
   )

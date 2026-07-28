@@ -26,7 +26,7 @@ export const FAQ_ITEMS: FaqItem[] = [
   },
   {
     q: 'Is DataCheetah free?',
-    a: 'Yes. The app is open source under the MIT license. Optional remote Ask providers bill you under their own accounts; local WebLLM runs on your device when WebGPU works.',
+    a: 'Yes. The app is open source under the Apache License 2.0. Optional remote Ask providers bill you under their own accounts; local WebLLM runs on your device when WebGPU works.',
   },
   {
     q: 'How do API keys work?',

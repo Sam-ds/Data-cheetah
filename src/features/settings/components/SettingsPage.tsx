@@ -32,7 +32,7 @@ import {
 } from '@/features/settings/services/testApiKey'
 import { resetDuckDB, ensureDuckDB } from '@/hooks/useDuckDB'
 import { rehydratePersistedFiles } from '@/features/files/services/localDatasetService'
-import { resetAskLlmSession } from '@/features/ask'
+import { resetAskLlmSession, unloadAskLlm, useAskStore, ASK_MODEL_CATALOG } from '@/features/ask'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils/cn'
 
@@ -97,6 +97,9 @@ export function SettingsPage() {
   const setAskProvider = usePreferencesStore((s) => s.setAskProvider)
   const askRemoteModelId = usePreferencesStore((s) => s.askRemoteModelId)
   const setAskRemoteModelId = usePreferencesStore((s) => s.setAskRemoteModelId)
+  const selectedLocalModelId = useAskStore((s) => s.selectedModelId)
+  const modelReady = useAskStore((s) => s.modelReady)
+  const setModelReady = useAskStore((s) => s.setModelReady)
 
   const [hasVault, setHasVault] = useState(false)
   const [unlocked, setUnlocked] = useState(false)
@@ -158,6 +161,7 @@ export function SettingsPage() {
       askRemoteModelId: id === 'local' ? askRemoteModelId : remote,
     })
     await resetAskLlmSession()
+    setModelReady(false)
     toast.success(`Ask provider: ${ASK_PROVIDER_LABELS[id]}`)
   }
 
@@ -165,6 +169,21 @@ export function SettingsPage() {
     setAskRemoteModelId(id)
     await persistAskPrefs({ askRemoteModelId: id })
     await resetAskLlmSession()
+    setModelReady(false)
+  }
+
+  const onLocalModelChange = async (id: string) => {
+    useAskStore.getState().setSelectedModelId(id)
+    await resetAskLlmSession()
+    setModelReady(false)
+    toast.success('Local model updated — open Insights and Load model once')
+  }
+
+  const clearModelFromMemory = async () => {
+    await unloadAskLlm()
+    await resetAskLlmSession()
+    setModelReady(false)
+    toast.success('Model cleared from memory')
   }
 
   const handleCreateVault = async () => {
@@ -206,6 +225,7 @@ export function SettingsPage() {
     setDraftSecrets({ ...EMPTY_ASK_SECRETS })
     setUnlocked(false)
     void resetAskLlmSession()
+    setModelReady(false)
     toast.message('Vault locked — API keys cleared from memory')
   }
 
@@ -266,8 +286,8 @@ export function SettingsPage() {
         <div>
           <h1 className="text-lg font-semibold tracking-tight">Settings</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Pick which Ask backend to use, store each provider’s API key in the encrypted vault, then
-            unlock the vault when you want Ask to call that API.
+            Pick which Insights backend to use, store each provider’s API key in the encrypted vault, then
+            unlock the vault when you want Insights to call that API.
           </p>
         </div>
 
@@ -300,11 +320,11 @@ export function SettingsPage() {
         <section className="space-y-3 rounded-xl border border-border/60 p-4">
           <div className="flex items-center gap-2 text-sm font-medium">
             <Sparkles className="h-4 w-4 text-[#f2a01f]" />
-            1. Which Ask provider to use
+            1. Which Insights provider to use
           </div>
           <p className="text-[11px] text-muted-foreground">
-            This chooses the active backend for the Ask tab. Local needs no key. Remote providers use
-            the matching key from the vault below (not a separate key per model name).
+            This chooses the active backend for Generate insights. Local needs no key. Remote
+            providers use the matching key from the vault below (not a separate key per model name).
           </p>
           <select
             className="h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
@@ -319,9 +339,42 @@ export function SettingsPage() {
           </select>
 
           {askProvider === 'local' ? (
-            <p className="text-[11px] text-muted-foreground">
-              Local WebLLM models are chosen in the Ask panel. No API key required.
-            </p>
+            <>
+              <label className="block text-xs text-muted-foreground">Local WebLLM model</label>
+              <select
+                className="h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
+                value={selectedLocalModelId}
+                onChange={(e) => void onLocalModelChange(e.target.value)}
+              >
+                {ASK_MODEL_CATALOG.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.label} ({m.sizeHint})
+                  </option>
+                ))}
+              </select>
+              <p className="text-[11px] text-muted-foreground">
+                Choice is saved. Insights only shows this model — click <strong>Load model</strong>{' '}
+                once per browser session (not on every refresh). A full page refresh clears GPU
+                memory and requires Load again.
+              </p>
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="gap-1.5"
+                  disabled={!modelReady}
+                  onClick={() => void clearModelFromMemory()}
+                  title="Unload WebLLM from GPU/RAM"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  Clear model from memory
+                </Button>
+                <span className="text-[11px] text-muted-foreground">
+                  {modelReady ? 'Currently loaded this session' : 'Not loaded'}
+                </span>
+              </div>
+            </>
           ) : (
             <>
               {askProvider !== 'openai-compatible' && remoteModels.length > 0 && (
@@ -356,7 +409,23 @@ export function SettingsPage() {
                 <Shield className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-600" />
                 Scroll to section 2, unlock the vault, paste the{' '}
                 <strong className="text-foreground">{ASK_PROVIDER_LABELS[askProvider]}</strong> key,
-                save, then open Ask → Connect.
+                save, then open Insights → Connect once per session.
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="gap-1.5"
+                  disabled={!modelReady}
+                  onClick={() => void clearModelFromMemory()}
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  Clear connection from memory
+                </Button>
+                <span className="text-[11px] text-muted-foreground">
+                  {modelReady ? 'Connected this session' : 'Not connected'}
+                </span>
               </div>
             </>
           )}
@@ -369,7 +438,7 @@ export function SettingsPage() {
           </div>
           <p className="text-[11px] leading-relaxed text-muted-foreground">
             <strong className="text-foreground">What this is for:</strong> a secure on-device store for
-            your provider API keys. You can save keys for several providers; Ask only uses the key that
+            your provider API keys. You can save keys for several providers; Insights only uses the key that
             matches the provider selected above. Encryption (PBKDF2 + AES-GCM) protects keys at rest —
             it is not itself a model.
           </p>

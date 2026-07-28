@@ -5,7 +5,10 @@ import { useState } from 'react'
 import type { ColumnSchema } from '@/types/dataset'
 
 export function useDataExplorer() {
-  const activeFile = useFilesStore((s) => s.getActiveFile())
+  const activeFileId = useFilesStore((s) => s.activeFileId)
+  const files = useFilesStore((s) => s.files)
+  const activeFile =
+    files.find((f) => f.id === activeFileId) ?? (files.length > 0 ? files[files.length - 1]! : null)
   const [preview, setPreview] = useState<Record<string, unknown>[]>([])
   const [schema, setSchema] = useState<ColumnSchema[]>([])
   const [loading, setLoading] = useState(false)
@@ -34,7 +37,7 @@ export function useDataExplorer() {
   }, [activeFile])
 
   useEffect(() => {
-    loadExplorer()
+    void loadExplorer()
   }, [loadExplorer])
 
   return {

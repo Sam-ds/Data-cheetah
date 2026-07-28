@@ -10,6 +10,10 @@ export interface ColumnRule {
   notNull?: boolean
   unique?: boolean
   type?: ColumnValueType
+  /** Inclusive lower bound (numbers, or UTC epoch ms for dates) */
+  min?: number
+  /** Inclusive upper bound (numbers, or UTC epoch ms for dates) */
+  max?: number
 }
 
 function parseBool(raw: unknown, fallback?: boolean): boolean | undefined {
@@ -30,6 +34,26 @@ function parseType(raw: unknown): ColumnValueType | undefined {
   if (s === 'date' || s === 'datetime') return 'date'
   if (s === 'string' || s === 'text') return 'string'
   return undefined
+}
+
+/** Parse number or YYYY-MM-DD into a numeric bound (epoch ms for dates). */
+export function parseBound(raw: unknown, asDate = false): number | undefined {
+  if (raw === undefined || raw === null || raw === '') return undefined
+  if (typeof raw === 'number' && Number.isFinite(raw)) return raw
+  const s = String(raw).trim()
+  if (!s) return undefined
+
+  const dateMatch = s.match(/^(\d{4})-(\d{2})-(\d{2})$/)
+  if (dateMatch || asDate) {
+    const iso = dateMatch ? s : s.slice(0, 10)
+    if (/^\d{4}-\d{2}-\d{2}$/.test(iso)) {
+      const t = Date.parse(`${iso}T00:00:00.000Z`)
+      if (!Number.isNaN(t)) return t
+    }
+  }
+
+  const n = Number(s)
+  return Number.isFinite(n) ? n : undefined
 }
 
 function defaultFakerForType(type: ColumnValueType): SchemaColumn['fakerPath'] {
@@ -56,6 +80,12 @@ function guessTypeFromName(name: string): ColumnValueType {
   return 'string'
 }
 
+function normalizeMinMax(min?: number, max?: number): { min?: number; max?: number } {
+  if (min == null && max == null) return {}
+  if (min != null && max != null && min > max) return { min: max, max: min }
+  return { min, max }
+}
+
 function ruleFromObject(row: Record<string, unknown>): ColumnRule | null {
   const name = String(row.name ?? row.column ?? row.field ?? '').trim()
   if (!name) return null
@@ -66,11 +96,89 @@ function ruleFromObject(row: Record<string, unknown>): ColumnRule | null {
     if (nullable !== undefined) notNull = !nullable
   }
 
+  const type = parseType(row.type)
+  const asDate = type === 'date'
+  const { min, max } = normalizeMinMax(
+    parseBound(row.min ?? row.from, asDate),
+    parseBound(row.max ?? row.to, asDate),
+  )
+
   return {
     name,
     notNull,
     unique: parseBool(row.unique ?? row.isUnique ?? row.is_unique, undefined),
-    type: parseType(row.type),
+    type,
+    min,
+    max,
+  }
+}
+
+function parseLineRule(line: string): ColumnRule | null {
+  const colon = line.indexOf(':')
+  const name = (colon >= 0 ? line.slice(0, colon) : line).trim()
+  if (!name) return null
+  const rest = colon >= 0 ? line.slice(colon + 1) : ''
+  const lower = rest.toLowerCase()
+
+  const rule: ColumnRule = { name }
+  if (/\bunique\b/.test(lower)) rule.unique = true
+  if (/\bnot\s*null\b|\brequired\b/.test(lower)) rule.notNull = true
+  if (/\bnullable\b|\boptional\b/.test(lower) && !/\bnot\s*null\b/.test(lower)) {
+    rule.notNull = false
+  }
+
+  const typeMatch = lower.match(/\b(integer|int|number|float|double|boolean|bool|date|datetime|string|text)\b/)
+  if (typeMatch) rule.type = parseType(typeMatch[1])
+
+  const asDate = rule.type === 'date'
+  const fromMatch =
+    rest.match(/\bfrom\s*[:=]?\s*([^\s,]+)/i) ?? rest.match(/\bmin\s*[:=]?\s*([^\s,]+)/i)
+  const toMatch =
+    rest.match(/\bto\s*[:=]?\s*([^\s,]+)/i) ?? rest.match(/\bmax\s*[:=]?\s*([^\s,]+)/i)
+
+  const { min, max } = normalizeMinMax(
+    fromMatch ? parseBound(fromMatch[1], asDate) : undefined,
+    toMatch ? parseBound(toMatch[1], asDate) : undefined,
+  )
+  if (min != null) rule.min = min
+  if (max != null) rule.max = max
+
+  // If from/to look like dates but type unset, treat as date
+  if (!rule.type && (fromMatch?.[1]?.match(/^\d{4}-\d{2}-\d{2}$/) || toMatch?.[1]?.match(/^\d{4}-\d{2}-\d{2}$/))) {
+    rule.type = 'date'
+    const rebuilt = normalizeMinMax(
+      fromMatch ? parseBound(fromMatch[1], true) : undefined,
+      toMatch ? parseBound(toMatch[1], true) : undefined,
+    )
+    if (rebuilt.min != null) rule.min = rebuilt.min
+    if (rebuilt.max != null) rule.max = rebuilt.max
+  }
+
+  return rule
+}
+
+function columnFromRule(rule: ColumnRule, existing?: SchemaColumn): SchemaColumn {
+  const type = rule.type ?? existing?.type ?? guessTypeFromName(rule.name)
+  const fakerPath =
+    rule.type && (!existing || rule.type !== existing.type)
+      ? defaultFakerForType(rule.type)
+      : (existing?.fakerPath ?? defaultFakerForType(type))
+
+  const { min, max } = normalizeMinMax(
+    rule.min ?? existing?.min,
+    rule.max ?? existing?.max,
+  )
+
+  return {
+    name: existing?.name ?? rule.name,
+    type,
+    fakerPath,
+    notes: existing?.notes,
+    enumValues: existing?.enumValues,
+    min,
+    max,
+    notNull: rule.notNull ?? existing?.notNull ?? true,
+    unique: rule.unique ?? existing?.unique ?? false,
   }
 }
 
@@ -93,23 +201,10 @@ export function parseColumnRules(text: string): ColumnRule[] {
   }
 
   const lines = trimmed.split(/\r?\n/).map((l) => l.trim()).filter(Boolean)
-  const looksLikeKv = lines.some((l) => l.includes(':')) && lines.every((l) => !l.includes(',') || l.includes(':'))
+  const looksLikeKv =
+    lines.some((l) => l.includes(':')) && lines.every((l) => !l.includes(',') || l.includes(':'))
   if (looksLikeKv) {
-    const rules: ColumnRule[] = []
-    for (const line of lines) {
-      const colon = line.indexOf(':')
-      const name = (colon >= 0 ? line.slice(0, colon) : line).trim()
-      if (!name) continue
-      const text = (colon >= 0 ? line.slice(colon + 1) : '').toLowerCase()
-      const rule: ColumnRule = { name }
-      if (/\bunique\b/.test(text)) rule.unique = true
-      if (/\bnot\s*null\b|\brequired\b/.test(text)) rule.notNull = true
-      if (/\bnullable\b|\boptional\b/.test(text) && !/\bnot\s*null\b/.test(text)) {
-        rule.notNull = false
-      }
-      rules.push(rule)
-    }
-    return rules
+    return lines.map(parseLineRule).filter((r): r is ColumnRule => r != null)
   }
 
   const parsed = Papa.parse<Record<string, string>>(trimmed, {
@@ -131,6 +226,8 @@ export function parseColumnRules(text: string): ColumnRule[] {
       const notNullKey = keys.find((k) => /not[_\s]?null|required|nullable/i.test(k))
       const uniqueKey = keys.find((k) => /unique/i.test(k))
       const typeKey = keys.find((k) => /^type$/i.test(k))
+      const minKey = keys.find((k) => /^(min|from)$/i.test(k))
+      const maxKey = keys.find((k) => /^(max|to)$/i.test(k))
       if (notNullKey) mapped.not_null = row[notNullKey]
       if (notNullKey && /nullable/i.test(notNullKey)) {
         mapped.nullable = row[notNullKey]
@@ -138,6 +235,8 @@ export function parseColumnRules(text: string): ColumnRule[] {
       }
       if (uniqueKey) mapped.unique = row[uniqueKey]
       if (typeKey) mapped.type = row[typeKey]
+      if (minKey) mapped.from = row[minKey]
+      if (maxKey) mapped.to = row[maxKey]
       return ruleFromObject(mapped)
     })
     .filter((r): r is ColumnRule => r != null)
@@ -159,27 +258,13 @@ export function applyColumnRules(plan: SchemaPlan, rules: ColumnRule[]): SchemaP
       }
     }
     used.add(col.name.toLowerCase())
-    const type = rule.type ?? col.type
-    return {
-      ...col,
-      type,
-      fakerPath: rule.type && rule.type !== col.type ? defaultFakerForType(rule.type) : col.fakerPath,
-      notNull: rule.notNull ?? col.notNull ?? true,
-      unique: rule.unique ?? col.unique ?? false,
-    } satisfies SchemaColumn
+    return columnFromRule(rule, col)
   })
 
   for (const rule of rules) {
     if (used.has(rule.name.toLowerCase())) continue
     if (columns.some((c) => c.name.toLowerCase() === rule.name.toLowerCase())) continue
-    const type = rule.type ?? guessTypeFromName(rule.name)
-    columns.push({
-      name: rule.name,
-      type,
-      fakerPath: defaultFakerForType(type),
-      notNull: rule.notNull ?? true,
-      unique: rule.unique ?? false,
-    })
+    columns.push(columnFromRule(rule))
   }
 
   return { ...plan, columns }
@@ -190,23 +275,29 @@ export function planFromColumnRules(rules: ColumnRule[]): SchemaPlan {
   if (rules.length === 0) {
     throw new Error('Provide a sample and/or column rules')
   }
-  const columns: SchemaColumn[] = rules.map((rule) => {
-    const type = rule.type ?? guessTypeFromName(rule.name)
-    return {
-      name: rule.name,
-      type,
-      fakerPath: defaultFakerForType(type),
-      notNull: rule.notNull ?? true,
-      unique: rule.unique ?? false,
-    }
-  })
-  return { columns, rows: [], source: 'sample' }
+  return {
+    columns: rules.map((rule) => columnFromRule(rule)),
+    rows: [],
+    source: 'sample',
+  }
+}
+
+function formatBound(col: SchemaColumn, value: number): string {
+  if (col.type === 'date') {
+    return new Date(value).toISOString().slice(0, 10)
+  }
+  return String(value)
 }
 
 export function formatColumnConstraints(col: SchemaColumn): string {
-  const bits: string[] = []
+  const bits: string[] = [col.type]
   if (col.unique) bits.push('unique')
   if (col.notNull === false) bits.push('nullable')
   else bits.push('not null')
+  if (col.min != null || col.max != null) {
+    const from = col.min != null ? formatBound(col, col.min) : '…'
+    const to = col.max != null ? formatBound(col, col.max) : '…'
+    bits.push(`${from}–${to}`)
+  }
   return `${col.name}(${bits.join(', ')})`
 }

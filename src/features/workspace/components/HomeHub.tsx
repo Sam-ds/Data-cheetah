@@ -101,49 +101,27 @@ export function HomeHub() {
           </button>
         </div>
 
-        <footer className="home-fade-up home-fade-up-delay-3 mt-auto w-full space-y-4 border-t border-neutral-200 pt-8 dark:border-border/60">
-          <div className="space-y-2">
-            <p className="text-xs font-semibold uppercase tracking-wide text-neutral-600 dark:text-muted-foreground">
-              Powered by open source
-            </p>
-            <p className="mx-auto max-w-2xl text-[11px] leading-relaxed text-neutral-700 dark:text-muted-foreground">
-              {OPEN_SOURCE_CREDITS.map((c, i) => (
-                <span key={c.name}>
-                  {i > 0 && <span className="text-neutral-400"> · </span>}
-                  <a
-                    href={c.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="underline-offset-2 hover:underline"
-                    title={c.role}
-                  >
-                    {c.name}
-                  </a>
-                </span>
-              ))}
-            </p>
-          </div>
-
-          <nav className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs">
-            <button
-              type="button"
-              onClick={() => setAppMode('faq')}
-              className="font-medium text-[#b45309] underline-offset-2 hover:underline dark:text-[#f2a01f]"
-            >
-              FAQ
-            </button>
-            <span className="text-neutral-300 dark:text-border" aria-hidden>
-              |
-            </span>
-            <button
-              type="button"
-              onClick={() => setAppMode('license')}
-              className="font-medium text-[#b45309] underline-offset-2 hover:underline dark:text-[#f2a01f]"
-            >
-              License
-            </button>
-          </nav>
-        </footer>
+        <div className="home-fade-up home-fade-up-delay-3 mt-auto w-full space-y-2 border-t border-neutral-200 pt-8 dark:border-border/60">
+          <p className="text-xs font-semibold uppercase tracking-wide text-neutral-600 dark:text-muted-foreground">
+            Powered by open source
+          </p>
+          <p className="mx-auto max-w-2xl text-[11px] leading-relaxed text-neutral-700 dark:text-muted-foreground">
+            {OPEN_SOURCE_CREDITS.map((c, i) => (
+              <span key={c.name}>
+                {i > 0 && <span className="text-neutral-400"> · </span>}
+                <a
+                  href={c.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="underline-offset-2 hover:underline"
+                  title={c.role}
+                >
+                  {c.name}
+                </a>
+              </span>
+            ))}
+          </p>
+        </div>
       </div>
     </div>
   )

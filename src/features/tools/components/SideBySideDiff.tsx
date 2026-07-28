@@ -88,7 +88,7 @@ function DiffColumn({
       <div
         ref={scrollRef}
         onScroll={onScroll}
-        className="min-h-0 flex-1 overflow-auto font-mono text-[11px] leading-5"
+        className="min-h-0 flex-1 overflow-auto text-[13px] leading-6"
       >
         {lines.map((line, idx) => {
           const text = side === 'left' ? line.left : line.right

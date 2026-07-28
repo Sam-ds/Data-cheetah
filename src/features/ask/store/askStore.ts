@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { DEFAULT_ASK_MODEL_ID } from '../config/modelCatalog'
-import type { AskAnswer, AskPhase, AskQuestion } from '../llm/types'
+import type { AskPhase, InsightReport, SqlAskReply } from '../llm/types'
 
 interface AskState {
   selectedModelId: string
@@ -14,10 +14,10 @@ interface AskState {
   /** live stream preview while model writes */
   streamPreview: string
   error: string | null
+  /** Dataset ids in scope for Ask + Generate insights */
   selectedFileIds: string[]
-  questions: AskQuestion[]
-  activeQuestionId: string | null
-  answers: Record<string, AskAnswer>
+  insightReport: InsightReport | null
+  sqlAskReply: SqlAskReply | null
   setSelectedModelId: (id: string) => void
   setModelReady: (ready: boolean) => void
   setLoadProgress: (text: string, progress: number) => void
@@ -27,9 +27,10 @@ interface AskState {
   setError: (error: string | null) => void
   setSelectedFileIds: (ids: string[]) => void
   toggleFileId: (id: string) => void
-  setQuestions: (questions: AskQuestion[]) => void
-  setActiveQuestionId: (id: string | null) => void
-  setAnswer: (answer: AskAnswer) => void
+  setInsightReport: (report: InsightReport | null) => void
+  setSqlAskReply: (reply: SqlAskReply | null) => void
+  /** Clear Insights/Ask UI without unloading the model from memory. */
+  clearInsightUi: () => void
   resetSession: () => void
 }
 
@@ -45,9 +46,8 @@ export const useAskStore = create<AskState>()(
       streamPreview: '',
       error: null,
       selectedFileIds: [],
-      questions: [],
-      activeQuestionId: null,
-      answers: {},
+      insightReport: null,
+      sqlAskReply: null,
       setSelectedModelId: (id) => set({ selectedModelId: id, modelReady: false }),
       setModelReady: (ready) => set({ modelReady: ready }),
       setLoadProgress: (text, progress) => set({ loadProgressText: text, loadProgress: progress }),
@@ -66,12 +66,19 @@ export const useAskStore = create<AskState>()(
             ? s.selectedFileIds.filter((x) => x !== id)
             : [...s.selectedFileIds, id],
         })),
-      setQuestions: (questions) => set({ questions, activeQuestionId: null }),
-      setActiveQuestionId: (id) => set({ activeQuestionId: id }),
-      setAnswer: (answer) =>
-        set((s) => ({
-          answers: { ...s.answers, [answer.questionId]: answer },
-        })),
+      setInsightReport: (report) => set({ insightReport: report }),
+      setSqlAskReply: (reply) => set({ sqlAskReply: reply }),
+      clearInsightUi: () =>
+        set({
+          insightReport: null,
+          sqlAskReply: null,
+          streamPreview: '',
+          error: null,
+          phase: 'idle',
+          busyStartedAt: null,
+          loadProgressText: '',
+          loadProgress: 0,
+        }),
       resetSession: () =>
         set({
           modelReady: false,
@@ -82,9 +89,8 @@ export const useAskStore = create<AskState>()(
           streamPreview: '',
           error: null,
           selectedFileIds: [],
-          questions: [],
-          activeQuestionId: null,
-          answers: {},
+          insightReport: null,
+          sqlAskReply: null,
         }),
     }),
     {

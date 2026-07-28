@@ -1,6 +1,40 @@
 import { faker } from '@faker-js/faker'
 import type { FakerPath, SchemaColumn, SchemaPlan } from './schemaPlan'
 
+function formatYmdUtc(d: Date): string {
+  const y = d.getUTCFullYear()
+  const m = String(d.getUTCMonth() + 1).padStart(2, '0')
+  const day = String(d.getUTCDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
+
+function dateBetweenBounds(col: SchemaColumn, attempt = 0): string {
+  const now = Date.now()
+  const defaultMin = now - 365 * 86400000 * 5
+  const defaultMax = now
+  let minMs = Number.isFinite(col.min) ? col.min! : defaultMin
+  let maxMs = Number.isFinite(col.max) ? col.max! : defaultMax
+  if (minMs > maxMs) {
+    const t = minMs
+    minMs = maxMs
+    maxMs = t
+  }
+  // Keep unique retries inside the window when possible
+  const span = Math.max(0, maxMs - minMs)
+  const dayMs = 86400000
+  if (col.unique && span >= dayMs) {
+    const days = Math.floor(span / dayMs) + 1
+    const offset = attempt % days
+    return formatYmdUtc(new Date(minMs + offset * dayMs))
+  }
+  const t = minMs + faker.number.float({ min: 0, max: Math.max(span, 0) })
+  const d = new Date(t)
+  if (attempt > 0) d.setUTCDate(d.getUTCDate() + attempt)
+  if (d.getTime() > maxMs) return formatYmdUtc(new Date(maxMs))
+  if (d.getTime() < minMs) return formatYmdUtc(new Date(minMs))
+  return formatYmdUtc(d)
+}
+
 function valueForColumn(col: SchemaColumn, attempt = 0): unknown {
   const path = col.fakerPath as FakerPath
   switch (path) {
@@ -39,16 +73,27 @@ function valueForColumn(col: SchemaColumn, attempt = 0): unknown {
       return attempt > 0
         ? `${faker.commerce.productName()} ${attempt}`
         : faker.commerce.productName()
-    case 'commerce.price':
-      return Number(faker.commerce.price({ min: col.min ?? 1, max: col.max ?? 999 }))
-    case 'finance.amount':
-      return Number(faker.finance.amount({ min: col.min ?? 1, max: col.max ?? 9999, dec: 2 }))
+    case 'commerce.price': {
+      const min = Number.isFinite(col.min) ? col.min! : 1
+      const max = Number.isFinite(col.max) ? col.max! : 999
+      return Number(faker.commerce.price({ min, max: max >= min ? max : min + 1 }))
+    }
+    case 'finance.amount': {
+      const min = Number.isFinite(col.min) ? col.min! : 1
+      const max = Number.isFinite(col.max) ? col.max! : 9999
+      return Number(
+        faker.finance.amount({ min, max: max >= min ? max : min + 1, dec: 2 }),
+      )
+    }
     case 'number.int': {
       const min = Number.isFinite(col.min) ? Math.trunc(col.min!) : 1
-      const max = Number.isFinite(col.max) ? Math.trunc(col.max!) : Math.max(min + 100_000, min + 1000)
+      const max = Number.isFinite(col.max)
+        ? Math.trunc(col.max!)
+        : Math.max(min + 100_000, min + 1000)
       if (col.unique) {
-        const start = Math.max(min, 1)
-        return start + attempt
+        const start = min
+        const value = start + attempt
+        return max >= min ? Math.min(value, max) : value
       }
       return faker.number.int({ min, max: max >= min ? max : min + 100 })
     }
@@ -74,21 +119,22 @@ function valueForColumn(col: SchemaColumn, attempt = 0): unknown {
       return attempt > 0 ? `${faker.lorem.word()}${attempt}` : faker.lorem.word()
     case 'lorem.paragraph':
       return attempt > 0 ? `${faker.lorem.paragraph()} (${attempt})` : faker.lorem.paragraph()
-    case 'date.past': {
-      const d = faker.date.past()
-      if (attempt > 0) d.setUTCDate(d.getUTCDate() + attempt)
-      return d.toISOString().slice(0, 10)
-    }
-    case 'date.recent': {
-      const d = faker.date.recent()
-      if (attempt > 0) d.setUTCDate(d.getUTCDate() + attempt)
-      return d.toISOString().slice(0, 10)
-    }
-    case 'date.soon': {
-      const d = faker.date.soon()
-      if (attempt > 0) d.setUTCDate(d.getUTCDate() + attempt)
-      return d.toISOString().slice(0, 10)
-    }
+    case 'date.past':
+    case 'date.recent':
+    case 'date.soon':
+      if (col.min != null || col.max != null || col.type === 'date') {
+        return dateBetweenBounds(col, attempt)
+      }
+      {
+        const d =
+          path === 'date.recent'
+            ? faker.date.recent()
+            : path === 'date.soon'
+              ? faker.date.soon()
+              : faker.date.past()
+        if (attempt > 0) d.setUTCDate(d.getUTCDate() + attempt)
+        return formatYmdUtc(d)
+      }
     case 'helpers.arrayElement': {
       const opts = col.enumValues?.length ? col.enumValues : ['A', 'B', 'C']
       if (col.unique) {

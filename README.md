@@ -84,7 +84,7 @@ For local models:
 3. **Sample insights** (5 suggestions) from existing schema + sample rows — or ask your own question
 4. Click an insight → model writes SQL → DuckDB runs it → grounded answer from the result
 5. Use **Full screen** in the Ask panel when you want more room (Esc to exit)
-6. Optional: **one** `datacheetah.schema.json` for all loaded tables (download fill-in draft from Ask, edit, upload)
+6. Optional: after tables are loaded, add **one** `datacheetah.schema.json` for all tables (Files sidebar → Sample file → edit → Upload)
 
 Pluggable layout under `src/features/ask/` (`llm/` provider interface, prompts, services, UI). Swap or extend models without touching SQL/charts.
 
@@ -92,12 +92,12 @@ Pluggable layout under `src/features/ask/` (`llm/` provider interface, prompts, 
 Toolbar **Settings**: DuckDB memory limit (restart to apply), Ask provider / remote model, and the encrypted API-key vault.
 
 ### Optional table schema descriptions
-Ask works without them, but SQL quality improves when you document meaning in **one file for all tables**:
+Insights / Ask work without them, but SQL quality improves when you document meaning in **one file for all tables**:
 
-1. Load your data files
-2. In Ask → **Download fill-in file** → get `datacheetah.schema.json` pre-filled with every table/column name
+1. Load your data files (they cache in the local workspace)
+2. In the Explore **Files** sidebar → **Sample file** → download `datacheetah.schema.json` pre-filled with every table/column name
 3. Fill in `description`, `grain`, `notes`, column meanings, relationships
-4. **Upload descriptions** (or Open `*.schema.json` from the toolbar)
+4. **Upload** the edited file (or Open `*.schema.json` from the toolbar / drop zone)
 
 Example multi-table file: `examples/datacheetah.schema.json`.
 
@@ -336,4 +336,4 @@ DataCheetah is built entirely on the shoulders of open-source projects. Thank yo
 
 ## License
 
-MIT
+Apache License 2.0 — see [LICENSE](./LICENSE).

@@ -13,6 +13,12 @@ export type DuckDBRequest =
   | { id: string; type: 'GET_PREVIEW'; payload: { tableName: string; limit: number } }
   | { id: string; type: 'PROFILE_TABLE'; payload: { tableName: string } }
   | { id: string; type: 'PROFILE_COLUMN'; payload: { tableName: string; column: string } }
+  | { id: string; type: 'DEDUP_STATS'; payload: { tableName: string } }
+  | {
+      id: string
+      type: 'EXPORT_SQL'
+      payload: { sql: string; format: 'csv' | 'json' | 'parquet'; fileName?: string }
+    }
   | { id: string; type: 'DISPOSE' }
 
 export type DuckDBResponse =
@@ -39,6 +45,22 @@ export type DuckDBResponse =
       id: string
       type: 'PROFILE_RESULT'
       payload: { columns: ColumnProfile[]; duplicateCount?: number }
+    }
+  | {
+      id: string
+      type: 'DEDUP_STATS_RESULT'
+      payload: {
+        tableName: string
+        totalRows: number
+        distinctRows: number
+        duplicateRows: number
+        columnCount: number
+      }
+    }
+  | {
+      id: string
+      type: 'EXPORT_RESULT'
+      payload: { buffer: ArrayBuffer; fileName: string; mime: string }
     }
   | { id: string; type: 'ERROR'; payload: { message: string } }
 

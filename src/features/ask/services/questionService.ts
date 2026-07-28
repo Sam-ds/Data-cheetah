@@ -1,6 +1,6 @@
 import type { LlmProvider } from '../llm/types'
 import type { AskQuestion } from '../llm/types'
-import { buildGenerateQuestionsPrompt } from '../prompts/askPrompts'
+import { buildGenerateInsightsPrompt } from '../prompts/askPrompts'
 import type { FileContextBlock } from './contextBuilder'
 import { parseModelJson } from './sqlGuard'
 
@@ -113,7 +113,7 @@ export async function generateQuestions(
   contexts: FileContextBlock[],
   onChunk?: (text: string) => void,
 ): Promise<AskQuestion[]> {
-  const { system, user } = buildGenerateQuestionsPrompt(contexts)
+  const { system, user } = buildGenerateInsightsPrompt(contexts)
   const raw = await provider.complete(
     [
       { role: 'system', content: system },
@@ -138,7 +138,7 @@ export async function generateQuestions(
 
   if (questions.length === 0) {
     throw new Error(
-      'Could not read questions from the model reply. Try Suggest again, or ask your own question.',
+      'Could not read insight probes from the model reply. Try Generate insights again.',
     )
   }
 

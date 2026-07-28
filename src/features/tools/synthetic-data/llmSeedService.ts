@@ -1,7 +1,7 @@
 import type { ChatMessage, LlmProvider } from '@/features/ask/llm/types'
 import { FAKER_PATH_WHITELIST, normalizeFakerPath, type SchemaColumn, type SchemaPlan } from './schemaPlan'
 import { inferPlanFromSample } from './inferFromSample'
-import { applyColumnRules, type ColumnRule } from './columnRules'
+import { applyColumnRules, parseBound, type ColumnRule } from './columnRules'
 
 function extractJsonObject(text: string): unknown {
   const trimmed = text.trim()
@@ -23,8 +23,8 @@ function coercePlan(raw: unknown, fallbackSample: string, seedCount: number): Sc
       fakerPath?: string
       notes?: string
       enumValues?: string[]
-      min?: number
-      max?: number
+      min?: number | string
+      max?: number | string
       notNull?: boolean
       not_null?: boolean
       unique?: boolean
@@ -66,8 +66,8 @@ function coercePlan(raw: unknown, fallbackSample: string, seedCount: number): Sc
         fakerPath: normalizeFakerPath(c.fakerPath, fallbackPath as 'lorem.word'),
         notes: c.notes,
         enumValues: Array.isArray(c.enumValues) ? c.enumValues.map(String) : undefined,
-        min: typeof c.min === 'number' ? c.min : undefined,
-        max: typeof c.max === 'number' ? c.max : undefined,
+        min: parseBound(c.min, type === 'date'),
+        max: parseBound(c.max, type === 'date'),
         notNull:
           typeof c.notNull === 'boolean'
             ? c.notNull
@@ -115,9 +115,15 @@ export async function seedPlanWithLlm(
       ? `\nColumn constraints to honor in seed rows:\n${columnRules
           .map((r) => {
             const bits = [
+              r.type ? `type=${r.type}` : null,
               r.unique ? 'unique' : null,
               r.notNull === false ? 'nullable' : 'not null',
-              r.type ? `type=${r.type}` : null,
+              r.min != null
+                ? `min=${r.type === 'date' ? new Date(r.min).toISOString().slice(0, 10) : r.min}`
+                : null,
+              r.max != null
+                ? `max=${r.type === 'date' ? new Date(r.max).toISOString().slice(0, 10) : r.max}`
+                : null,
             ].filter(Boolean)
             return `- ${r.name}: ${bits.join(', ')}`
           })
@@ -133,6 +139,7 @@ Rules:
 - Include exactly ${seedCount} realistic seed rows in "rows" matching the columns.
 - For unique columns, seed rows must not repeat values.
 - For notNull columns, never use null or empty strings.
+- Honor type and min/max ranges when provided (for dates use YYYY-MM-DD strings in seed rows; set min/max as numeric year bounds or omit and keep values inside the stated range).
 - Prefer realistic values consistent with the sample and context.
 - Do not invent SQL. Do not wrap JSON in markdown.`
 

@@ -2,6 +2,7 @@ import type { ColumnSchema, RegisteredDataset } from '@/types/dataset'
 import type { TableSchemaDoc } from '@/types/schemaDoc'
 import { duckdbClient } from '@/services/duckdbClient'
 import { formatSchemaDocForPrompt } from '@/features/files/services/schemaDocService'
+import { needsQuotedIdentifier } from './sqlGuard'
 
 export interface FileContextBlock {
   fileId: string
@@ -72,7 +73,10 @@ export function formatTableContextForPrompt(c: FileContextBlock): string {
             meaning.unit ? ` (${meaning.unit})` : ''
           }`
         : ''
-      return `  - ${col.name}: ${col.type}${extra}`
+      const shown = needsQuotedIdentifier(col.name)
+        ? `"${col.name.replace(/"/g, '""')}"`
+        : col.name
+      return `  - ${shown}: ${col.type}${extra}`
     })
     .join('\n')
   const sample = JSON.stringify(c.sampleRows, null, 2)
@@ -99,4 +103,41 @@ export function formatTableContextForPrompt(c: FileContextBlock): string {
   return [header, `Columns:\n${cols}`, relationships, `Sample rows:\n${sample}`]
     .filter(Boolean)
     .join('\n')
+}
+
+/** Exact column names per table for SQL prompts (forces quoting when needed). */
+export function formatColumnInventory(contexts: FileContextBlock[]): string {
+  return contexts
+    .map((c) => {
+      const cols = c.columns
+        .map((col) =>
+          needsQuotedIdentifier(col.name)
+            ? `"${col.name.replace(/"/g, '""')}"`
+            : col.name,
+        )
+        .join(', ')
+      return `"${c.tableName}": ${cols || '(no columns)'}`
+    })
+    .join('\n')
+}
+
+/**
+ * Column names that appear (case-insensitive) on more than one table — safe JOIN keys.
+ * Returns the canonical spelling from the first table that has each name.
+ */
+export function findSharedJoinColumns(contexts: FileContextBlock[]): string[] {
+  if (contexts.length < 2) return []
+  const counts = new Map<string, { count: number; canonical: string }>()
+  for (const c of contexts) {
+    const seen = new Set<string>()
+    for (const col of c.columns) {
+      const key = col.name.toLowerCase()
+      if (seen.has(key)) continue
+      seen.add(key)
+      const prev = counts.get(key)
+      if (prev) prev.count += 1
+      else counts.set(key, { count: 1, canonical: col.name })
+    }
+  }
+  return [...counts.values()].filter((v) => v.count >= 2).map((v) => v.canonical)
 }

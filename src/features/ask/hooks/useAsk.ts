@@ -1,10 +1,10 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { useFilesStore } from '@/features/files/store/filesStore'
 import { usePreferencesStore } from '@/features/profiling/store/profileStore'
 import { useAskStore } from '../store/askStore'
 import { buildFileContexts } from '../services/contextBuilder'
-import { generateQuestions } from '../services/questionService'
+import { generateInsightReport } from '../services/insightsService'
 import { answerQuestion } from '../services/answerService'
 import {
   getActiveAskModelId,
@@ -16,6 +16,10 @@ import { checkWebGpuSupport } from '../llm/nullProvider'
 import { isVaultUnlocked } from '@/features/settings/services/secretsVault'
 import { useVaultSessionStore } from '@/features/settings/store/vaultSessionStore'
 import { savePreferences } from '@/services/storageService'
+import { ASK_MODEL_CATALOG } from '../config/modelCatalog'
+import { ASK_PROVIDER_LABELS, modelsForProvider } from '@/types/askSettings'
+import { useSqlStore, useQueryStore } from '@/features/sql/store/sqlStore'
+import { useWorkspaceStore } from '@/features/workspace/store/workspaceStore'
 
 function formatElapsed(ms: number): string {
   const s = Math.floor(ms / 1000)
@@ -26,13 +30,17 @@ function formatElapsed(ms: number): string {
 
 export function useAsk() {
   const files = useFilesStore((s) => s.files)
-  const setFileSchemaDoc = useFilesStore((s) => s.setFileSchemaDoc)
   const defaultRowLimit = usePreferencesStore((s) => s.defaultRowLimit)
   const askProvider = usePreferencesStore((s) => s.askProvider)
   const askRemoteModelId = usePreferencesStore((s) => s.askRemoteModelId)
   const setAskRemoteModelId = usePreferencesStore((s) => s.setAskRemoteModelId)
   const vaultUnlocked = useVaultSessionStore((s) => s.unlocked)
   const isLocal = askProvider === 'local'
+  const setEditorContent = useSqlStore((s) => s.setEditorContent)
+  const setResult = useQueryStore((s) => s.setResult)
+  const setQueryError = useQueryStore((s) => s.setError)
+  const setActiveBottomTab = useWorkspaceStore((s) => s.setActiveBottomTab)
+  const setActiveRightTab = useWorkspaceStore((s) => s.setActiveRightTab)
 
   const selectedModelId = useAskStore((s) => s.selectedModelId)
   const modelReady = useAskStore((s) => s.modelReady)
@@ -42,10 +50,9 @@ export function useAsk() {
   const busyStartedAt = useAskStore((s) => s.busyStartedAt)
   const streamPreview = useAskStore((s) => s.streamPreview)
   const error = useAskStore((s) => s.error)
+  const insightReport = useAskStore((s) => s.insightReport)
+  const sqlAskReply = useAskStore((s) => s.sqlAskReply)
   const selectedFileIds = useAskStore((s) => s.selectedFileIds)
-  const questions = useAskStore((s) => s.questions)
-  const activeQuestionId = useAskStore((s) => s.activeQuestionId)
-  const answers = useAskStore((s) => s.answers)
 
   const setSelectedModelId = useAskStore((s) => s.setSelectedModelId)
   const setModelReady = useAskStore((s) => s.setModelReady)
@@ -54,16 +61,36 @@ export function useAsk() {
   const setBusyStartedAt = useAskStore((s) => s.setBusyStartedAt)
   const setStreamPreview = useAskStore((s) => s.setStreamPreview)
   const setError = useAskStore((s) => s.setError)
+  const setInsightReport = useAskStore((s) => s.setInsightReport)
+  const setSqlAskReply = useAskStore((s) => s.setSqlAskReply)
   const setSelectedFileIds = useAskStore((s) => s.setSelectedFileIds)
   const toggleFileId = useAskStore((s) => s.toggleFileId)
-  const setQuestions = useAskStore((s) => s.setQuestions)
-  const setActiveQuestionId = useAskStore((s) => s.setActiveQuestionId)
-  const setAnswer = useAskStore((s) => s.setAnswer)
 
   const [elapsedLabel, setElapsedLabel] = useState('')
 
   const busy =
-    phase === 'loadingModel' || phase === 'generatingQuestions' || phase === 'answering'
+    phase === 'loadingModel' || phase === 'generatingInsights' || phase === 'answering'
+
+  const activeModelLabel = (() => {
+    if (isLocal) {
+      const entry = ASK_MODEL_CATALOG.find((m) => m.id === selectedModelId)
+      return entry ? `${entry.label} (${entry.sizeHint})` : selectedModelId
+    }
+    const remote = modelsForProvider(askProvider).find((m) => m.id === askRemoteModelId)
+    return remote?.label ?? askRemoteModelId
+  })()
+
+  /** Re-sync Ready if the engine is still in memory (e.g. after leaving Home). */
+  useEffect(() => {
+    try {
+      const ready = getAskLlmProvider().isReady()
+      if (ready !== useAskStore.getState().modelReady) {
+        setModelReady(ready)
+      }
+    } catch {
+      /* ignore */
+    }
+  }, [askProvider, selectedModelId, askRemoteModelId, setModelReady])
 
   useEffect(() => {
     if (!busy || !busyStartedAt) {
@@ -73,11 +100,11 @@ export function useAsk() {
     const tick = () => {
       const ms = Date.now() - busyStartedAt
       setElapsedLabel(formatElapsed(ms))
-      if (phase === 'generatingQuestions' || phase === 'answering') {
+      if (phase === 'generatingInsights' || phase === 'answering') {
         toast.loading(
-          phase === 'generatingQuestions'
-            ? `Sample insights… ${formatElapsed(ms)} (model is working)`
-            : `Answering… ${formatElapsed(ms)} (model is working)`,
+          phase === 'generatingInsights'
+            ? `Generating insights… ${formatElapsed(ms)}`
+            : `Answering… ${formatElapsed(ms)}`,
           { id: 'ask-busy', duration: Infinity },
         )
       }
@@ -93,8 +120,38 @@ export function useAsk() {
     return () => window.clearInterval(id)
   }, [busy, busyStartedAt, phase])
 
+  /** Keep selection in sync with loaded files: drop removed, default-select new. */
+  const prevFileIdsRef = useRef<Set<string>>(new Set())
+  useEffect(() => {
+    const liveIds = files.map((f) => f.id)
+    const liveSet = new Set(liveIds)
+    const prev = prevFileIdsRef.current
+    const current = useAskStore.getState().selectedFileIds
+    const kept = current.filter((id) => liveSet.has(id))
+    const newlyAdded = liveIds.filter((id) => !prev.has(id))
+    prevFileIdsRef.current = liveSet
+
+    let next = kept
+    if (prev.size === 0 && liveIds.length > 0) {
+      next = liveIds
+    } else if (newlyAdded.length > 0) {
+      next = [...new Set([...kept, ...newlyAdded])]
+    }
+
+    const same =
+      next.length === current.length &&
+      next.every((id) => current.includes(id)) &&
+      current.every((id) => next.includes(id))
+    if (!same) setSelectedFileIds(next)
+  }, [files, setSelectedFileIds])
+
+  const resolveScopedFileIds = useCallback((): string[] => {
+    const live = new Set(files.map((f) => f.id))
+    return useAskStore.getState().selectedFileIds.filter((id) => live.has(id))
+  }, [files])
+
   const beginBusy = useCallback(
-    (next: 'loadingModel' | 'generatingQuestions' | 'answering', text: string, progress: number) => {
+    (next: 'loadingModel' | 'generatingInsights' | 'answering', text: string, progress: number) => {
       setPhase(next)
       setBusyStartedAt(Date.now())
       setStreamPreview('')
@@ -122,6 +179,20 @@ export function useAsk() {
       setError(msg)
       toast.error(msg)
       return
+    }
+
+    // Already loaded for this session — do not download / reconnect again
+    try {
+      const existing = getAskLlmProvider()
+      if (existing.isReady()) {
+        setModelReady(true)
+        setPhase('idle')
+        setLoadProgress('Model ready', 1)
+        toast.success(isLocal ? 'Model already loaded this session' : 'Already connected this session')
+        return
+      }
+    } catch {
+      /* continue to load */
     }
 
     beginBusy(
@@ -156,9 +227,12 @@ export function useAsk() {
       setPhase('idle')
       setLoadProgress('Model ready', 1)
       endBusy()
-      toast.success(isLocal ? 'Local model ready' : 'Remote model connected', {
-        id: 'ask-model-load',
-      })
+      toast.success(
+        isLocal
+          ? 'Local model ready — stays loaded until you clear it or refresh the page'
+          : 'Remote model connected',
+        { id: 'ask-model-load' },
+      )
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to load model'
       setModelReady(false)
@@ -169,75 +243,90 @@ export function useAsk() {
     }
   }, [beginBusy, endBusy, isLocal, setError, setLoadProgress, setModelReady, setPhase])
 
-  const runGenerateQuestions = useCallback(async () => {
+  const runGenerateInsights = useCallback(async () => {
     const provider = getAskLlmProvider()
     if (!provider.isReady() || !useAskStore.getState().modelReady) {
-      toast.error('Load a model first — wait until status shows Ready')
+      toast.error('Load a model first in Insights — wait until status shows Ready')
       return
     }
-    const fileIds = useAskStore.getState().selectedFileIds
+    const fileIds = resolveScopedFileIds()
     if (fileIds.length === 0) {
-      toast.error('Select at least one file')
+      toast.error('Select at least one table in Insights or the Ask bar')
       return
     }
 
-    beginBusy('generatingQuestions', 'Building table context…', 0.15)
+    beginBusy('generatingInsights', 'Building table context…', 0.15)
+    setInsightReport(null)
     toast.loading(
-      isLocal ? 'Generating sample insights… (local model is running)' : 'Generating sample insights…',
+      isLocal ? 'Generating insights… (local model is running)' : 'Generating insights…',
       {
-      id: 'ask-busy',
-      duration: Infinity,
-    })
+        id: 'ask-busy',
+        duration: Infinity,
+      },
+    )
 
     try {
       const contexts = await buildFileContexts(files, fileIds)
-      setLoadProgress('Model is generating sample insights — please wait…', 0.4)
-      const nextQuestions = await generateQuestions(provider, contexts, (chunk) => {
-        setStreamPreview(chunk.slice(-400))
-        setLoadProgress(`Model writing… ${chunk.length} characters`, 0.55)
-      })
-      setQuestions(nextQuestions)
+      const report = await generateInsightReport(
+        provider,
+        contexts,
+        defaultRowLimit,
+        (status) => {
+          setLoadProgress(status, 0.55)
+          setStreamPreview(status)
+        },
+      )
+      setInsightReport(report)
       setPhase('idle')
       setLoadProgress('', 0)
       endBusy()
-      toast.success(`${nextQuestions.length} sample insights ready`, { id: 'ask-busy' })
+      setActiveRightTab('ask')
+      toast.success('Insights ready', { id: 'ask-busy' })
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Sample insights failed'
+      const message = err instanceof Error ? err.message : 'Generate insights failed'
       setError(message)
       setPhase('error')
       endBusy()
       toast.error(message, { id: 'ask-busy' })
     }
-  }, [beginBusy, endBusy, files, isLocal, setError, setLoadProgress, setPhase, setQuestions, setStreamPreview])
+  }, [
+    beginBusy,
+    defaultRowLimit,
+    endBusy,
+    files,
+    isLocal,
+    resolveScopedFileIds,
+    setActiveRightTab,
+    setError,
+    setInsightReport,
+    setLoadProgress,
+    setPhase,
+    setStreamPreview,
+  ])
 
-  const runAnswer = useCallback(
-    async (questionId: string, questionText?: string) => {
+  const runAskQuestion = useCallback(
+    async (text: string) => {
+      const question = text.trim()
+      if (!question) {
+        toast.error('Type a question about your data')
+        return
+      }
+
       const provider = getAskLlmProvider()
       if (!provider.isReady() || !useAskStore.getState().modelReady) {
-        toast.error('Load a model first — wait until status shows Ready')
+        toast.error('Open Insights and load a model first')
+        setActiveRightTab('ask')
         return
       }
 
-      const existing = useAskStore.getState().questions.find((x) => x.id === questionId)
-      const question = (questionText ?? existing?.question ?? '').trim()
-      if (!question) return
-
-      // Keep custom questions in the list so they remain clickable
-      if (!existing) {
-        setQuestions([
-          ...useAskStore.getState().questions.filter((q) => q.id !== questionId),
-          { id: questionId, question },
-        ])
-      }
-
-      const fileIds = useAskStore.getState().selectedFileIds
+      const fileIds = resolveScopedFileIds()
       if (fileIds.length === 0) {
-        toast.error('Select at least one file')
+        toast.error('Select at least one table first')
         return
       }
 
-      setActiveQuestionId(questionId)
-      beginBusy('answering', 'Preparing answer…', 0.2)
+      beginBusy('answering', 'Writing SQL for your question…', 0.2)
+      setSqlAskReply(null)
       toast.loading(isLocal ? 'Answering… (local model is running)' : 'Answering…', {
         id: 'ask-busy',
         duration: Infinity,
@@ -248,7 +337,7 @@ export function useAsk() {
         const answer = await answerQuestion(
           provider,
           contexts,
-          questionId,
+          `sql-ask-${Date.now()}`,
           question,
           defaultRowLimit,
           (status) => {
@@ -256,22 +345,54 @@ export function useAsk() {
             setStreamPreview(status)
           },
         )
-        setAnswer(answer)
+
+        if (answer.sql) {
+          setEditorContent(answer.sql.endsWith(';') ? answer.sql : `${answer.sql};`)
+        }
+
+        if (answer.error) {
+          setQueryError(answer.error)
+          setSqlAskReply({
+            question,
+            answer: '',
+            sql: answer.sql,
+            steps: answer.steps,
+            error: answer.error,
+          })
+          setPhase('error')
+          setError(answer.error)
+          endBusy()
+          setActiveBottomTab('results')
+          toast.error(answer.error, { id: 'ask-busy' })
+          return
+        }
+
+        setResult({
+          columns: answer.columns,
+          columnTypes: answer.columns.map(() => 'VARCHAR'),
+          rows: answer.previewRows,
+          totalRows: answer.rowCount,
+          durationMs: 0,
+        })
+        setSqlAskReply({
+          question,
+          answer: answer.answer,
+          sql: answer.sql,
+          steps: answer.steps,
+        })
         setPhase('idle')
         setLoadProgress('', 0)
         endBusy()
-        toast.success('Answer ready', { id: 'ask-busy' })
+        setActiveBottomTab('results')
+        toast.success(
+          answer.steps && answer.steps.length > 1
+            ? `Answer ready (${answer.steps.length} SQL steps)`
+            : 'SQL ready — results below',
+          { id: 'ask-busy' },
+        )
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Failed to answer'
-        setAnswer({
-          questionId,
-          sql: '',
-          answer: '',
-          rowCount: 0,
-          previewRows: [],
-          columns: [],
-          error: message,
-        })
+        setSqlAskReply({ question, answer: '', sql: '', error: message })
         setError(message)
         setPhase('error')
         endBusy()
@@ -284,38 +405,31 @@ export function useAsk() {
       endBusy,
       files,
       isLocal,
-      setActiveQuestionId,
-      setAnswer,
+      resolveScopedFileIds,
+      setActiveBottomTab,
+      setActiveRightTab,
+      setEditorContent,
       setError,
       setLoadProgress,
       setPhase,
-      setQuestions,
+      setQueryError,
+      setResult,
+      setSqlAskReply,
       setStreamPreview,
     ],
-  )
-
-  const runCustomQuestion = useCallback(
-    async (text: string) => {
-      const question = text.trim()
-      if (!question) {
-        toast.error('Type a question about your data')
-        return
-      }
-      const id = `custom-${Date.now()}`
-      await runAnswer(id, question)
-    },
-    [runAnswer],
   )
 
   const unload = useCallback(async () => {
     toast.dismiss('ask-model-load')
     toast.dismiss('ask-busy')
     await unloadAskLlm()
+    await resetAskLlmSession()
     setModelReady(false)
     setLoadProgress('', 0)
     setPhase('idle')
     endBusy()
-  }, [endBusy, setLoadProgress, setModelReady, setPhase])
+    toast.message(isLocal ? 'Model cleared from memory' : 'Remote connection cleared')
+  }, [endBusy, isLocal, setLoadProgress, setModelReady, setPhase])
 
   const selectModel = useCallback(
     (id: string) => {
@@ -338,43 +452,18 @@ export function useAsk() {
     [setAskRemoteModelId, setLoadProgress, setModelReady],
   )
 
-  const attachSchemaDoc = useCallback(
-    (fileId: string, doc: import('@/types/schemaDoc').TableSchemaDoc) => {
-      setFileSchemaDoc(fileId, doc)
-    },
-    [setFileSchemaDoc],
-  )
+  const selectAllTables = useCallback(() => {
+    setSelectedFileIds(files.map((f) => f.id))
+  }, [files, setSelectedFileIds])
 
-  const clearSchemaDoc = useCallback(
-    (fileId: string) => {
-      setFileSchemaDoc(fileId, undefined)
-    },
-    [setFileSchemaDoc],
-  )
-
-  const attachSchemaDocs = useCallback(
-    (docs: import('@/types/schemaDoc').TableSchemaDoc[]) => {
-      const attached: string[] = []
-      const missed: string[] = []
-      const attachByName = useFilesStore.getState().attachSchemaDocByTableName
-      for (const doc of docs) {
-        const table = attachByName(doc)
-        if (table) attached.push(table)
-        else missed.push(doc.table)
-      }
-      return { attached, missed }
-    },
-    [],
-  )
-
-  const clearAllSchemaDocs = useCallback(() => {
-    for (const f of useFilesStore.getState().files) {
-      setFileSchemaDoc(f.id, undefined)
-    }
-  }, [setFileSchemaDoc])
+  const selectNoTables = useCallback(() => {
+    setSelectedFileIds([])
+  }, [setSelectedFileIds])
 
   return {
     selectedModelId,
+    activeModelLabel,
+    providerLabel: ASK_PROVIDER_LABELS[askProvider],
     modelReady,
     loadProgressText,
     loadProgress,
@@ -383,28 +472,24 @@ export function useAsk() {
     streamPreview,
     elapsedLabel,
     error,
+    insightReport,
+    sqlAskReply,
     selectedFileIds,
-    questions,
-    activeQuestionId,
-    answers,
     files,
     askProvider,
     askRemoteModelId,
     isLocal,
     webGpu: checkWebGpuSupport(),
     vaultUnlocked,
-    setSelectedFileIds,
-    toggleFileId,
     setSelectedModelId: selectModel,
     setAskRemoteModelId: selectRemoteModel,
-    attachSchemaDoc,
-    clearSchemaDoc,
-    attachSchemaDocs,
-    clearAllSchemaDocs,
+    setSelectedFileIds,
+    toggleFileId,
+    selectAllTables,
+    selectNoTables,
     loadModel,
-    runGenerateQuestions,
-    runAnswer,
-    runCustomQuestion,
+    runGenerateInsights,
+    runAskQuestion,
     unload,
   }
 }

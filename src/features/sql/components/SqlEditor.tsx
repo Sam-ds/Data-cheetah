@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState } from 'react'
+import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { Loader2, Save } from 'lucide-react'
 import { toast } from 'sonner'
 import { useSqlStore } from '@/features/sql/store/sqlStore'
@@ -7,6 +7,10 @@ import { usePreferencesStore } from '@/features/profiling/store/profileStore'
 import { saveQuery } from '@/services/storageService'
 import { generateId } from '@/lib/utils/sanitizeTableName'
 import { Button } from '@/components/ui/button'
+import {
+  registerSqlCompletionProvider,
+  snapshotFromFiles,
+} from '@/features/sql/services/sqlCompletionProvider'
 
 const MonacoEditor = lazy(() => import('@monaco-editor/react'))
 
@@ -17,10 +21,22 @@ interface SqlEditorProps {
 export function SqlEditor({ onRun }: SqlEditorProps) {
   const { editorContent, setEditorContent, diagnostics } = useSqlStore()
   const theme = usePreferencesStore((s) => s.theme)
+  const files = useFilesStore((s) => s.files)
   const activeFile = useFilesStore((s) => s.getActiveFile())
   const [naming, setNaming] = useState(false)
   const [queryName, setQueryName] = useState('')
   const [saving, setSaving] = useState(false)
+
+  const filesRef = useRef(files)
+  filesRef.current = files
+  const completionDisposable = useRef<{ dispose: () => void } | null>(null)
+
+  useEffect(() => {
+    return () => {
+      completionDisposable.current?.dispose()
+      completionDisposable.current = null
+    }
+  }, [])
 
   const startSave = () => {
     if (!editorContent.trim()) {
@@ -59,6 +75,13 @@ export function SqlEditor({ onRun }: SqlEditorProps) {
     }
   }
 
+  const ensureCompletions = (monaco: typeof import('monaco-editor')) => {
+    if (completionDisposable.current) return
+    completionDisposable.current = registerSqlCompletionProvider(monaco, () =>
+      snapshotFromFiles(filesRef.current),
+    )
+  }
+
   return (
     <div className="flex h-full flex-col">
       <div className="panel-header gap-2">
@@ -73,11 +96,11 @@ export function SqlEditor({ onRun }: SqlEditorProps) {
                 placeholder="Query name"
                 onChange={(e) => setQueryName(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter') confirmSave()
+                  if (e.key === 'Enter') void confirmSave()
                   if (e.key === 'Escape') setNaming(false)
                 }}
               />
-              <Button size="sm" className="h-6 px-2 text-xs" onClick={confirmSave} disabled={saving}>
+              <Button size="sm" className="h-6 px-2 text-xs" onClick={() => void confirmSave()} disabled={saving}>
                 {saving ? 'Saving…' : 'Save'}
               </Button>
               <Button
@@ -117,11 +140,15 @@ export function SqlEditor({ onRun }: SqlEditorProps) {
             theme={theme === 'dark' ? 'vs-dark' : 'vs'}
             value={editorContent}
             onChange={(value) => setEditorContent(value ?? '')}
-            onMount={(editor) => {
+            beforeMount={(monaco) => {
+              ensureCompletions(monaco)
+            }}
+            onMount={(editor, monaco) => {
+              ensureCompletions(monaco)
               editor.addAction({
                 id: 'run-query',
                 label: 'Run Query',
-                keybindings: [2048 | 3],
+                keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter],
                 run: () => onRun?.(),
               })
             }}
@@ -134,6 +161,14 @@ export function SqlEditor({ onRun }: SqlEditorProps) {
               padding: { top: 8 },
               lineNumbers: 'on',
               renderLineHighlight: 'line',
+              quickSuggestions: {
+                other: true,
+                comments: false,
+                strings: false,
+              },
+              suggestOnTriggerCharacters: true,
+              wordBasedSuggestions: 'off',
+              tabCompletion: 'on',
             }}
           />
         </Suspense>

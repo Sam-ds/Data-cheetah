@@ -97,8 +97,33 @@ export function scrubSqlExtractionJunk(sql: string): string {
   return s
 }
 
+/**
+ * DuckDB does not accept MySQL/BigQuery backticks. Convert `ident` → "ident".
+ * Leaves content inside normal '…' string literals alone.
+ */
+export function repairMysqlBackticks(sql: string): string {
+  const masks: string[] = []
+  const masked = sql.replace(/'(?:[^']|'')*'/g, (m) => {
+    const token = `\u0000SQ${masks.length}\u0000`
+    masks.push(m)
+    return token
+  })
+
+  const converted = masked.replace(/`([^`\\]+)`/g, (_full, inner: string) => {
+    const name = inner.trim()
+    if (!name) return '""'
+    return `"${name.replace(/"/g, '""')}"`
+  })
+
+  // Any leftover stray backticks (unpaired) → drop them
+  const cleaned = converted.replace(/`/g, '')
+
+  return cleaned.replace(/\u0000SQ(\d+)\u0000/g, (_, i: string) => masks[Number(i)] ?? '')
+}
+
 export function guardSelectSql(rawSql: string): string {
   let sql = scrubSqlExtractionJunk(rawSql)
+  sql = repairMysqlBackticks(sql)
 
   if (!sql) throw new Error('Model returned empty SQL.')
 
@@ -144,17 +169,174 @@ function readJsonString(source: string, openQuoteIndex: number): string | null {
   return null
 }
 
-function extractSqlFieldFromText(source: string): string | null {
-  const key = /"(?:sql|query|statement)"\s*:\s*/gi
+/** Collect every JSON string value for the given object keys (does not stop at the first). */
+export function extractAllQuotedFields(source: string, keys: string[]): string[] {
+  const keyAlt = keys.map((k) => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')
+  const key = new RegExp(`"(?:${keyAlt})"\\s*:\\s*`, 'gi')
+  const out: string[] = []
   let match: RegExpExecArray | null
   while ((match = key.exec(source)) !== null) {
     const valueStart = match.index + match[0].length
     if (source[valueStart] === '"') {
       const value = readJsonString(source, valueStart)
-      if (value?.trim()) return value.trim()
+      if (value?.trim()) out.push(value.trim())
     }
   }
-  return null
+  return out
+}
+
+function extractSqlFieldFromText(source: string): string | null {
+  return extractAllQuotedFields(source, ['sql', 'query', 'statement'])[0] ?? null
+}
+
+/**
+ * Split semicolon-separated read-only statements (respects quotes).
+ * Used when a model packs multiple SELECTs into one "sql" string.
+ */
+export function splitSelectStatements(sql: string): string[] {
+  const cleaned = scrubSqlExtractionJunk(sql)
+  if (!cleaned) return []
+
+  const parts: string[] = []
+  let current = ''
+  let inSingle = false
+  let inDouble = false
+
+  for (let i = 0; i < cleaned.length; i++) {
+    const ch = cleaned[i]!
+    if (inSingle) {
+      current += ch
+      if (ch === "'") {
+        if (cleaned[i + 1] === "'") {
+          current += cleaned[++i]
+          continue
+        }
+        inSingle = false
+      }
+      continue
+    }
+    if (inDouble) {
+      current += ch
+      if (ch === '"') {
+        if (cleaned[i + 1] === '"') {
+          current += cleaned[++i]
+          continue
+        }
+        inDouble = false
+      }
+      continue
+    }
+    if (ch === "'") {
+      inSingle = true
+      current += ch
+      continue
+    }
+    if (ch === '"') {
+      inDouble = true
+      current += ch
+      continue
+    }
+    if (ch === ';') {
+      const t = current.trim()
+      if (t) parts.push(t)
+      current = ''
+      continue
+    }
+    current += ch
+  }
+  const tail = current.trim()
+  if (tail) parts.push(tail)
+  return parts
+}
+
+export type ExtractedPlanStep = { goal: string; sql: string }
+
+/**
+ * Pull 1–N plan steps from messy LLM plan output.
+ * Prefers a full `steps` array; falls back to every `"sql"` field (not just the first).
+ */
+export function extractPlanStepsFromModelRaw(raw: string, maxSteps = 3): ExtractedPlanStep[] {
+  const trimmed = raw.trim()
+  const source = trimmed.replace(/^```(?:json|sql)?\s*/i, '').replace(/```$/i, '').trim()
+  const sqlFieldCount = extractAllQuotedFields(source, ['sql', 'query', 'statement']).length
+
+  const fromList = (list: unknown[]): ExtractedPlanStep[] => {
+    const steps: ExtractedPlanStep[] = []
+    for (const item of list) {
+      if (!item || typeof item !== 'object') continue
+      const rec = item as Record<string, unknown>
+      const sqlRaw = String(rec.sql ?? rec.query ?? '').trim()
+      if (!sqlRaw) continue
+      const pieces = splitSelectStatements(sqlRaw)
+      const goalBase = String(rec.goal ?? rec.purpose ?? rec.title ?? '').trim()
+      for (const piece of pieces.length ? pieces : [sqlRaw]) {
+        steps.push({
+          goal: goalBase || `Step ${steps.length + 1}`,
+          sql: piece,
+        })
+        if (steps.length >= maxSteps) return steps
+      }
+    }
+    return steps
+  }
+
+  try {
+    const parsed = parseModelJson(raw, 'any') as Record<string, unknown> | unknown[]
+    if (Array.isArray(parsed)) {
+      const steps = fromList(parsed)
+      // Truncated JSON recovery sometimes keeps only step 1 — prefer field scan if more sql keys exist
+      if (steps.length > 0 && !(steps.length === 1 && sqlFieldCount > 1)) return steps.slice(0, maxSteps)
+    } else if (parsed && typeof parsed === 'object') {
+      if (Array.isArray(parsed.steps)) {
+        const steps = fromList(parsed.steps)
+        if (steps.length > 0 && !(steps.length === 1 && sqlFieldCount > 1)) {
+          return steps.slice(0, maxSteps)
+        }
+      }
+      const single = String(parsed.sql ?? parsed.query ?? '').trim()
+      if (single && sqlFieldCount <= 1) {
+        const pieces = splitSelectStatements(single)
+        if (pieces.length > 1) {
+          return pieces.slice(0, maxSteps).map((sql, i) => ({
+            goal: `Step ${i + 1}`,
+            sql,
+          }))
+        }
+        return [{ goal: 'Answer question', sql: pieces[0] ?? single }]
+      }
+    }
+  } catch {
+    /* fall through to field scan */
+  }
+
+  const sqls = extractAllQuotedFields(source, ['sql', 'query', 'statement'])
+  const goals = extractAllQuotedFields(source, ['goal', 'purpose', 'title'])
+  if (sqls.length > 0) {
+    const steps: ExtractedPlanStep[] = []
+    for (let i = 0; i < sqls.length && steps.length < maxSteps; i++) {
+      const pieces = splitSelectStatements(sqls[i]!)
+      for (const piece of pieces.length ? pieces : [sqls[i]!]) {
+        steps.push({
+          goal: goals[i] ?? goals[steps.length] ?? `Step ${steps.length + 1}`,
+          sql: piece,
+        })
+        if (steps.length >= maxSteps) break
+      }
+    }
+    if (steps.length > 0) return steps
+  }
+
+  try {
+    const sql = extractSqlFromModel(raw)
+    const pieces = splitSelectStatements(sql)
+    if (pieces.length > 1) {
+      return pieces.slice(0, maxSteps).map((s, i) => ({ goal: `Step ${i + 1}`, sql: s }))
+    }
+    if (sql) return [{ goal: 'Answer question', sql }]
+  } catch {
+    /* ignore */
+  }
+  return []
 }
 
 /** Pull SELECT SQL from messy model output (JSON sql/query fields, fences, or raw SQL). */
@@ -249,6 +431,44 @@ export function collectTableNames(contexts: { tableName: string }[]): string[] {
 
 function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+/** True when DuckDB requires double quotes (spaces, punctuation, mixed case, leading digit, etc.). */
+export function needsQuotedIdentifier(name: string): boolean {
+  // Unquoted ids fold to lowercase in DuckDB — quote anything that isn't already lowercase snake/idents.
+  if (!/^[a-z_][a-z0-9_]*$/.test(name)) return true
+  return false
+}
+
+/**
+ * Quote known table/column names that contain spaces or special characters when the
+ * model emits them bare, e.g. Subscription Date → "Subscription Date".
+ * Skips text already inside '…' strings or "…" identifiers.
+ */
+export function repairUnquotedIdentifiers(sql: string, knownIdentifiers: Iterable<string>): string {
+  const ids = [
+    ...new Set(
+      [...knownIdentifiers]
+        .map((s) => s.trim())
+        .filter((s) => s.length > 0 && needsQuotedIdentifier(s)),
+    ),
+  ].sort((a, b) => b.length - a.length)
+
+  if (ids.length === 0) return sql
+
+  const masks: string[] = []
+  let masked = sql.replace(/'(?:[^']|'')*'|"(?:[^"]|"")*"/g, (m) => {
+    const token = `\u0000MASK${masks.length}\u0000`
+    masks.push(m)
+    return token
+  })
+
+  for (const id of ids) {
+    const pattern = new RegExp(`(?<![\\w.])${escapeRegExp(id)}(?![\\w.])`, 'gi')
+    masked = masked.replace(pattern, `"${id.replace(/"/g, '""')}"`)
+  }
+
+  return masked.replace(/\u0000MASK(\d+)\u0000/g, (_, i: string) => masks[Number(i)] ?? '')
 }
 
 function levenshtein(a: string, b: string): number {

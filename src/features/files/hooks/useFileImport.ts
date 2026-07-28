@@ -4,6 +4,14 @@ import {
   isSchemaDocFileName,
   readSchemaDocFromFile,
 } from '@/features/files/services/schemaDocService'
+import {
+  collectFilesFromDataTransfer,
+  confirmLargeFolderLoad,
+  filterFolderImportFiles,
+  formatBytes,
+  FOLDER_SIZE_WARN_BYTES,
+  totalFileBytes,
+} from '@/features/files/services/folderImport'
 import { buildDefaultQuery } from '@/features/profiling/services/profilingService'
 import { profileTable } from '@/features/profiling/services/profilingService'
 import { useFilesStore } from '@/features/files/store/filesStore'
@@ -108,11 +116,42 @@ export function useFileImport() {
   )
 
   const handleFiles = useCallback(
-    async (list: FileList | File[]) => {
-      const filesArr = Array.from(list)
-      if (filesArr.length === 0) return
-      const schemaFiles = filesArr.filter((f) => isSchemaDocFileName(f.name))
-      const dataFiles = filesArr.filter((f) => !isSchemaDocFileName(f.name))
+    async (list: FileList | File[], opts?: { fromFolder?: boolean }) => {
+      const raw = Array.from(list)
+      if (raw.length === 0) return
+
+      const { supported, skipped } = filterFolderImportFiles(raw)
+      if (supported.length === 0) {
+        toast.error(
+          opts?.fromFolder
+            ? 'No supported files in that folder (CSV, Parquet, JSON, Excel, or *.schema.json).'
+            : 'No supported files selected.',
+        )
+        return
+      }
+
+      const total = totalFileBytes(supported)
+      if (total > FOLDER_SIZE_WARN_BYTES) {
+        toast.warning(
+          `About ${formatBytes(total)} selected (over 5 GB). Prefer keeping only the files you need.`,
+          { duration: 8000 },
+        )
+        if (!confirmLargeFolderLoad(supported)) {
+          toast.message('Folder load cancelled')
+          return
+        }
+      }
+
+      if (opts?.fromFolder || supported.length > 1) {
+        toast.message(
+          `Loading ${supported.length.toLocaleString()} file${supported.length === 1 ? '' : 's'} on this device` +
+            (skipped ? ` (${skipped} skipped)` : '') +
+            ` · ${formatBytes(total)}`,
+        )
+      }
+
+      const schemaFiles = supported.filter((f) => isSchemaDocFileName(f.name))
+      const dataFiles = supported.filter((f) => !isSchemaDocFileName(f.name))
       for (const file of dataFiles) {
         await handleImport(file)
       }
@@ -126,9 +165,20 @@ export function useFileImport() {
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
       e.preventDefault()
-      if (e.dataTransfer.files?.length) {
-        void handleFiles(e.dataTransfer.files)
-      }
+      void (async () => {
+        try {
+          const files = await collectFilesFromDataTransfer(e.dataTransfer)
+          const fromFolder = Array.from(e.dataTransfer.items ?? []).some((item) => {
+            const entry = (
+              item as DataTransferItem & { webkitGetAsEntry?: () => { isDirectory?: boolean } | null }
+            ).webkitGetAsEntry?.()
+            return Boolean(entry?.isDirectory)
+          })
+          await handleFiles(files, { fromFolder })
+        } catch (err) {
+          toast.error(err instanceof Error ? err.message : 'Could not read dropped files')
+        }
+      })()
     },
     [handleFiles],
   )
@@ -137,6 +187,16 @@ export function useFileImport() {
     (e: React.ChangeEvent<HTMLInputElement>) => {
       if (e.target.files?.length) {
         void handleFiles(e.target.files)
+      }
+      e.target.value = ''
+    },
+    [handleFiles],
+  )
+
+  const handleFolderInput = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      if (e.target.files?.length) {
+        void handleFiles(e.target.files, { fromFolder: true })
       }
       e.target.value = ''
     },
@@ -153,6 +213,7 @@ export function useFileImport() {
     handleFiles,
     handleDrop,
     handleFileInput,
+    handleFolderInput,
     setActiveFile,
   }
 }

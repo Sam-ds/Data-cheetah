@@ -30,7 +30,19 @@ function isDateOnlyArrowType(typeName: string): boolean {
   const u = typeName.toUpperCase()
   // Arrow Date32/Date64, DuckDB DATE — not TIMESTAMP / DateTime
   if (u.includes('TIMESTAMP') || u.includes('DATETIME') || u.includes('TIME ZONE')) return false
-  return u.includes('DATE') || /^DATE\d*/i.test(typeName)
+  return (
+    u.includes('DATEDAY') ||
+    u.includes('DATE32') ||
+    u.includes('DATE64') ||
+    u.includes('DATEMILLISECOND') ||
+    /^DATE$/i.test(typeName.trim()) ||
+    /\bDATE\b/.test(u)
+  )
+}
+
+function isTimestampArrowType(typeName: string): boolean {
+  const u = typeName.toUpperCase()
+  return u.includes('TIMESTAMP') || u.includes('DATETIME') || u.includes('TIMESTAMPTZ')
 }
 
 function isMidnightUtc(value: Date): boolean {
@@ -42,25 +54,97 @@ function isMidnightUtc(value: Date): boolean {
   )
 }
 
+/** Arrow Date32 = days since epoch; Date64/Timestamp = ms/us/ns depending on type string. */
+function formatTemporalNumber(value: number | bigint, typeName: string): string {
+  const n = typeof value === 'bigint' ? Number(value) : value
+  if (!Number.isFinite(n)) return String(value)
+
+  const u = typeName.toUpperCase()
+
+  // Date32 / DateDay: integer days since Unix epoch
+  if (
+    u.includes('DATEDAY') ||
+    u.includes('DATE32') ||
+    (isDateOnlyArrowType(typeName) && !u.includes('DATE64') && !u.includes('MILLISECOND'))
+  ) {
+    // Guard: if value looks like ms already (> ~year 2100 in days), treat as ms
+    if (Math.abs(n) > 100_000) {
+      return formatYmdUtc(new Date(n))
+    }
+    return formatYmdUtc(new Date(n * 86_400_000))
+  }
+
+  // Date64: milliseconds since epoch
+  if (u.includes('DATE64') || (u.includes('DATE') && u.includes('MILLISECOND'))) {
+    return formatYmdUtc(new Date(n))
+  }
+
+  let ms = n
+  if (u.includes('NANO')) ms = n / 1e6
+  else if (u.includes('MICRO') || u.includes('[US]') || u.includes('US]')) ms = n / 1e3
+  else if ((/\bSECOND\b/.test(u) || u.includes('[S]')) && !u.includes('MILLI') && !u.includes('MICRO')) {
+    ms = n * 1000
+  } else if (!u.includes('MILLI') && Math.abs(n) > 1e14) {
+    // DuckDB often returns TIMESTAMP as microseconds without a clear unit in the type string
+    ms = n / 1e3
+  } else if (!u.includes('MILLI') && Math.abs(n) > 1e11 && Math.abs(n) <= 1e14) {
+    ms = n // already ms
+  }
+
+  const d = new Date(ms)
+  if (!Number.isFinite(d.getTime())) return String(value)
+  // Date-only midnights (common when CSV DATE was inferred as TIMESTAMP)
+  if (isDateOnlyArrowType(typeName) || isMidnightUtc(d)) {
+    return formatYmdUtc(d)
+  }
+  return d.toISOString().replace(/\.\d{3}Z$/, 'Z')
+}
+
 function serializeValue(value: unknown, typeName?: string): unknown {
   if (value == null) return null
-  if (typeof value === 'bigint') return Number(value)
-  if (typeof value === 'number' || typeof value === 'string' || typeof value === 'boolean') return value
+
+  const type = typeName ?? ''
+  const temporal = isDateOnlyArrowType(type) || isTimestampArrowType(type)
+
+  if (typeof value === 'bigint') {
+    if (temporal) return formatTemporalNumber(value, type)
+    const asNum = Number(value)
+    // Huge ints from Arrow timestamps when type string is missing/opaque
+    if (Math.abs(asNum) > 1e11) {
+      return formatTemporalNumber(value, type || 'TIMESTAMP[us]')
+    }
+    return asNum
+  }
+
+  if (typeof value === 'number') {
+    if (temporal) return formatTemporalNumber(value, type)
+    return value
+  }
+
+  if (typeof value === 'string' || typeof value === 'boolean') return value
+
   if (value instanceof Date) {
-    // DATE columns, or date-only midnight values mis-typed as TIMESTAMP by CSV auto-detect
-    if ((typeName && isDateOnlyArrowType(typeName)) || isMidnightUtc(value)) {
+    if (isDateOnlyArrowType(type) || isMidnightUtc(value)) {
       return formatYmdUtc(value)
     }
     return value.toISOString().replace(/\.\d{3}Z$/, 'Z')
   }
+
   if (ArrayBuffer.isView(value)) {
     return Array.from(value as unknown as ArrayLike<number>)
   }
   if (Array.isArray(value)) return value.map((v) => serializeValue(v, typeName))
   if (typeof value === 'object') {
-    const withToJSON = value as { toJSON?: () => unknown }
-    if (typeof withToJSON.toJSON === 'function') {
-      return serializeValue(withToJSON.toJSON(), typeName)
+    // Arrow sometimes wraps scalars
+    const maybeValueOf = value as { valueOf?: () => unknown; toJSON?: () => unknown }
+    if (typeof maybeValueOf.valueOf === 'function') {
+      const raw = maybeValueOf.valueOf()
+      if (raw !== value && (typeof raw === 'number' || typeof raw === 'bigint' || raw instanceof Date)) {
+        return serializeValue(raw, typeName)
+      }
+    }
+    if (typeof maybeValueOf.toJSON === 'function') {
+      return serializeValue(maybeValueOf.toJSON(), typeName)
     }
     const plain: Record<string, unknown> = {}
     for (const [key, nested] of Object.entries(value as Record<string, unknown>)) {
@@ -79,7 +163,27 @@ type ArrowLikeResult = {
 }
 
 function fieldTypeName(field: { type?: unknown }): string {
-  return field.type != null ? String(field.type) : ''
+  const t = field.type
+  if (t == null) return ''
+  if (typeof t === 'string') return t
+  if (typeof t === 'object') {
+    const obj = t as {
+      toString?: () => string
+      typeId?: number
+      unit?: unknown
+      name?: string
+    }
+    const parts: string[] = []
+    if (typeof obj.toString === 'function') {
+      const s = obj.toString()
+      if (s && s !== '[object Object]') parts.push(s)
+    }
+    if (obj.typeId != null) parts.push(`typeId:${obj.typeId}`)
+    if (obj.unit != null) parts.push(`unit:${String(obj.unit)}`)
+    if (obj.name) parts.push(obj.name)
+    if (parts.length) return parts.join(' ')
+  }
+  return String(t)
 }
 
 function serializeRows(result: ArrowLikeResult): Record<string, unknown>[] {
@@ -228,10 +332,90 @@ async function executeSql(
   return { columns, columnTypes, rows, durationMs }
 }
 
+function quoteIdent(name: string): string {
+  return `"${name.replace(/"/g, '""')}"`
+}
+
+async function dedupStats(tableName: string): Promise<{
+  tableName: string
+  totalRows: number
+  distinctRows: number
+  duplicateRows: number
+  columnCount: number
+}> {
+  const connection = await ensureDb()
+  const t = quoteIdent(tableName)
+
+  const schemaResult = await connection.query(`DESCRIBE ${t}`)
+  const columnCount = serializeRows(schemaResult).length
+
+  const result = await connection.query(`
+    SELECT
+      (SELECT COUNT(*) FROM ${t})::BIGINT AS total_rows,
+      (SELECT COUNT(*) FROM (SELECT DISTINCT * FROM ${t}))::BIGINT AS distinct_rows
+  `)
+  const row = serializeRows(result)[0]
+  const totalRows = Number(row?.total_rows ?? 0)
+  const distinctRows = Number(row?.distinct_rows ?? 0)
+  return {
+    tableName,
+    totalRows,
+    distinctRows,
+    duplicateRows: Math.max(0, totalRows - distinctRows),
+    columnCount,
+  }
+}
+
+async function exportSql(
+  sql: string,
+  format: 'csv' | 'json' | 'parquet',
+  preferredName?: string,
+): Promise<{ buffer: ArrayBuffer; fileName: string; mime: string }> {
+  const connection = await ensureDb()
+  if (!db) throw new Error('DuckDB not initialized')
+
+  const ext = format === 'csv' ? 'csv' : format === 'json' ? 'json' : 'parquet'
+  const mime =
+    format === 'csv'
+      ? 'text/csv'
+      : format === 'json'
+        ? 'application/json'
+        : 'application/vnd.apache.parquet'
+  const virtualPath = `/tmp/dc_export_${crypto.randomUUID()}.${ext}`
+  const downloadName = preferredName?.trim() || `export.${ext}`
+
+  try {
+    await db.dropFile(virtualPath)
+  } catch {
+    /* ignore missing */
+  }
+
+  let copySql: string
+  if (format === 'csv') {
+    copySql = `COPY (${sql}) TO '${virtualPath}' (HEADER, DELIMITER ',')`
+  } else if (format === 'json') {
+    copySql = `COPY (${sql}) TO '${virtualPath}' (FORMAT JSON, ARRAY true)`
+  } else {
+    copySql = `COPY (${sql}) TO '${virtualPath}' (FORMAT PARQUET)`
+  }
+
+  await connection.query(copySql)
+  const bytes = await db.copyFileToBuffer(virtualPath)
+  try {
+    await db.dropFile(virtualPath)
+  } catch {
+    /* ignore */
+  }
+
+  const buffer = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer
+  return { buffer, fileName: downloadName, mime }
+}
+
 async function profileTable(tableName: string): Promise<{ columns: ColumnProfile[]; duplicateCount: number }> {
   const connection = await ensureDb()
+  const t = quoteIdent(tableName)
 
-  const schemaResult = await connection.query(`DESCRIBE "${tableName}"`)
+  const schemaResult = await connection.query(`DESCRIBE ${t}`)
   const schemaRows = serializeRows(schemaResult)
 
   const columns: ColumnProfile[] = []
@@ -244,8 +428,8 @@ async function profileTable(tableName: string): Promise<{ columns: ColumnProfile
   let duplicateCount = 0
   try {
     const dupResult = await connection.query(`
-      SELECT COUNT(*) - (SELECT COUNT(*) FROM (SELECT DISTINCT * FROM "${tableName}")) as dup_count
-      FROM "${tableName}"
+      SELECT COUNT(*) - (SELECT COUNT(*) FROM (SELECT DISTINCT * FROM ${t})) as dup_count
+      FROM ${t}
     `)
     const dupRows = serializeRows(dupResult)
     duplicateCount = Number(dupRows[0]?.dup_count ?? 0)
@@ -378,6 +562,22 @@ self.onmessage = async (event: MessageEvent<DuckDBRequest>) => {
       case 'PROFILE_TABLE': {
         const profile = await profileTable(msg.payload.tableName)
         respond({ id: msg.id, type: 'PROFILE_RESULT', payload: profile })
+        break
+      }
+
+      case 'DEDUP_STATS': {
+        const stats = await dedupStats(msg.payload.tableName)
+        respond({ id: msg.id, type: 'DEDUP_STATS_RESULT', payload: stats })
+        break
+      }
+
+      case 'EXPORT_SQL': {
+        const exported = await exportSql(
+          msg.payload.sql,
+          msg.payload.format,
+          msg.payload.fileName,
+        )
+        respond({ id: msg.id, type: 'EXPORT_RESULT', payload: exported })
         break
       }
 

@@ -22,21 +22,25 @@ export function ToolPane({
   className,
 }: ToolPaneProps) {
   return (
-    <div className={cn('flex h-full flex-col gap-3 p-4', className)}>
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h2 className="text-sm font-semibold text-foreground">{title}</h2>
-          {description && <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>}
+    <div className={cn('flex h-full flex-col gap-4 p-4 sm:p-5', className)}>
+      <div className="flex flex-wrap items-start justify-between gap-3 rounded-xl border bg-gradient-to-br from-muted/50 via-background to-background px-4 py-3">
+        <div className="min-w-0">
+          <h2 className="text-sm font-semibold tracking-tight text-foreground">{title}</h2>
+          {description && (
+            <p className="mt-1 max-w-2xl text-xs leading-relaxed text-muted-foreground">
+              {description}
+            </p>
+          )}
         </div>
         {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
       </div>
       {error && (
-        <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+        <div className="rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
           {error}
         </div>
       )}
       {warning && !error && (
-        <div className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-300">
+        <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-300">
           {warning}
         </div>
       )}
@@ -58,7 +62,7 @@ export function ToolTextarea({ label, className, ...props }: ToolTextareaProps) 
       <textarea
         spellCheck={false}
         className={cn(
-          'min-h-0 flex-1 resize-none rounded-md border bg-background px-3 py-2 font-mono text-xs leading-relaxed text-foreground outline-none focus:ring-2 focus:ring-ring',
+          'min-h-0 flex-1 resize-none rounded-lg border bg-background px-3 py-2.5 text-sm leading-6 tracking-normal text-foreground shadow-sm outline-none transition-shadow placeholder:text-muted-foreground/70 focus:ring-2 focus:ring-ring',
           className,
         )}
         {...props}
@@ -72,7 +76,7 @@ export function ToolActionButton({
   ...props
 }: React.ComponentProps<typeof Button>) {
   return (
-    <Button size="sm" {...props}>
+    <Button size="sm" className="shadow-sm" {...props}>
       {children}
     </Button>
   )

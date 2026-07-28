@@ -1,23 +1,36 @@
 import { duckdbClient } from '@/services/duckdbClient'
 import type { QueryResult } from '@/types/query'
-import type { AskAnswer, LlmProvider } from '../llm/types'
-import { buildAnswerPrompt, buildSqlForQuestionPrompt } from '../prompts/askPrompts'
+import type { AskAnswer, AskQueryStep, LlmProvider } from '../llm/types'
+import {
+  buildAnswerPrompt,
+  buildMultiStepAnswerPrompt,
+  buildSqlForQuestionPrompt,
+  buildSqlPlanPrompt,
+} from '../prompts/askPrompts'
 import type { FileContextBlock } from './contextBuilder'
+import { findSharedJoinColumns, formatColumnInventory } from './contextBuilder'
 import {
   applyCatalogDidYouMean,
   applyDateBinderRepair,
   collectDateColumnNames,
   collectSqlIdentifiers,
   collectTableNames,
+  extractPlanStepsFromModelRaw,
   extractSqlFromModel,
   repairDateIntegerComparisons,
   repairDuckdbStringQuotes,
+  repairMysqlBackticks,
   repairUnknownTableNames,
+  repairUnquotedIdentifiers,
   scrubSqlExtractionJunk,
+  splitSelectStatements,
 } from './sqlGuard'
 
 const RESULT_CAP = 20
 const ASK_ROW_LIMIT_FLOOR = 500
+const MAX_PLAN_STEPS = 3
+
+type PlannedStep = { goal: string; sql: string }
 
 function normalizeResultColumns(
   columns: string[],
@@ -52,6 +65,61 @@ function formatCell(value: unknown): string {
     return Number.isInteger(value) ? String(value) : String(Math.round(value * 1000) / 1000)
   }
   return String(value)
+}
+
+function isAggregateColumnName(col: string): boolean {
+  const c = col.trim()
+  return (
+    /^(count|sum|avg|mean|min|max|total|cnt)(_|\(|$)/i.test(c) ||
+    /count_star|count\(\*\)|count\s*\(/i.test(c) ||
+    /^agg[_]/i.test(c)
+  )
+}
+
+function isCountQuestion(question: string): boolean {
+  return /\b(how many|how much|count(?:\s+of)?|number of|total number of|what(?:'s| is) the (?:total )?count)\b/i.test(
+    question,
+  )
+}
+
+/** Pull a readable subject from “how many X …” style questions. */
+function extractCountSubject(question: string): string | null {
+  const cleaned = question.replace(/[?!.]+$/g, '').trim()
+  const patterns = [
+    /\bhow many\s+(.+?)(?:\s+are\s+there|\s+is\s+there|\s+do\s+we|\s+does\s+|\s+in\b|\s+on\b|\s+from\b|\s+with\b|\?|$)/i,
+    /\bnumber of\s+(.+?)(?:\s+are\s+there|\s+in\b|\s+on\b|\s+from\b|\?|$)/i,
+    /\bcount(?:\s+of)?\s+(.+?)(?:\s+in\b|\s+on\b|\s+from\b|\?|$)/i,
+  ]
+  for (const re of patterns) {
+    const m = cleaned.match(re)
+    const subject = m?.[1]?.trim().replace(/\s+/g, ' ')
+    if (subject && subject.length >= 2 && subject.length <= 80) return subject
+  }
+  return null
+}
+
+function naturalCountSentence(question: string, value: string): string {
+  const subject = extractCountSubject(question)
+  const n = Number(value)
+  const isOne = Number.isFinite(n) && n === 1
+  if (subject) {
+    // Keep the user's wording (e.g. "airports") — only flip verb agreement.
+    if (isOne) return `There is ${value} ${subject}.`
+    return `There are ${value} ${subject}.`
+  }
+  if (isOne) return `There is ${value}.`
+  return `There are ${value}.`
+}
+
+function naturalSingleValueAnswer(question: string, col: string, value: string): string {
+  if (isCountQuestion(question) || isAggregateColumnName(col)) {
+    return naturalCountSentence(question, value)
+  }
+  // Avoid dumping raw aggregate aliases for non-count questions too
+  if (isAggregateColumnName(col)) {
+    return `The result is ${value}.`
+  }
+  return `The ${col} is ${value}.`
 }
 
 function asFiniteNumber(value: unknown): number | null {
@@ -118,16 +186,16 @@ function tryComparisonAnswer(
     .slice(0, 3)
 
   if (others.length === 1) {
-    return `${winner} has the ${ascending ? 'lower' : 'higher'} ${metricCol} (${formatCell(best[metricCol])}) vs ${others[0]}.`
+    return `${winner} has the ${ascending ? 'lower' : 'higher'} value (${formatCell(best[metricCol])}) compared with ${others[0]}.`
   }
   if (others.length > 1) {
-    return `${winner} leads with ${metricCol}=${formatCell(best[metricCol])} (ahead of ${others.join(', ')}).`
+    return `${winner} leads with ${formatCell(best[metricCol])} (ahead of ${others.join(', ')}).`
   }
-  return `${winner} (${metricCol}=${formatCell(best[metricCol])}).`
+  return `${winner} has ${formatCell(best[metricCol])}.`
 }
 
 /**
- * Prefer a deterministic one-liner for tiny result sets so the model cannot invent figures.
+ * Prefer a natural one-liner for tiny result sets so the model cannot invent figures.
  * Falls back to null → caller may use the LLM for richer multi-row summaries.
  */
 export function tryDeterministicAnswer(
@@ -138,13 +206,27 @@ export function tryDeterministicAnswer(
   if (isUnusableResult(rows)) return emptyResultAnswer(question)
 
   if (rows.length === 1 && columns.length === 1) {
-    const col = columns[0]
-    return `Result for “${question}”: ${formatCell(rows[0][col])} (${col}).`
+    const col = columns[0]!
+    return naturalSingleValueAnswer(question, col, formatCell(rows[0]![col]))
   }
 
   if (rows.length === 1 && columns.length <= 4) {
-    const parts = columns.map((c) => `${c}=${formatCell(rows[0][c])}`)
-    return `Result for “${question}”: ${parts.join(', ')}.`
+    const row = rows[0]!
+    // Single numeric aggregate among columns → treat as a count/total answer when question fits
+    const numericCols = columns.filter((c) => asFiniteNumber(row[c]) != null)
+    if (
+      numericCols.length === 1 &&
+      (isCountQuestion(question) || isAggregateColumnName(numericCols[0]!))
+    ) {
+      return naturalCountSentence(question, formatCell(row[numericCols[0]!]))
+    }
+    const parts = columns.map((c) => {
+      const label = isAggregateColumnName(c) ? 'value' : c
+      return `${label} ${formatCell(row[c])}`
+    })
+    return parts.length === 1
+      ? `The ${parts[0]}.`
+      : `Here is what the data shows: ${parts.join('; ')}.`
   }
 
   const comparison = tryComparisonAnswer(question, columns, rows)
@@ -152,10 +234,13 @@ export function tryDeterministicAnswer(
 
   if (rows.length <= 8 && columns.length <= 4) {
     const lines = rows.map((row, i) => {
-      const parts = columns.map((c) => `${c}=${formatCell(row[c])}`)
+      const parts = columns.map((c) => {
+        const label = isAggregateColumnName(c) ? 'value' : c
+        return `${label} ${formatCell(row[c])}`
+      })
       return `${i + 1}. ${parts.join(', ')}`
     })
-    return `Results for “${question}” (${rows.length} rows):\n${lines.join('\n')}`
+    return `Here are the ${rows.length} matching rows:\n${lines.join('\n')}`
   }
 
   return null
@@ -167,8 +252,14 @@ function prepareSql(
   tableNames: string[],
   dateColumns: string[],
 ): string {
-  const withTables = repairUnknownTableNames(sql, tableNames)
-  const withDates = repairDateIntegerComparisons(withTables, dateColumns)
+  const noBackticks = repairMysqlBackticks(sql)
+  const withTables = repairUnknownTableNames(noBackticks, tableNames)
+  const withSpacedIds = repairUnquotedIdentifiers(withTables, [
+    ...knownIds,
+    ...tableNames,
+    ...dateColumns,
+  ])
+  const withDates = repairDateIntegerComparisons(withSpacedIds, dateColumns)
   const quoted = repairDuckdbStringQuotes(withDates, [...knownIds, ...tableNames, ...dateColumns])
   return scrubSqlExtractionJunk(quoted)
 }
@@ -185,76 +276,21 @@ async function runSql(
   return { sql: repaired, result }
 }
 
-async function rewriteSqlAfterError(
+async function runSqlWithRepairs(
   provider: LlmProvider,
   contexts: FileContextBlock[],
   question: string,
-  badSql: string,
-  errorMessage: string,
+  initialSql: string,
+  effectiveLimit: number,
+  knownIds: string[],
+  tableNames: string[],
+  dateColumns: string[],
   onStatus?: (text: string) => void,
-): Promise<string> {
-  onStatus?.('Fixing SQL after DuckDB error…')
-  const allowedTables = contexts.map((c) => `"${c.tableName}"`).join(', ')
-  const tables = contexts
-    .map((c) => `"${c.tableName}" (${c.columns.map((col) => `${col.name}:${col.type}`).join(', ')})`)
-    .join('\n')
-  const raw = await provider.complete(
-    [
-      {
-        role: 'system',
-        content: `Fix the DuckDB SQL. Return ONLY JSON: {"sql":"SELECT ..."}.
-Rules:
-- Use ONLY these exact table names: ${allowedTables}
-- String literals use single quotes: country = 'US' (never "US")
-- Identifiers use double quotes only for table/column names
-- One read-only SELECT or WITH ... SELECT
-- Never compare DATE/TIMESTAMP to an integer year — use DATE '1984-01-01' or EXTRACT(year FROM col) = 1984
-- Prefer simple filters: lat = 1.2 AND lon = 3.4 (not row IN tuples)`,
-      },
-      {
-        role: 'user',
-        content: `ALLOWED TABLES: ${allowedTables}\n\nTables:\n${tables}\n\nQuestion: ${question}\n\nBroken SQL:\n${badSql}\n\nDuckDB error:\n${errorMessage}\n\nReturn corrected {"sql":"..."}.`,
-      },
-    ],
-    {
-      temperature: 0,
-      onChunk: (t) => onStatus?.(`Fixing SQL… ${t.length} chars`),
-    },
-  )
-  return extractSqlFromModel(raw)
-}
-
-export async function answerQuestion(
-  provider: LlmProvider,
-  contexts: FileContextBlock[],
-  questionId: string,
-  question: string,
-  rowLimit = 10000,
-  onStatus?: (text: string) => void,
-): Promise<AskAnswer> {
-  const effectiveLimit = Math.max(rowLimit || 0, ASK_ROW_LIMIT_FLOOR)
-  const knownIds = collectSqlIdentifiers(contexts)
-  const tableNames = collectTableNames(contexts)
-  const dateColumns = collectDateColumnNames(contexts)
-
-  const sqlPrompt = buildSqlForQuestionPrompt(contexts, question)
-  onStatus?.('Model is writing SQL…')
-  const sqlRaw = await provider.complete(
-    [
-      { role: 'system', content: sqlPrompt.system },
-      { role: 'user', content: sqlPrompt.user },
-    ],
-    {
-      temperature: 0.1,
-      onChunk: (t) => onStatus?.(`Writing SQL… ${t.length} chars`),
-    },
-  )
-
-  let sql = prepareSql(extractSqlFromModel(sqlRaw), knownIds, tableNames, dateColumns)
+): Promise<{ sql: string; result: QueryResult | null; error: string | null }> {
+  let sql = prepareSql(initialSql, knownIds, tableNames, dateColumns)
   let result: QueryResult | null = null
   let lastError: string | null = null
 
-  onStatus?.('Running SQL in DuckDB…')
   try {
     const ran = await runSql(sql, effectiveLimit, knownIds, tableNames, dateColumns)
     sql = ran.sql
@@ -263,7 +299,6 @@ export async function answerQuestion(
     lastError = err instanceof Error ? err.message : String(err)
   }
 
-  // Fast path: DuckDB "Did you mean …?"
   if (!result && lastError) {
     const hinted = applyCatalogDidYouMean(sql, lastError)
     if (hinted) {
@@ -279,7 +314,6 @@ export async function answerQuestion(
     }
   }
 
-  // Fast path: DATE vs integer year binder errors
   if (!result && lastError) {
     const dateFixed = applyDateBinderRepair(sql, lastError, dateColumns)
     if (dateFixed) {
@@ -295,7 +329,6 @@ export async function answerQuestion(
     }
   }
 
-  // Model rewrite using the binder/catalog error
   if (!result && lastError) {
     try {
       const fixed = await rewriteSqlAfterError(
@@ -315,59 +348,324 @@ export async function answerQuestion(
     }
   }
 
-  if (!result) {
+  return { sql, result, error: result ? null : lastError }
+}
+
+function extractPlanSteps(raw: string): PlannedStep[] {
+  return extractPlanStepsFromModelRaw(raw, MAX_PLAN_STEPS)
+}
+
+/** Expand a single planned step into multiple when the model packed several SELECTs together. */
+function expandPlannedSteps(planned: PlannedStep[]): PlannedStep[] {
+  const out: PlannedStep[] = []
+  for (const step of planned) {
+    const pieces = splitSelectStatements(step.sql)
+    if (pieces.length <= 1) {
+      out.push(step)
+      continue
+    }
+    for (const [i, sql] of pieces.entries()) {
+      out.push({
+        goal: pieces.length > 1 ? `${step.goal} (${i + 1}/${pieces.length})` : step.goal,
+        sql,
+      })
+      if (out.length >= MAX_PLAN_STEPS) return out
+    }
+  }
+  return out.slice(0, MAX_PLAN_STEPS)
+}
+
+function combineStepSql(steps: AskQueryStep[]): string {
+  return steps
+    .map((s, i) => `-- Step ${i + 1}: ${s.goal}\n${s.sql}${s.sql.trim().endsWith(';') ? '' : ';'}`)
+    .join('\n\n')
+}
+
+/** Prefer a multi-row sample for the results grid; else first successful step. */
+function pickDisplayStep(steps: AskQueryStep[]): AskQueryStep | null {
+  const ok = steps.filter((s) => !s.error && s.rowCount > 0)
+  if (ok.length === 0) return steps.find((s) => !s.error) ?? steps[0] ?? null
+  return ok.find((s) => s.rowCount > 1) ?? ok[ok.length - 1]!
+}
+
+function looksMultiPartQuestion(question: string): boolean {
+  const q = question.trim()
+  if (/\bhow many\b/i.test(q) && /\b(name|list|show|give|examples?)\b/i.test(q)) return true
+  if (/\b(and|also|;)\b/i.test(q) && /\b(name|list|show|give|count|how many)\b/i.test(q)) return true
+  const sentences = q.split(/[.!?]+/).map((s) => s.trim()).filter(Boolean)
+  return sentences.length >= 2
+}
+
+export async function answerQuestion(
+  provider: LlmProvider,
+  contexts: FileContextBlock[],
+  questionId: string,
+  question: string,
+  rowLimit = 10000,
+  onStatus?: (text: string) => void,
+): Promise<AskAnswer> {
+  const effectiveLimit = Math.max(rowLimit || 0, ASK_ROW_LIMIT_FLOOR)
+  const knownIds = collectSqlIdentifiers(contexts)
+  const tableNames = collectTableNames(contexts)
+  const dateColumns = collectDateColumnNames(contexts)
+
+  onStatus?.('Planning SQL steps…')
+  const planPrompt = buildSqlPlanPrompt(contexts, question)
+  let planned: PlannedStep[] = []
+  try {
+    const planRaw = await provider.complete(
+      [
+        { role: 'system', content: planPrompt.system },
+        { role: 'user', content: planPrompt.user },
+      ],
+      {
+        temperature: 0.1,
+        onChunk: (t) => onStatus?.(`Planning… ${t.length} chars`),
+      },
+    )
+    planned = expandPlannedSteps(extractPlanSteps(planRaw))
+  } catch {
+    planned = []
+  }
+
+  // Multi-part question but only one step planned → ask again for 2+ steps
+  if (planned.length === 1 && looksMultiPartQuestion(question)) {
+    onStatus?.('Question has multiple parts — planning extra SQL steps…')
+    try {
+      const retryRaw = await provider.complete(
+        [
+          {
+            role: 'system',
+            content: `${planPrompt.system}
+
+IMPORTANT: The user question has MULTIPLE parts. You MUST return 2 or 3 steps in {"steps":[...]}.
+Do not combine everything into one SELECT. Example: count in step 1, list/examples in step 2.`,
+          },
+          {
+            role: 'user',
+            content: `${planPrompt.user}
+
+Previous plan had only 1 step — rewrite with 2–3 separate steps.`,
+          },
+        ],
+        {
+          temperature: 0.15,
+          onChunk: (t) => onStatus?.(`Re-planning… ${t.length} chars`),
+        },
+      )
+      const retried = expandPlannedSteps(extractPlanSteps(retryRaw))
+      if (retried.length > planned.length) planned = retried
+    } catch {
+      /* keep original single step */
+    }
+  }
+
+  // Fallback to single-SQL prompt if planning failed
+  if (planned.length === 0) {
+    onStatus?.('Writing SQL…')
+    const sqlPrompt = buildSqlForQuestionPrompt(contexts, question)
+    const sqlRaw = await provider.complete(
+      [
+        { role: 'system', content: sqlPrompt.system },
+        { role: 'user', content: sqlPrompt.user },
+      ],
+      {
+        temperature: 0.1,
+        onChunk: (t) => onStatus?.(`Writing SQL… ${t.length} chars`),
+      },
+    )
+    planned = expandPlannedSteps([
+      { goal: 'Answer question', sql: extractSqlFromModel(sqlRaw) },
+    ])
+  }
+
+  const executed: AskQueryStep[] = []
+  for (const [index, step] of planned.entries()) {
+    onStatus?.(`Running step ${index + 1} of ${planned.length}: ${step.goal}`)
+    const ran = await runSqlWithRepairs(
+      provider,
+      contexts,
+      `${question} (${step.goal})`,
+      step.sql,
+      effectiveLimit,
+      knownIds,
+      tableNames,
+      dateColumns,
+      onStatus,
+    )
+
+    if (ran.result && isUnusableResult(ran.result.rows) && planned.length === 1) {
+      onStatus?.('No usable rows — asking model for a simpler query…')
+      const allowedTables = contexts.map((c) => `"${c.tableName}"`).join(', ')
+      try {
+        const retryRaw = await provider.complete(
+          [
+            {
+              role: 'system',
+              content: `The previous DuckDB SQL returned no usable rows. Write a simpler read-only SELECT that answers the question using ONLY these exact tables: ${allowedTables}.
+Return ONLY JSON: {"sql":"SELECT ..."}.
+String literals: single quotes ('US'). Dates: DATE 'YYYY-MM-DD' or EXTRACT(year FROM col). Prefer COUNT(*) / GROUP BY. LIMIT 100.`,
+            },
+            {
+              role: 'user',
+              content: `ALLOWED TABLES: ${allowedTables}\n\nTables:\n${contexts
+                .map((c) => `"${c.tableName}" cols: ${c.columns.map((col) => `${col.name}:${col.type}`).join(', ')}`)
+                .join('\n')}\n\nQuestion: ${question}\n\nPrevious SQL (empty/null):\n${ran.sql}`,
+            },
+          ],
+          {
+            temperature: 0.1,
+            onChunk: (t) => onStatus?.(`Retrying SQL… ${t.length} chars`),
+          },
+        )
+        const retry = await runSqlWithRepairs(
+          provider,
+          contexts,
+          question,
+          extractSqlFromModel(retryRaw),
+          effectiveLimit,
+          knownIds,
+          tableNames,
+          dateColumns,
+          onStatus,
+        )
+        if (retry.result && !isUnusableResult(retry.result.rows)) {
+          const columns = normalizeResultColumns(retry.result.columns, retry.result.rows)
+          executed.push({
+            goal: step.goal,
+            sql: retry.sql,
+            columns,
+            previewRows: retry.result.rows.slice(0, RESULT_CAP),
+            rowCount: retry.result.rows.length,
+          })
+          continue
+        }
+      } catch {
+        /* keep original */
+      }
+    }
+
+    if (!ran.result) {
+      executed.push({
+        goal: step.goal,
+        sql: ran.sql,
+        columns: [],
+        previewRows: [],
+        rowCount: 0,
+        error: ran.error ?? 'Query failed',
+      })
+      continue
+    }
+
+    const columns = normalizeResultColumns(ran.result.columns, ran.result.rows)
+    executed.push({
+      goal: step.goal,
+      sql: ran.sql,
+      columns,
+      previewRows: ran.result.rows.slice(0, RESULT_CAP),
+      rowCount: ran.result.rows.length,
+      error: isUnusableResult(ran.result.rows) ? 'No usable rows' : undefined,
+    })
+  }
+
+  const combinedSql = combineStepSql(executed)
+  const display = pickDisplayStep(executed)
+  const anyOk = executed.some((s) => !s.error && s.rowCount > 0)
+
+  if (!anyOk) {
     return {
       questionId,
-      sql,
+      sql: combinedSql,
       answer: '',
       rowCount: 0,
       previewRows: [],
       columns: [],
+      steps: executed,
       error:
-        lastError ??
+        executed.find((s) => s.error)?.error ??
         'DuckDB could not run the generated SQL. Try another question or inspect the SQL.',
     }
   }
 
-  // One retry with a simpler prompt if the first query returned nothing usable
-  if (isUnusableResult(result.rows)) {
-    onStatus?.('No usable rows — asking model for a simpler query…')
-    const allowedTables = contexts.map((c) => `"${c.tableName}"`).join(', ')
-    const retryRaw = await provider.complete(
+  // Multi-step (or compound) → always synthesize with LLM from all evidence
+  if (executed.length > 1) {
+    onStatus?.('Writing final answer from all steps…')
+    const prompt = buildMultiStepAnswerPrompt(
+      question,
+      executed.map((s) => ({
+        goal: s.goal,
+        sql: s.sql,
+        columns: s.columns,
+        rows: s.previewRows,
+        rowCount: s.rowCount,
+        error: s.error,
+      })),
+    )
+    const answer = await provider.complete(
       [
-        {
-          role: 'system',
-          content: `The previous DuckDB SQL returned no usable rows. Write a simpler read-only SELECT that answers the question using ONLY these exact tables: ${allowedTables}.
-Return ONLY JSON: {"sql":"SELECT ..."}.
-String literals: single quotes ('US'). Dates: DATE 'YYYY-MM-DD' or EXTRACT(year FROM col). Prefer COUNT(*) / GROUP BY. LIMIT 100.`,
-        },
-        {
-          role: 'user',
-          content: `ALLOWED TABLES: ${allowedTables}\n\nTables:\n${contexts
-            .map((c) => `"${c.tableName}" cols: ${c.columns.map((col) => `${col.name}:${col.type}`).join(', ')}`)
-            .join('\n')}\n\nQuestion: ${question}\n\nPrevious SQL (empty/null):\n${sql}`,
-        },
+        { role: 'system', content: prompt.system },
+        { role: 'user', content: prompt.user },
       ],
       {
         temperature: 0.1,
-        onChunk: (t) => onStatus?.(`Retrying SQL… ${t.length} chars`),
+        onChunk: (t) => onStatus?.(`Writing answer… ${t.length} chars`),
       },
     )
-    try {
-      const retrySql = prepareSql(extractSqlFromModel(retryRaw), knownIds, tableNames, dateColumns)
-      if (retrySql !== sql) {
-        const ran = await runSql(retrySql, effectiveLimit, knownIds, tableNames, dateColumns)
-        if (!isUnusableResult(ran.result.rows)) {
-          sql = ran.sql
-          result = ran.result
-        }
-      }
-    } catch {
-      /* keep original empty result */
+    return {
+      questionId,
+      sql: combinedSql,
+      answer: answer.trim(),
+      rowCount: display?.rowCount ?? 0,
+      previewRows: display?.previewRows ?? [],
+      columns: display?.columns ?? [],
+      steps: executed,
     }
   }
 
-  return finishAnswer(provider, questionId, question, sql, result, onStatus)
+  // Single step → for multi-part questions still synthesize with LLM
+  const only = executed[0]!
+  if (looksMultiPartQuestion(question)) {
+    onStatus?.('Writing final answer…')
+    const prompt = buildMultiStepAnswerPrompt(question, [
+      {
+        goal: only.goal,
+        sql: only.sql,
+        columns: only.columns,
+        rows: only.previewRows,
+        rowCount: only.rowCount,
+        error: only.error,
+      },
+    ])
+    const answer = await provider.complete(
+      [
+        { role: 'system', content: prompt.system },
+        { role: 'user', content: prompt.user },
+      ],
+      {
+        temperature: 0.1,
+        onChunk: (t) => onStatus?.(`Writing answer… ${t.length} chars`),
+      },
+    )
+    return {
+      questionId,
+      sql: combinedSql,
+      answer: answer.trim(),
+      rowCount: only.rowCount,
+      previewRows: only.previewRows,
+      columns: only.columns,
+      steps: executed,
+    }
+  }
+
+  return finishAnswer(
+    provider,
+    questionId,
+    question,
+    only.sql,
+    { columns: only.columns, rows: only.previewRows },
+    onStatus,
+    executed,
+  )
 }
 
 async function finishAnswer(
@@ -377,6 +675,7 @@ async function finishAnswer(
   sql: string,
   result: { columns: string[]; rows: Record<string, unknown>[] },
   onStatus?: (text: string) => void,
+  steps?: AskQueryStep[],
 ): Promise<AskAnswer> {
   const columns = normalizeResultColumns(result.columns, result.rows)
   const previewRows = result.rows.slice(0, RESULT_CAP)
@@ -391,6 +690,7 @@ async function finishAnswer(
       rowCount: result.rows.length,
       previewRows,
       columns,
+      steps,
       emptyResult: true,
     }
   }
@@ -405,6 +705,7 @@ async function finishAnswer(
       rowCount: result.rows.length,
       previewRows,
       columns,
+      steps,
     }
   }
 
@@ -428,5 +729,73 @@ async function finishAnswer(
     rowCount: result.rows.length,
     previewRows,
     columns,
+    steps,
   }
+}
+
+// Keep rewriteSqlAfterError below — remove old answerQuestion/runSql duplicates by deleting the old block.
+async function rewriteSqlAfterError(
+  provider: LlmProvider,
+  contexts: FileContextBlock[],
+  question: string,
+  badSql: string,
+  errorMessage: string,
+  onStatus?: (text: string) => void,
+): Promise<string> {
+  onStatus?.('Fixing SQL after DuckDB error…')
+  const allowedTables = contexts.map((c) => `"${c.tableName}"`).join(', ')
+  const tables = contexts
+    .map((c) => `"${c.tableName}" (${c.columns.map((col) => `${col.name}:${col.type}`).join(', ')})`)
+    .join('\n')
+  const inventory = formatColumnInventory(contexts)
+  const shared = findSharedJoinColumns(contexts)
+  const joinHint =
+    shared.length > 0
+      ? `Shared join columns only: ${shared.join(', ')}`
+      : 'No shared columns — remove JOINs; query one table or UNION ALL aggregates. Never invent id keys.'
+
+  const raw = await provider.complete(
+    [
+      {
+        role: 'system',
+        content: `Fix the DuckDB SQL. Return ONLY JSON: {"sql":"SELECT ..."}.
+Rules:
+- Use ONLY these exact table names: ${allowedTables}
+- Use ONLY columns from COLUMN INVENTORY — never invent columns (especially not id unless listed)
+- ${joinHint}
+- If the error is a missing column on a JOIN, drop the JOIN or switch to a column that exists on both tables
+- String literals use single quotes: "Country" = 'US' (never "US")
+- Identifiers use double quotes for table/column names that need them (spaces / mixed case) — never MySQL/BigQuery backticks
+- Columns with spaces must be quoted: "First Name", "Subscription Date"
+- One read-only SELECT or WITH ... SELECT
+- Never compare DATE/TIMESTAMP to an integer year — use DATE '1984-01-01' or EXTRACT(year FROM col) = 1984
+- Prefer simple filters: lat = 1.2 AND lon = 3.4 (not row IN tuples)`,
+      },
+      {
+        role: 'user',
+        content: `ALLOWED TABLES: ${allowedTables}
+
+COLUMN INVENTORY:
+${inventory}
+
+Tables:
+${tables}
+
+Question: ${question}
+
+Broken SQL:
+${badSql}
+
+DuckDB error:
+${errorMessage}
+
+Return corrected {"sql":"..."}. Fix missing/invented columns. Do not invent join keys.`,
+      },
+    ],
+    {
+      temperature: 0,
+      onChunk: (t) => onStatus?.(`Fixing SQL… ${t.length} chars`),
+    },
+  )
+  return extractSqlFromModel(raw)
 }

@@ -3,11 +3,9 @@ import { createPortal } from 'react-dom'
 import { Loader2, Maximize2, Minimize2, Shield, Sparkles, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useAsk } from '../hooks/useAsk'
-import { ModelPicker } from './ModelPicker'
-import { FilePicker } from './FilePicker'
-import { QuestionList } from './QuestionList'
-import { AnswerCard } from './AnswerCard'
-import { CustomQuestionBox } from './CustomQuestionBox'
+import { ModelStatus } from './ModelStatus'
+import { InsightsReportView } from './InsightsReport'
+import { TableScopePicker } from './TableScopePicker'
 import { useWorkspaceStore } from '@/features/workspace/store/workspaceStore'
 
 export function AskPanel() {
@@ -17,17 +15,9 @@ export function AskPanel() {
   const modelGateOk = ask.isLocal ? ask.webGpu.ok : ask.vaultUnlocked
   const busy =
     ask.phase === 'loadingModel' ||
-    ask.phase === 'generatingQuestions' ||
+    ask.phase === 'generatingInsights' ||
     ask.phase === 'answering'
-  const activeAnswer = ask.activeQuestionId ? ask.answers[ask.activeQuestionId] ?? null : null
-  const generating = ask.phase === 'generatingQuestions'
-  const answering = ask.phase === 'answering'
-
-  useEffect(() => {
-    if (ask.selectedFileIds.length === 0 && ask.files.length > 0) {
-      ask.setSelectedFileIds(ask.files.map((f) => f.id))
-    }
-  }, [ask.files, ask.selectedFileIds.length, ask.setSelectedFileIds])
+  const generating = ask.phase === 'generatingInsights'
 
   useEffect(() => {
     if (!fullscreen) return
@@ -38,7 +28,7 @@ export function AskPanel() {
     return () => window.removeEventListener('keydown', onKey)
   }, [fullscreen])
 
-  const statusBanner = busy && (
+  const statusBanner = busy && ask.phase !== 'answering' && (
     <div
       className="border-b border-[#f2a01f]/40 bg-[rgba(242,160,31,0.14)] px-3 py-2.5 backdrop-blur-sm"
       role="status"
@@ -49,11 +39,7 @@ export function AskPanel() {
         <div className="min-w-0 flex-1 space-y-1.5">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
             <p className="text-xs font-semibold text-foreground">
-              {ask.phase === 'loadingModel'
-                ? 'Loading model'
-                : generating
-                  ? 'Generating sample insights'
-                  : 'Answering'}
+              {ask.phase === 'loadingModel' ? 'Loading model' : 'Generating insights'}
             </p>
             {ask.elapsedLabel && (
               <span className="rounded-full bg-background/80 px-2 py-0.5 text-[10px] font-medium text-[#b45309] dark:text-[#f2a01f]">
@@ -64,21 +50,19 @@ export function AskPanel() {
           <p className="text-[11px] leading-snug text-muted-foreground">
             {ask.loadProgressText ||
               (generating
-                ? 'Local model is thinking — this can take 30–90+ seconds on CPU/GPU.'
-                : answering
-                  ? 'Writing SQL, running DuckDB, then summarizing…'
-                  : 'Working…')}
+                ? 'Planning probes, running DuckDB queries, then writing the summary…'
+                : 'Working…')}
           </p>
           <div className="h-1.5 overflow-hidden rounded-full bg-muted">
             <div
               className={`h-full bg-[#f2a01f] ${
-                generating || answering ? 'animate-pulse' : 'transition-all duration-300'
+                generating ? 'animate-pulse' : 'transition-all duration-300'
               }`}
               style={{
                 width:
                   ask.phase === 'loadingModel' && ask.loadProgress > 0
                     ? `${Math.min(100, Math.round(ask.loadProgress * 100))}%`
-                    : generating || answering
+                    : generating
                       ? '70%'
                       : '35%',
               }}
@@ -95,8 +79,8 @@ export function AskPanel() {
         <Shield className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#f2a01f]" />
         <span>
           {ask.isLocal
-            ? 'Local WebLLM on WebGPU. Schema and sample rows stay on this device.'
-            : 'Remote model — questions and schema samples are sent to the selected API. Keys stay encrypted in your vault until unlock.'}
+            ? 'Pick tables below for insights and the Ask bar. Schema samples stay on this device.'
+            : 'Pick tables below for insights and the Ask bar. Schema samples go to the remote API — change model in Settings.'}
         </span>
       </div>
 
@@ -112,43 +96,41 @@ export function AskPanel() {
         </p>
       )}
 
-      <ModelPicker
-        askProvider={ask.askProvider}
-        selectedModelId={ask.selectedModelId}
-        askRemoteModelId={ask.askRemoteModelId}
+      <ModelStatus
+        providerLabel={ask.providerLabel}
+        modelLabel={ask.activeModelLabel}
+        isLocal={ask.isLocal}
         modelReady={ask.modelReady}
         loading={ask.phase === 'loadingModel'}
         progressText={ask.loadProgressText}
         progress={ask.loadProgress}
         vaultUnlocked={ask.vaultUnlocked}
         disabled={(ask.isLocal && !ask.webGpu.ok) || busy}
-        onSelectLocal={ask.setSelectedModelId}
-        onSelectRemote={ask.setAskRemoteModelId}
         onLoad={ask.loadModel}
+        onClear={() => void ask.unload()}
         onOpenSettings={() => setAppMode('settings')}
       />
 
-      <FilePicker
+      <TableScopePicker
         files={ask.files}
         selectedFileIds={ask.selectedFileIds}
         onToggle={ask.toggleFileId}
-        onAttachSchemaDocs={ask.attachSchemaDocs}
-        onClearAllSchemaDocs={ask.clearAllSchemaDocs}
+        onSelectAll={ask.selectAllTables}
+        onSelectNone={ask.selectNoTables}
         disabled={busy}
-      />
-
-      <CustomQuestionBox
-        disabled={!modelGateOk || !ask.modelReady || ask.selectedFileIds.length === 0}
-        busy={busy}
-        onAsk={ask.runCustomQuestion}
       />
 
       <Button
         size="sm"
-        variant="outline"
-        className="w-full"
-        disabled={busy || !ask.modelReady || ask.selectedFileIds.length === 0}
-        onClick={ask.runGenerateQuestions}
+        className="w-full gap-1.5"
+        disabled={
+          busy ||
+          !ask.modelReady ||
+          !modelGateOk ||
+          ask.selectedFileIds.length === 0 ||
+          ask.files.length === 0
+        }
+        onClick={ask.runGenerateInsights}
       >
         {generating ? (
           <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -156,21 +138,19 @@ export function AskPanel() {
           <Sparkles className="h-3.5 w-3.5" />
         )}
         {generating
-          ? `Sample insights… ${ask.elapsedLabel || '0s'}`
-          : 'Sample insights'}
+          ? `Generating insights… ${ask.elapsedLabel || '0s'}`
+          : 'Generate insights'}
       </Button>
 
-      {(generating || answering) && (
+      {generating && (
         <div className="rounded-xl border border-[#f2a01f]/40 bg-[rgba(242,160,31,0.08)] p-3">
           <div className="flex items-center gap-2 text-xs font-semibold text-foreground">
             <Loader2 className="h-4 w-4 animate-spin text-[#f2a01f]" />
-            {generating ? 'Generating sample insights' : 'Running insight'}
+            Building insights
             {ask.elapsedLabel ? ` · ${ask.elapsedLabel}` : ''}
           </div>
           <p className="mt-1.5 text-[11px] text-muted-foreground">
-            {generating
-              ? 'Up to 5 sample insights. Live text below updates as tokens stream.'
-              : 'Steps: write SQL → run in DuckDB → summarize results.'}
+            Steps: choose useful probes → run SQL in DuckDB → summarise findings into one briefing.
           </p>
           {ask.streamPreview && (
             <pre className="mt-2 max-h-28 overflow-auto rounded-md bg-background/80 p-2 text-[10px] leading-snug text-muted-foreground">
@@ -183,27 +163,12 @@ export function AskPanel() {
     </div>
   )
 
-  const insightsBlock = (
+  const reportBlock = (
     <div className="space-y-2">
       <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-        Sample insights
+        Results
       </p>
-      <QuestionList
-        questions={ask.questions}
-        activeQuestionId={ask.activeQuestionId}
-        answering={answering}
-        generating={generating}
-        onSelect={ask.runAnswer}
-      />
-    </div>
-  )
-
-  const answerBlock = (
-    <div className="space-y-2">
-      <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-        Answer
-      </p>
-      <AnswerCard answer={activeAnswer} />
+      <InsightsReportView report={ask.insightReport} />
     </div>
   )
 
@@ -217,7 +182,7 @@ export function AskPanel() {
             size="sm"
             className="h-7 gap-1.5 px-2 text-[11px] text-muted-foreground"
             onClick={() => setFullscreen(true)}
-            title="Open Ask in full screen"
+            title="Open Insights in full screen"
           >
             <Maximize2 className="h-3.5 w-3.5" />
             Full screen
@@ -227,18 +192,14 @@ export function AskPanel() {
       {statusBanner}
       <div className={`min-h-0 flex-1 overflow-y-auto p-3 ${busy && !fullscreen ? 'pt-2' : ''}`}>
         {fullscreen ? (
-          <div className="mx-auto grid max-w-6xl gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
-            <div className="space-y-4">
-              {setupBlock}
-              {insightsBlock}
-            </div>
-            <div className="min-w-0 lg:sticky lg:top-0 lg:self-start">{answerBlock}</div>
+          <div className="mx-auto grid max-w-6xl gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
+            <div className="space-y-4">{setupBlock}</div>
+            <div className="min-w-0 lg:sticky lg:top-0 lg:self-start">{reportBlock}</div>
           </div>
         ) : (
           <div className="space-y-4">
             {setupBlock}
-            {insightsBlock}
-            {answerBlock}
+            {reportBlock}
           </div>
         )}
       </div>
@@ -252,8 +213,10 @@ export function AskPanel() {
         <header className="flex h-12 shrink-0 items-center gap-2 border-b px-3">
           <Sparkles className="h-4 w-4 text-[#f2a01f]" />
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-semibold">Ask</p>
-            <p className="text-[11px] text-muted-foreground">Sample insights · Esc to exit</p>
+            <p className="text-sm font-semibold">Generate insights</p>
+            <p className="text-[11px] text-muted-foreground">
+              Summary · evidence queries · Esc to exit
+            </p>
           </div>
           <Button
             type="button"
@@ -285,7 +248,7 @@ export function AskPanel() {
     <>
       {fullscreen ? (
         <div className="flex h-full items-center justify-center p-4 text-center text-xs text-muted-foreground">
-          Ask is open in full screen.
+          Insights is open in full screen.
           <Button
             type="button"
             variant="link"
