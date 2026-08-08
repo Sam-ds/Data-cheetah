@@ -42,6 +42,10 @@ price: number, from 0.5, to 99.99
 order_date: date, from 2020-01-01, to 2026-12-31
 customer_email: string, unique, not null`
 
+const DEFAULT_CONTEXT =
+  'E-commerce orders for a small bookstore. Keep emails realistic and avoid example.com as email.'
+
+
 const IN_MEMORY_ROW_LIMIT = 50_000
 const MAX_ROW_LIMIT = 50_000_000
 const LARGE_PREVIEW_ROWS = 50
@@ -74,9 +78,7 @@ export function SyntheticDataTool() {
 
   const [sample, setSample] = useState(SAMPLE_PLACEHOLDER)
   const [columnRulesText, setColumnRulesText] = useState(RULES_PLACEHOLDER)
-  const [context, setContext] = useState(
-    'E-commerce orders for a small bookstore. Keep emails realistic.',
-  )
+  const [context, setContext] = useState(DEFAULT_CONTEXT)
   const [targetRows, setTargetRows] = useState(100)
   const [generatedTargetRows, setGeneratedTargetRows] = useState<number | null>(null)
   const [seedCount, setSeedCount] = useState(10)
@@ -108,6 +110,10 @@ export function SyntheticDataTool() {
         setGpuProbe('failed')
         setGpuProbeReason(result.reason)
         setUseLlm(false)
+        toast.warning(
+          `Local model unavailable — LLM seed turned off. ${result.reason}`,
+          { duration: 10_000 },
+        )
       }
     })
     return () => {
@@ -157,6 +163,7 @@ export function SyntheticDataTool() {
       }
 
       let nextPlan: SchemaPlan
+      let llmFallbackReason: string | null = null
       if (useLlm) {
         setStatus('Seeding first rows with LLM…')
         try {
@@ -196,9 +203,12 @@ export function SyntheticDataTool() {
             resetWebGpuProbeCache()
           }
           setLlmProgress(null)
-          const friendly = friendlyLlmSeedError(err, askProvider)
-          toast.message(`LLM seed skipped. ${friendly}`)
-          setStatus('Using sample/rules + faker (no LLM).')
+          llmFallbackReason = friendlyLlmSeedError(err, askProvider)
+          toast.warning(`LLM seed failed — falling back to sample/rules + faker. ${llmFallbackReason}`, {
+            duration: 10_000,
+          })
+          setError(`LLM seed failed: ${llmFallbackReason}`)
+          setStatus('LLM unavailable — using sample/rules + faker.')
           nextPlan = buildFallbackPlan()
         }
       } else {
@@ -219,15 +229,21 @@ export function SyntheticDataTool() {
       setGeneratedTargetRows(target)
       setStatus(
         streamed
-          ? `Preview ready. Click Stream CSV to write ${target.toLocaleString()} rows directly to disk.`
-          : `Done: ${generated.length} rows (${nextPlan.source === 'llm' ? 'LLM seed' : 'sample/rules'} + faker).`,
+          ? llmFallbackReason
+            ? `Preview ready (LLM seed failed). Stream CSV for ${target.toLocaleString()} rows.`
+            : `Preview ready. Click Stream CSV to write ${target.toLocaleString()} rows directly to disk.`
+          : llmFallbackReason
+            ? `Done: ${generated.length} rows via sample/rules + faker (LLM seed failed).`
+            : `Done: ${generated.length} rows (${nextPlan.source === 'llm' ? 'LLM seed' : 'sample/rules'} + faker).`,
       )
-      playSuccess()
-      toast.success(
-        streamed
-          ? `Ready to stream ${target.toLocaleString()} rows`
-          : `Generated ${generated.length.toLocaleString()} synthetic rows`,
-      )
+      if (!llmFallbackReason) {
+        playSuccess()
+        toast.success(
+          streamed
+            ? `Ready to stream ${target.toLocaleString()} rows`
+            : `Generated ${generated.length.toLocaleString()} synthetic rows`,
+        )
+      }
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Generation failed'
       setError(message)

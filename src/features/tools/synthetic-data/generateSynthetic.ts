@@ -45,11 +45,24 @@ function valueForColumn(col: SchemaColumn, attempt = 0): unknown {
     case 'person.lastName':
       return attempt > 0 ? `${faker.person.lastName()}${attempt}` : faker.person.lastName()
     case 'internet.email': {
-      const email = faker.internet.email()
+      const providers = [
+        'gmail.com',
+        'outlook.com',
+        'yahoo.com',
+        'proton.me',
+        'icloud.com',
+        'mailhaven.net',
+        'northleaf.io',
+      ] as const
+      const local = faker.internet
+        .username()
+        .toLowerCase()
+        .replace(/[^a-z0-9._-]/g, '')
+      const provider = faker.helpers.arrayElement(providers)
+      const email = `${local || 'user'}@${provider}`
       if (attempt === 0) return email
       const at = email.indexOf('@')
-      if (at > 0) return `${email.slice(0, at)}+${attempt}${email.slice(at)}`
-      return `${email}.${attempt}`
+      return `${email.slice(0, at)}+${attempt}${email.slice(at)}`
     }
     case 'internet.userName':
       return attempt > 0 ? `${faker.internet.username()}${attempt}` : faker.internet.username()

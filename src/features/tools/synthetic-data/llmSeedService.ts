@@ -141,6 +141,7 @@ Rules:
 - For notNull columns, never use null or empty strings.
 - Honor type and min/max ranges when provided (for dates use YYYY-MM-DD strings in seed rows; set min/max as numeric year bounds or omit and keep values inside the stated range).
 - Prefer realistic values consistent with the sample and context.
+- Never use example.com, example.org, or example.net in emails or URLs — use realistic provider/personal domains.
 - Do not invent SQL. Do not wrap JSON in markdown.`
 
   const messages: ChatMessage[] = [
