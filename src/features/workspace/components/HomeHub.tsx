@@ -191,19 +191,32 @@ export function HomeHub() {
       showArt={false}
       contentClassName="mx-auto flex w-full max-w-5xl flex-1 flex-col px-0 pb-12 sm:pb-16"
     >
-      <header className="home-hero-header w-full px-6 pt-4 sm:px-8">
-        <div className="home-hero-frame">
-          <img
-            src={hero}
-            alt="DataCheetah"
-            className="home-hero"
-          />
+      <header className="home-hero-header w-full pt-4">
+        <div className="home-hero-track">
+          <div className="home-hero-frame">
+            <span className="home-hero-blast" aria-hidden>
+              <span className="home-hero-spark home-hero-spark--a" />
+              <span className="home-hero-spark home-hero-spark--b" />
+              <span className="home-hero-spark home-hero-spark--c" />
+              <span className="home-hero-spark home-hero-spark--d" />
+              <span className="home-hero-spark home-hero-spark--e" />
+              <span className="home-hero-spark home-hero-spark--f" />
+              <span className="home-hero-spark home-hero-spark--g" />
+              <span className="home-hero-spark home-hero-spark--h" />
+              <span className="home-hero-spark home-hero-spark--i" />
+            </span>
+            <img
+              src={hero}
+              alt="DataCheetah"
+              className="home-hero"
+            />
+          </div>
         </div>
-        <p className="home-brand-name" aria-label="datacheetah">
+        <p className="home-brand-name px-6 sm:px-8" aria-label="datacheetah">
           <span className="home-brand-data">data</span>
           <span className="home-brand-cheetah">cheetah</span>
         </p>
-        <p className="home-tagline mx-auto mt-4 text-center">
+        <p className="home-tagline mx-auto mt-4 px-6 text-center sm:px-8">
           <span className="home-tagline-text">A suite of data tools</span>
         </p>
       </header>

@@ -291,23 +291,176 @@ body {
   text-align: center;
 }
 
+/* Full-bleed runway so the hero can race in from off-screen left */
+.home-hero-track {
+  position: relative;
+  width: 100%;
+  max-width: none;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  padding-inline: 1.5rem;
+}
+
+@media (min-width: 640px) {
+  .home-hero-track {
+    padding-inline: 2rem;
+  }
+}
+
 .home-hero-frame {
   position: relative;
   width: min(640px, 90vw);
+  flex-shrink: 0;
   overflow: visible;
   isolation: isolate;
   border-radius: 0;
   background: transparent;
   box-shadow: none;
   opacity: 0;
-  animation: home-hero-in 1.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+  will-change: transform, opacity;
+  animation: home-hero-slide 1.85s cubic-bezier(0.22, 0.82, 0.18, 1) both;
 }
 
 .home-hero-frame::before {
   display: none;
 }
 
+/* Asteroid-style sparks: uneven lengths, angles, and fade timing */
+.home-hero-blast {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.home-hero-spark {
+  position: absolute;
+  right: 46%;
+  top: 50%;
+  height: 3px;
+  border-radius: 999px;
+  transform-origin: right center;
+  pointer-events: none;
+  opacity: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(242, 160, 31, 0.15) 35%,
+    rgba(255, 214, 120, 0.85) 72%,
+    rgba(255, 255, 255, 1) 100%
+  );
+  box-shadow:
+    0 0 5px rgba(255, 214, 120, 0.6),
+    0 0 14px rgba(242, 160, 31, 0.4);
+  mix-blend-mode: screen;
+  animation: home-hero-spark 1.85s cubic-bezier(0.22, 0.82, 0.18, 1) both;
+}
+
+.home-hero-spark::after {
+  content: '';
+  position: absolute;
+  right: -1px;
+  top: 50%;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  transform: translate(50%, -50%);
+  background: #fff;
+  box-shadow: 0 0 8px 3px rgba(255, 214, 120, 0.85);
+}
+
+.home-hero-spark--a {
+  width: 15rem;
+  top: 38%;
+  rotate: -11deg;
+  animation-delay: 0.02s;
+}
+
+.home-hero-spark--b {
+  width: 7.5rem;
+  top: 46%;
+  right: 50%;
+  height: 2.5px;
+  rotate: 4deg;
+  animation-delay: 0.08s;
+}
+
+.home-hero-spark--c {
+  width: 22rem;
+  top: 52%;
+  right: 44%;
+  height: 3.5px;
+  rotate: -3deg;
+  animation-delay: 0s;
+}
+
+.home-hero-spark--d {
+  width: 11rem;
+  top: 61%;
+  right: 48%;
+  rotate: 9deg;
+  animation-delay: 0.12s;
+}
+
+.home-hero-spark--e {
+  width: 5.5rem;
+  top: 33%;
+  right: 54%;
+  height: 2.5px;
+  rotate: -18deg;
+  animation-delay: 0.16s;
+}
+
+.home-hero-spark--f {
+  width: 18rem;
+  top: 57%;
+  right: 41%;
+  height: 3px;
+  rotate: 6deg;
+  animation-delay: 0.05s;
+}
+
+.home-hero-spark--g {
+  width: 9rem;
+  top: 42%;
+  right: 57%;
+  height: 2.5px;
+  rotate: -7deg;
+  animation-delay: 0.2s;
+}
+
+.home-hero-spark--h {
+  width: 13rem;
+  top: 68%;
+  right: 52%;
+  rotate: 14deg;
+  animation-delay: 0.1s;
+}
+
+.home-hero-spark--i {
+  width: 4.25rem;
+  top: 49%;
+  right: 61%;
+  height: 2.5px;
+  rotate: 2deg;
+  animation-delay: 0.24s;
+}
+
+.dark .home-hero-spark {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(242, 160, 31, 0.25) 30%,
+    rgba(255, 214, 120, 0.95) 70%,
+    rgba(255, 255, 255, 1) 100%
+  );
+}
+
 .home-hero {
+  position: relative;
+  z-index: 1;
   display: block;
   width: 100%;
   height: auto;
@@ -330,7 +483,7 @@ body {
     transparent 84%
   );
   filter: drop-shadow(0 10px 24px rgba(242, 160, 31, 0.12));
-  animation: home-hero-breathe 5.5s ease-in-out 1.45s infinite;
+  animation: home-hero-breathe 5.5s ease-in-out 1.9s infinite;
 }
 
 .dark .home-hero {
@@ -350,7 +503,7 @@ body {
   letter-spacing: -0.03em;
   line-height: 1.1;
   opacity: 0;
-  animation: home-brand-in 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.35s both;
+  animation: home-brand-in 0.9s cubic-bezier(0.16, 1, 0.3, 1) 1.35s both;
 }
 
 .home-brand-data {
@@ -656,21 +809,51 @@ body {
   to { opacity: 1; transform: translateY(0); }
 }
 
-@keyframes home-hero-in {
+/* Extreme left → overshoot right → settle center */
+@keyframes home-hero-slide {
   0% {
-    opacity: 0;
-    transform: translate3d(-48px, 0, 0) scale(0.94);
+    opacity: 0.55;
+    transform: translate3d(calc(-50vw - 50%), 0, 0);
   }
-  38% {
+  62% {
     opacity: 1;
-    transform: translate3d(18px, 0, 0) scale(1.02);
+    transform: translate3d(18vw, 0, 0);
   }
-  68% {
-    transform: translate3d(-8px, 0, 0) scale(0.99);
+  82% {
+    transform: translate3d(-2.5vw, 0, 0);
   }
   100% {
     opacity: 1;
-    transform: translate3d(0, 0, 0) scale(1);
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+/* Blast peaks while racing, fades as the hero settles */
+@keyframes home-hero-spark {
+  0% {
+    opacity: 0;
+    scale: 0.35 1;
+    translate: 10% 0;
+  }
+  12% {
+    opacity: 1;
+    scale: 1 1;
+    translate: 0 0;
+  }
+  48% {
+    opacity: 0.95;
+    scale: 1.08 1;
+    translate: -6% 0;
+  }
+  72% {
+    opacity: 0.35;
+    scale: 0.75 1;
+    translate: -16% 0;
+  }
+  100% {
+    opacity: 0;
+    scale: 0.4 1;
+    translate: -28% 0;
   }
 }
 
@@ -735,8 +918,10 @@ body {
   .home-fade-up,
   .home-logo,
   .home-hero,
+  .home-hero-track,
   .home-hero-frame,
   .home-hero-frame::before,
+  .home-hero-spark,
   .home-brand-name,
   .home-section,
   .home-tagline,
@@ -751,6 +936,10 @@ body {
     opacity: 1 !important;
     transform: none !important;
     filter: none !important;
+  }
+
+  .home-hero-blast {
+    display: none !important;
   }
 
   .home-tagline-text {

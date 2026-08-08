@@ -14,7 +14,7 @@ import {
   Settings,
   FolderOpen,
 } from 'lucide-react'
-import logo from '@/assets/logo.png'
+import logo from '@/assets/hero.png'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import {

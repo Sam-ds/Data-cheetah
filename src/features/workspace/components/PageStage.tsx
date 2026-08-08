@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { cn } from '@/lib/utils/cn'
-import bgCheetahCub from '@/assets/illustrations/bg-cheetah-cub.png'
+import stageArt from '@/assets/hero.png'
 
 interface PageStageProps {
   children: ReactNode
@@ -11,7 +11,7 @@ interface PageStageProps {
   /** Apply page-enter on the content shell (default true). */
   animateEnter?: boolean
   scroll?: boolean
-  /** Soft cheetah-cub watermark (default true on hub pages). */
+  /** Soft brand watermark (default true on hub pages). */
   showArt?: boolean
 }
 
@@ -36,7 +36,7 @@ export function PageStage({
       {showArt && (
         <div
           className="page-stage-art"
-          style={{ backgroundImage: `url(${bgCheetahCub})` }}
+          style={{ backgroundImage: `url(${stageArt})` }}
           aria-hidden
         />
       )}
