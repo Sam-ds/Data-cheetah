@@ -56,7 +56,8 @@ src/
 | `savedQueries` | Named SQL queries |
 | `datasetBlobs` | Cached dataset bytes + schema (scoped by `workspaceId`) |
 | `workspaces` | Local named workspaces (on-device profiles) |
-| `secretsVault` | AES-GCM ciphertext of API keys (passphrase-derived; no plaintext) |
+
+OpenRouter API keys are stored in `preferences` (plaintext on this device only).
 
 ## Chart Inference Rules
 
