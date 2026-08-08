@@ -37,9 +37,11 @@ export function WorkspaceLayout() {
 
   if (appMode === 'home') {
     return (
-      <div className="flex h-full flex-col bg-white dark:bg-black">
+      <div className="flex h-full flex-col">
         <TopToolbar />
-        <HomeHub />
+        <div className="min-h-0 flex-1 overflow-hidden">
+          <HomeHub />
+        </div>
         <AppFooter />
         <StatusBar />
       </div>
@@ -74,7 +76,7 @@ export function WorkspaceLayout() {
 
   if (appMode === 'faq') {
     return (
-      <div className="flex h-full flex-col bg-white dark:bg-black">
+      <div className="flex h-full flex-col">
         <TopToolbar />
         <div className="min-h-0 flex-1 overflow-hidden">
           <FaqPage />
@@ -87,7 +89,7 @@ export function WorkspaceLayout() {
 
   if (appMode === 'license') {
     return (
-      <div className="flex h-full flex-col bg-white dark:bg-black">
+      <div className="flex h-full flex-col">
         <TopToolbar />
         <div className="min-h-0 flex-1 overflow-hidden">
           <LicensePage />
@@ -124,96 +126,96 @@ export function WorkspaceLayout() {
         )}
 
         <div className="min-w-0 flex-1 overflow-hidden">
-          <Group orientation="vertical" className="h-full">
-            <Panel id="top-v3" defaultSize={42} minSize={20}>
-              <Group orientation="horizontal" className="h-full">
-                <Panel id="sql-v3" defaultSize={68} minSize={40}>
+          <Group orientation="horizontal" className="h-full">
+            <Panel id="main-h" defaultSize={68} minSize={40}>
+              <Group orientation="vertical" className="h-full">
+                <Panel id="sql-v3" defaultSize={42} minSize={20}>
                   <SqlEditor onRun={runQuery} />
                 </Panel>
                 <Separator />
-                <Panel id="explore-v3" defaultSize={32} minSize={20}>
-                  <Tabs
-                    value={activeRightTab}
-                    onValueChange={(v) =>
-                      setActiveRightTab(v as 'explorer' | 'statistics' | 'ask')
-                    }
-                    className="flex h-full flex-col"
-                  >
-                    <div className="flex items-center border-b bg-[var(--panel-header)] px-2">
-                      <TabsList className="h-8 bg-transparent p-0">
-                        <TabsTrigger
-                          value="explorer"
-                          className="gap-1.5 data-[state=active]:shadow-none"
-                        >
-                          <Compass className="h-3.5 w-3.5" />
-                          Explorer
-                        </TabsTrigger>
-                        <TabsTrigger
-                          value="statistics"
-                          className="gap-1.5 data-[state=active]:shadow-none"
-                        >
-                          <BarChart3 className="h-3.5 w-3.5" />
-                          Stats
-                        </TabsTrigger>
-                        <TabsTrigger
-                          value="ask"
-                          className="gap-1.5 data-[state=active]:shadow-none"
-                        >
-                          <Sparkles className="h-3.5 w-3.5" />
-                          Insights
-                        </TabsTrigger>
-                      </TabsList>
-                    </div>
-                    <TabsContent value="explorer" className="mt-0 flex-1 overflow-hidden">
-                      <DataExplorer embedded />
-                    </TabsContent>
-                    <TabsContent value="statistics" className="mt-0 flex-1 overflow-hidden">
-                      <ProfilePanel embedded />
-                    </TabsContent>
-                    <TabsContent value="ask" className="mt-0 flex-1 overflow-hidden">
-                      <AskPanel />
-                    </TabsContent>
-                  </Tabs>
+                <Panel id="bottom-v3" defaultSize={58} minSize={28}>
+                  <div className="flex h-full min-h-0 flex-col">
+                    <SqlAskBar />
+                    <Tabs
+                      value={activeBottomTab}
+                      onValueChange={(v) => setActiveBottomTab(v as 'results' | 'charts')}
+                      className="flex min-h-0 flex-1 flex-col"
+                    >
+                      <div className="flex items-center border-b bg-[var(--panel-header)] px-2">
+                        <TabsList className="h-8 bg-transparent p-0">
+                          <TabsTrigger
+                            value="results"
+                            className="gap-1.5 data-[state=active]:shadow-none"
+                          >
+                            <Table2 className="h-3.5 w-3.5" />
+                            Results
+                          </TabsTrigger>
+                          <TabsTrigger
+                            value="charts"
+                            className="gap-1.5 data-[state=active]:shadow-none"
+                          >
+                            <LineChart className="h-3.5 w-3.5" />
+                            Charts
+                          </TabsTrigger>
+                        </TabsList>
+                      </div>
+                      <TabsContent value="results" className="mt-0 min-h-0 flex-1 overflow-hidden">
+                        <ResultsGrid embedded />
+                      </TabsContent>
+                      <TabsContent value="charts" className="mt-0 min-h-0 flex-1 overflow-hidden">
+                        <ChartPanel embedded />
+                      </TabsContent>
+                    </Tabs>
+                  </div>
                 </Panel>
               </Group>
             </Panel>
 
             <Separator />
 
-            <Panel id="bottom-v3" defaultSize={58} minSize={28}>
-              <div className="flex h-full min-h-0 flex-col">
-                <SqlAskBar />
-                <Tabs
-                  value={activeBottomTab}
-                  onValueChange={(v) => setActiveBottomTab(v as 'results' | 'charts')}
-                  className="flex min-h-0 flex-1 flex-col"
-                >
-                  <div className="flex items-center border-b bg-[var(--panel-header)] px-2">
-                    <TabsList className="h-8 bg-transparent p-0">
-                      <TabsTrigger
-                        value="results"
-                        className="gap-1.5 data-[state=active]:shadow-none"
-                      >
-                        <Table2 className="h-3.5 w-3.5" />
-                        Results
-                      </TabsTrigger>
-                      <TabsTrigger
-                        value="charts"
-                        className="gap-1.5 data-[state=active]:shadow-none"
-                      >
-                        <LineChart className="h-3.5 w-3.5" />
-                        Charts
-                      </TabsTrigger>
-                    </TabsList>
-                  </div>
-                  <TabsContent value="results" className="mt-0 flex-1 overflow-hidden">
-                    <ResultsGrid embedded />
-                  </TabsContent>
-                  <TabsContent value="charts" className="mt-0 flex-1 overflow-hidden">
-                    <ChartPanel embedded />
-                  </TabsContent>
-                </Tabs>
-              </div>
+            <Panel id="explore-v3" defaultSize={32} minSize={20}>
+              <Tabs
+                value={activeRightTab}
+                onValueChange={(v) =>
+                  setActiveRightTab(v as 'explorer' | 'statistics' | 'ask')
+                }
+                className="flex h-full min-h-0 flex-col"
+              >
+                <div className="flex shrink-0 items-center border-b bg-[var(--panel-header)] px-2">
+                  <TabsList className="h-8 bg-transparent p-0">
+                    <TabsTrigger
+                      value="explorer"
+                      className="gap-1.5 data-[state=active]:shadow-none"
+                    >
+                      <Compass className="h-3.5 w-3.5" />
+                      Explorer
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="statistics"
+                      className="gap-1.5 data-[state=active]:shadow-none"
+                    >
+                      <BarChart3 className="h-3.5 w-3.5" />
+                      Stats
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="ask"
+                      className="gap-1.5 data-[state=active]:shadow-none"
+                    >
+                      <Sparkles className="h-3.5 w-3.5" />
+                      Insights
+                    </TabsTrigger>
+                  </TabsList>
+                </div>
+                <TabsContent value="explorer" className="mt-0 min-h-0 flex-1 overflow-hidden">
+                  <DataExplorer embedded />
+                </TabsContent>
+                <TabsContent value="statistics" className="mt-0 min-h-0 flex-1 overflow-hidden">
+                  <ProfilePanel embedded />
+                </TabsContent>
+                <TabsContent value="ask" className="mt-0 min-h-0 flex-1 overflow-hidden">
+                  <AskPanel />
+                </TabsContent>
+              </Tabs>
             </Panel>
           </Group>
         </div>

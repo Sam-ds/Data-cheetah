@@ -17,6 +17,7 @@ import { useFilesStore } from '@/features/files/store/filesStore'
 import { profileTable } from '@/features/profiling/services/profilingService'
 import { duckdbClient } from '@/services/duckdbClient'
 import { downloadBuffer } from '@/services/exportService'
+import { ExportNameDialog } from '@/components/ExportNameDialog'
 import { cn } from '@/lib/utils/cn'
 import { ColumnStats } from './ColumnStats'
 
@@ -60,6 +61,7 @@ export function ProfilePanel({ embedded = false }: ProfilePanelProps) {
   const [dedupError, setDedupError] = useState<string | null>(null)
   const [exporting, setExporting] = useState<ExportFormat | null>(null)
   const [exportMessage, setExportMessage] = useState<string | null>(null)
+  const [exportPromptFormat, setExportPromptFormat] = useState<ExportFormat | null>(null)
 
   useEffect(() => {
     if (restoringLocal) return
@@ -127,13 +129,11 @@ export function ProfilePanel({ embedded = false }: ProfilePanelProps) {
   }, [activeFile])
 
   const exportDeduped = useCallback(
-    async (format: ExportFormat) => {
+    async (format: ExportFormat, fileName: string) => {
       if (!activeFile) return
       setExporting(format)
       setExportMessage(null)
       setDedupError(null)
-      const base = activeFile.tableName.replace(/[^\w.-]+/g, '_') || 'data'
-      const fileName = `${base}_deduped.${format}`
       try {
         const sql = `SELECT DISTINCT * FROM ${quoteIdent(activeFile.tableName)}`
         const exported = await duckdbClient.exportSql(sql, format, fileName)
@@ -284,7 +284,7 @@ export function ProfilePanel({ embedded = false }: ProfilePanelProps) {
                     size="sm"
                     className="min-w-[7.5rem] gap-1.5 capitalize"
                     disabled={!!exporting || dedup.distinctRows === 0}
-                    onClick={() => void exportDeduped(format)}
+                    onClick={() => setExportPromptFormat(format)}
                   >
                     {exporting === format ? (
                       <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -476,6 +476,22 @@ export function ProfilePanel({ embedded = false }: ProfilePanelProps) {
         panelBody
       )}
       {fullscreenOverlay}
+      <ExportNameDialog
+        open={!!exportPromptFormat}
+        format={exportPromptFormat}
+        defaultName={
+          activeFile
+            ? `${activeFile.tableName.replace(/[^\w.-]+/g, '_') || 'data'}_deduped`
+            : 'export_deduped'
+        }
+        onOpenChange={(open) => {
+          if (!open) setExportPromptFormat(null)
+        }}
+        onConfirm={(fileName) => {
+          if (!exportPromptFormat) return
+          void exportDeduped(exportPromptFormat, fileName)
+        }}
+      />
     </>
   )
 }

@@ -627,3 +627,36 @@ export function applyDateBinderRepair(
   const repaired = repairDateIntegerComparisons(sql, dateColumns)
   return repaired === sql ? null : repaired
 }
+
+function looksLikeDateOrNumberLiteral(lit: string): boolean {
+  const t = lit.trim()
+  if (!t) return false
+  if (/^-?\d+(\.\d+)?([eE][+-]?\d+)?$/.test(t)) return true
+  if (/^\d{4}-\d{2}-\d{2}/.test(t)) return true
+  if (/^(true|false)$/i.test(t)) return true
+  return false
+}
+
+/**
+ * Make text filters case-insensitive so 'Atlanta' and 'atlanta' match the same rows.
+ * - col = 'X'  → lower(CAST(col AS VARCHAR)) = lower('X')
+ * - LIKE → ILIKE
+ * Skips date/number/boolean-looking literals.
+ */
+export function repairCaseInsensitiveTextFilters(sql: string): string {
+  // Avoid rewriting inside already-lower(...) wrappers by applying equality first.
+  let next = sql.replace(
+    /((?:"[^"]+"|\[[^\]]+\]|[A-Za-z_][\w$]*))\s*(=|<>|!=)\s*'((?:[^'\\]|\\.)*)'/g,
+    (full, col: string, op: string, lit: string) => {
+      if (looksLikeDateOrNumberLiteral(lit)) return full
+      // Already rewritten
+      if (/^lower\s*\(/i.test(full)) return full
+      return `lower(CAST(${col} AS VARCHAR)) ${op} lower('${lit}')`
+    },
+  )
+
+  // LIKE → ILIKE (do not touch ILIKE)
+  next = next.replace(/(?<![Ii])\bLIKE\b/g, 'ILIKE')
+
+  return next
+}

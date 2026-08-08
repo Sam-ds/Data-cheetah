@@ -199,33 +199,33 @@ export function LicensePage() {
       subtitle="DataCheetah is Apache 2.0-licensed and is powered by open source tools."
     >
       <section className="space-y-3">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-600 dark:text-muted-foreground">
+        <h2 className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
           DataCheetah
         </h2>
-        <pre className="overflow-x-auto whitespace-pre-wrap rounded-xl border border-neutral-200 bg-neutral-50 p-4 text-[11px] leading-relaxed text-neutral-800 dark:border-border/60 dark:bg-muted/20 dark:text-muted-foreground">
+        <pre className="overflow-x-auto whitespace-pre-wrap rounded-xl border border-border bg-card/80 p-4 text-[11px] leading-relaxed text-muted-foreground">
           {APACHE_2_TEXT}
         </pre>
       </section>
 
       <section className="space-y-3">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-600 dark:text-muted-foreground">
+        <h2 className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
           Third-party licenses
         </h2>
-        <p className="text-xs leading-relaxed text-neutral-700 dark:text-muted-foreground">
+        <p className="text-xs leading-relaxed text-muted-foreground">
           DataCheetah uses the following open source projects. We appreciate and acknowledge their
           authors and communities. Each project remains under its own license. Visit the linked
           project sites for the full license terms.
         </p>
-        <div className="overflow-x-auto rounded-xl border border-neutral-200 dark:border-border/60">
+        <div className="overflow-x-auto rounded-xl border border-border">
           <table className="w-full border-collapse text-left text-xs">
-            <thead className="bg-neutral-50 text-[11px] uppercase tracking-wide text-neutral-600 dark:bg-muted/30 dark:text-muted-foreground">
+            <thead className="bg-muted/50 text-[11px] uppercase tracking-wide text-muted-foreground">
               <tr>
                 <th className="px-4 py-2.5 font-semibold">Project</th>
                 <th className="px-4 py-2.5 font-semibold">Role</th>
                 <th className="px-4 py-2.5 font-semibold">License</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-neutral-200 dark:divide-border/60">
+            <tbody className="divide-y divide-border">
               {OPEN_SOURCE_CREDITS.map((item) => (
                 <tr key={item.name}>
                   <td className="px-4 py-2.5">
@@ -238,11 +238,9 @@ export function LicensePage() {
                       {item.name}
                     </a>
                   </td>
-                  <td className="px-4 py-2.5 text-neutral-700 dark:text-muted-foreground">
-                    {item.role}
-                  </td>
+                  <td className="px-4 py-2.5 text-muted-foreground">{item.role}</td>
                   <td className="px-4 py-2.5">
-                    <span className="rounded-md bg-neutral-100 px-1.5 py-0.5 font-mono text-[11px] text-neutral-800 dark:bg-muted/40 dark:text-foreground">
+                    <span className="rounded-md bg-muted px-1.5 py-0.5 font-mono text-[11px] text-foreground">
                       {item.license}
                     </span>
                   </td>

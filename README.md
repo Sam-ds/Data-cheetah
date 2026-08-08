@@ -8,22 +8,40 @@
 
 DataCheetah is a browser-only app for exploring structured datasets with SQL. DuckDB WASM runs all computation in a Web Worker. There is no backend, no file upload, no accounts, and no telemetry.
 
+You can use the hosted GitHub Pages build, or run everything yourself on your machine — same app, same privacy model. Local is the recommended way to develop and the simplest way to keep data fully on-device.
+
 ---
 
-## Quick Start
+## Run locally
+
+**Requirements:** [Node.js](https://nodejs.org/) 20+ and npm.
 
 ```bash
+git clone https://github.com/Sam-ds/Data-cheetah.git
+cd Data-cheetah
 npm install
 npm run dev
 ```
 
 Open [http://localhost:5173](http://localhost:5173). From **Home**, open **Data exploration**, drop a file in the sidebar (or use **Open**), then press **Ctrl+Enter** to run SQL.
 
+No API keys, env files, or server process are required. Optional Ask features (local WebLLM or OpenRouter) are configured later in **Settings** if you want them.
+
 | Command | Description |
 |---------|-------------|
-| `npm run dev` | Dev server |
-| `npm run build` | Production build |
-| `npm run preview` | Preview production build |
+| `npm run dev` | Dev server at http://localhost:5173 |
+| `npm run build` | Production build → `dist/` |
+| `npm run preview` | Serve the production build locally |
+| `npm run lint` | Lint with oxlint |
+
+To try a production build without deploying:
+
+```bash
+npm run build
+npm run preview
+```
+
+Then open the URL Vite prints (usually http://localhost:4173).
 
 ---
 
@@ -69,27 +87,27 @@ Open from **Home** or the header **Tools** tab (in-app page; data stays in the b
 
 Each tool lives in its own folder under `src/features/tools/` with isolated UI + helpers (easy to edit/debug).
 
-### Ask (local or remote LLM)
-Right panel tab **Ask** — choose a provider in **Settings**:
+### Ask (local or OpenRouter)
+Right panel tab **Insights** / Ask bar — choose a provider in **Settings**:
 
 1. **Local (WebLLM)** — runs in the browser with [WebLLM](https://webllm.mlc.ai/) (WebGPU required)
-2. **Remote** — OpenAI, Claude (Anthropic), Gemini, Kimi (Moonshot), or any OpenAI-compatible base URL
+2. **OpenRouter** — paste an [OpenRouter](https://openrouter.ai/keys) API key and type any model id (e.g. `openai/gpt-4o`)
 
-API keys are stored only after you create an **encrypted vault** (PBKDF2 + AES-GCM with your passphrase). Ciphertext lives in IndexedDB; plaintext keys exist in memory only while the vault is unlocked for the session.
+The OpenRouter key and model id are stored on this device in browser preferences (not encrypted at rest). They are never sent to a DataCheetah server.
 
 For local models:
 
 1. Choose a model from the editable catalog (`src/features/ask/config/modelCatalog.ts`)
 2. Select one or more loaded files
-3. **Sample insights** (5 suggestions) from existing schema + sample rows — or ask your own question
-4. Click an insight → model writes SQL → DuckDB runs it → grounded answer from the result
-5. Use **Full screen** in the Ask panel when you want more room (Esc to exit)
+3. **Generate insights** from schema + sample rows, or use the Ask bar for a custom question
+4. The model writes SQL → DuckDB runs it → grounded answer from the result
+5. Use **Full screen** in the Insights panel when you want more room (Esc to exit)
 6. Optional: after tables are loaded, add **one** `datacheetah.schema.json` for all tables (Files sidebar → Sample file → edit → Upload)
 
-Pluggable layout under `src/features/ask/` (`llm/` provider interface, prompts, services, UI). Swap or extend models without touching SQL/charts.
+Pluggable layout under `src/features/ask/` (`llm/` provider interface, prompts, services, UI).
 
 ### Settings
-Toolbar **Settings**: DuckDB memory limit (restart to apply), Ask provider / remote model, and the encrypted API-key vault.
+Toolbar **Settings**: DuckDB memory limit (restart to apply), Local vs OpenRouter, OpenRouter API key + model id.
 
 ### Optional table schema descriptions
 Insights / Ask work without them, but SQL quality improves when you document meaning in **one file for all tables**:
@@ -105,10 +123,9 @@ Example multi-table file: `examples/datacheetah.schema.json`.
 | Stored? | What |
 |---------|------|
 | In DuckDB memory | Active session tables (rebuilt from local cache on restore) |
-| In IndexedDB | Theme, layout prefs, saved SQL, **optional dataset bytes** per local workspace, schema descriptions, **encrypted API-key vault** (ciphertext only) |
-| In memory (session) | Decrypted API keys after vault unlock — cleared on Lock / tab close |
+| In IndexedDB | Theme, layout prefs, saved SQL, **optional dataset bytes** per local workspace, schema descriptions, optional OpenRouter key/model |
 | Never | Raw datasets uploaded to a server — there is no server |
-| Remote Ask only | Schema samples + questions sent to the provider you chose (OpenAI / Claude / etc.) |
+| OpenRouter Ask only | Schema samples + questions sent to OpenRouter |
 
 ### Local workspaces & dataset cache
 - Opening a file caches it in IndexedDB under the **active local workspace** (default: Personal).

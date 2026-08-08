@@ -12,7 +12,7 @@ export function AskPanel() {
   const ask = useAsk()
   const setAppMode = useWorkspaceStore((s) => s.setAppMode)
   const [fullscreen, setFullscreen] = useState(false)
-  const modelGateOk = ask.isLocal ? ask.webGpu.ok : ask.vaultUnlocked
+  const modelGateOk = ask.isLocal ? ask.webGpu.ok : ask.remoteKeyReady
   const busy =
     ask.phase === 'loadingModel' ||
     ask.phase === 'generatingInsights' ||
@@ -104,7 +104,7 @@ export function AskPanel() {
         loading={ask.phase === 'loadingModel'}
         progressText={ask.loadProgressText}
         progress={ask.loadProgress}
-        vaultUnlocked={ask.vaultUnlocked}
+        remoteKeyReady={ask.remoteKeyReady}
         disabled={(ask.isLocal && !ask.webGpu.ok) || busy}
         onLoad={ask.loadModel}
         onClear={() => void ask.unload()}

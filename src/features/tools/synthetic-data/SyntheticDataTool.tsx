@@ -21,8 +21,6 @@ import type { SchemaPlan } from './schemaPlan'
 import { getAskLlmProvider, getActiveAskModelId, resetAskLlmSession } from '@/features/ask/services/llmSession'
 import { checkWebGpuSupport, probeWebGpu, resetWebGpuProbeCache } from '@/features/ask/llm/nullProvider'
 import { usePreferencesStore } from '@/features/profiling/store/profileStore'
-import { isVaultUnlocked } from '@/features/settings/services/secretsVault'
-import { useVaultSessionStore } from '@/features/settings/store/vaultSessionStore'
 import { ASK_PROVIDER_LABELS, type AskProviderId } from '@/types/askSettings'
 import { useWorkspaceStore } from '@/features/workspace/store/workspaceStore'
 import { importFile } from '@/features/files/services/fileImportService'
@@ -49,11 +47,11 @@ function friendlyLlmSeedError(err: unknown, askProvider: AskProviderId): string 
     /DXGI_ERROR_DEVICE_REMOVED|requestDevice|WebGPU|GPUAdapter|D3D12|CreateMLCEngine/i.test(msg)
   ) {
     return askProvider === 'local'
-      ? 'Local WebGPU/GPU failed. Continuing with sample + faker. For LLM seeds, choose OpenAI or Claude in Settings (unlock vault), or turn off “Use LLM for seed rows”.'
+      ? 'Local WebGPU/GPU failed. Continuing with sample + faker. For LLM seeds, choose OpenRouter in Settings, or turn off “Use LLM for seed rows”.'
       : 'Model backend failed. Continuing with sample + faker.'
   }
-  if (/API key missing|vault|Unlock/i.test(msg)) {
-    return 'API key / vault not ready. Continuing with sample + faker. Unlock Settings vault or turn off LLM seeding.'
+  if (/API key missing|OpenRouter/i.test(msg)) {
+    return 'OpenRouter API key missing. Continuing with sample + faker. Add a key in Settings or turn off LLM seeding.'
   }
   // Cap length so Dawn stack noise never fills the toast
   const short = msg.replace(/\s+/g, ' ').trim()
@@ -62,7 +60,8 @@ function friendlyLlmSeedError(err: unknown, askProvider: AskProviderId): string 
 
 export function SyntheticDataTool() {
   const askProvider = usePreferencesStore((s) => s.askProvider)
-  const vaultUnlocked = useVaultSessionStore((s) => s.unlocked)
+  const openrouterApiKey = usePreferencesStore((s) => s.openrouterApiKey)
+  const remoteKeyReady = Boolean(openrouterApiKey?.trim())
   const setAppMode = useWorkspaceStore((s) => s.setAppMode)
   const addFile = useFilesStore((s) => s.addFile)
   const setEditorContent = useSqlStore((s) => s.setEditorContent)
@@ -125,8 +124,8 @@ export function SyntheticDataTool() {
       }
       return null
     }
-    if (!vaultUnlocked && !isVaultUnlocked()) {
-      return 'Unlock the API vault in Settings to seed with a remote model, or disable LLM seeding.'
+    if (!remoteKeyReady) {
+      return 'Add an OpenRouter API key in Settings to seed with a remote model, or disable LLM seeding.'
     }
     return null
   })()
@@ -162,8 +161,8 @@ export function SyntheticDataTool() {
               throw new Error(probed.reason)
             }
             setGpuProbe('ok')
-          } else if (!isVaultUnlocked()) {
-            throw new Error('Unlock the API vault in Settings before remote LLM seeding.')
+          } else if (!remoteKeyReady) {
+            throw new Error('Paste an OpenRouter API key in Settings before remote LLM seeding.')
           }
 
           await resetAskLlmSession()

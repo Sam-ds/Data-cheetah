@@ -8,40 +8,35 @@ export function FaqPage() {
       subtitle="How DataCheetah works, what stays on your device, and common gotchas."
     >
       <section className="space-y-4">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-600 dark:text-muted-foreground">
+        <h2 className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
           How it’s useful
         </h2>
-        <ul className="grid gap-3 sm:grid-cols-2">
+        <ul className="divide-y divide-border border-y border-border">
           {HOW_USEFUL.map((item) => (
-            <li
-              key={item.title}
-              className="rounded-xl border border-neutral-200 px-4 py-3 dark:border-border/60"
-            >
-              <p className="text-sm font-medium text-black dark:text-foreground">{item.title}</p>
-              <p className="mt-1 text-xs leading-relaxed text-neutral-700 dark:text-muted-foreground">
-                {item.body}
-              </p>
+            <li key={item.title} className="py-4">
+              <p className="text-sm font-semibold text-foreground">{item.title}</p>
+              <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">{item.body}</p>
             </li>
           ))}
         </ul>
       </section>
 
-      <section className="space-y-3">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-600 dark:text-muted-foreground">
+      <section className="space-y-4">
+        <h2 className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
           Questions
         </h2>
-        <div className="divide-y divide-neutral-200 rounded-xl border border-neutral-200 dark:divide-border/60 dark:border-border/60">
+        <div className="divide-y divide-border border-y border-border">
           {FAQ_ITEMS.map((item) => (
-            <details key={item.q} className="group px-4 py-3">
-              <summary className="cursor-pointer list-none text-sm font-medium text-black outline-none marker:content-none dark:text-foreground [&::-webkit-details-marker]:hidden">
+            <details key={item.q} className="group py-3.5">
+              <summary className="cursor-pointer list-none text-sm font-medium text-foreground outline-none marker:content-none [&::-webkit-details-marker]:hidden">
                 <span className="flex items-start justify-between gap-3">
                   {item.q}
-                  <span className="shrink-0 text-neutral-400 transition group-open:rotate-45">+</span>
+                  <span className="shrink-0 font-mono text-muted-foreground transition group-open:rotate-45">
+                    +
+                  </span>
                 </span>
               </summary>
-              <p className="mt-2 text-xs leading-relaxed text-neutral-700 dark:text-muted-foreground">
-                {item.a}
-              </p>
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{item.a}</p>
             </details>
           ))}
         </div>

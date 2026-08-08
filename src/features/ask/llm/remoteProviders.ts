@@ -86,7 +86,7 @@ export function createOpenAiCompatibleProvider(opts: {
       onProgress?.({ text: 'Checking API key…', progress: 0.2 })
       const key = opts.getApiKey()?.trim()
       if (!key) {
-        throw new Error('API key missing — unlock the vault in Settings and save a key for this provider.')
+        throw new Error('API key missing — paste your OpenRouter API key in Settings.')
       }
       const base = opts.getBaseUrl().replace(/\/$/, '')
       if (!base) throw new Error('Base URL is required')
@@ -107,7 +107,7 @@ export function createOpenAiCompatibleProvider(opts: {
     async complete(messages: ChatMessage[], completeOpts?: { temperature?: number; onChunk?: (a: string) => void }) {
       if (!ready) throw new Error('Call Load / Connect first.')
       const key = opts.getApiKey()?.trim()
-      if (!key) throw new Error('API key missing — unlock Settings vault.')
+      if (!key) throw new Error('API key missing — paste your OpenRouter API key in Settings.')
       const base = opts.getBaseUrl().replace(/\/$/, '')
       const model = loadedModel || opts.getModelId()
       const stream = !!completeOpts?.onChunk
@@ -117,6 +117,12 @@ export function createOpenAiCompatibleProvider(opts: {
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${key}`,
+          ...(opts.id === 'openrouter'
+            ? {
+                'HTTP-Referer': typeof window !== 'undefined' ? window.location.origin : 'https://datacheetah.app',
+                'X-Title': 'DataCheetah',
+              }
+            : {}),
         },
         body: JSON.stringify({
           model,

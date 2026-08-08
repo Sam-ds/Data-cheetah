@@ -19,6 +19,7 @@ import {
   extractSqlFromModel,
   repairDateIntegerComparisons,
   repairDuckdbStringQuotes,
+  repairCaseInsensitiveTextFilters,
   repairMysqlBackticks,
   repairUnknownTableNames,
   repairUnquotedIdentifiers,
@@ -261,7 +262,7 @@ function prepareSql(
   ])
   const withDates = repairDateIntegerComparisons(withSpacedIds, dateColumns)
   const quoted = repairDuckdbStringQuotes(withDates, [...knownIds, ...tableNames, ...dateColumns])
-  return scrubSqlExtractionJunk(quoted)
+  return scrubSqlExtractionJunk(repairCaseInsensitiveTextFilters(quoted))
 }
 
 async function runSql(

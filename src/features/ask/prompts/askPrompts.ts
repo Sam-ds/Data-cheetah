@@ -71,7 +71,7 @@ Rules:
 - String and date literals: ALWAYS single quotes — "Country" = 'US' NOT "Country" = "US"
 - Double quotes around a value like "US" make DuckDB look for a column named US and fail
 - Compare points with AND: lat = 33.64 AND lon = -84.42 — do NOT use (lat, lon) IN (x, y)
-- Match sample value casing for filters
+- Text filters are case-insensitive: prefer lower(col) = lower('atlanta') or col ILIKE 'atlanta' so 'Atlanta' and 'atlanta' match
 - Prefer aggregates (COUNT, GROUP BY) over overly selective WHERE clauses
 - For “which / who has more|most|least …” questions, return the winning row only (ORDER BY metric DESC/ASC LIMIT 1), not the full breakdown
 - Prefer LIMIT 100 unless an aggregate returns few rows
@@ -123,6 +123,7 @@ Rules:
 - ${joinRule}
 - Quote mixed-case / spaced columns exactly as listed — use double quotes, never MySQL/BigQuery backticks
 - String literals: single quotes ('US')
+- Text filters are case-insensitive: use lower(col) = lower('value') or ILIKE so casing does not matter
 - For "name some / list some / give examples", use a separate step with LIMIT 5–10 of useful label columns
 - For "how many / count", use COUNT(*) (or COUNT(DISTINCT …) if clearly needed)
 - Prefer LIMIT 100 on list steps

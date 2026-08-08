@@ -6,7 +6,7 @@ export interface FaqItem {
 export const FAQ_ITEMS: FaqItem[] = [
   {
     q: 'Does my data leave my computer?',
-    a: 'Dataset files are read in your browser and queried with DuckDB WASM. There is no DataCheetah server that receives your files. If you use a remote Ask provider (OpenAI, Claude, and so on), only the schema samples and questions you send go to that provider.',
+    a: 'Dataset files are read in your browser and queried with DuckDB WASM. There is no DataCheetah server that receives your files. If you use OpenRouter for Ask, only the schema samples and questions you send go to OpenRouter.',
   },
   {
     q: 'Why a large download when I first open a file?',
@@ -26,15 +26,15 @@ export const FAQ_ITEMS: FaqItem[] = [
   },
   {
     q: 'Is DataCheetah free?',
-    a: 'Yes. The app is open source under the Apache License 2.0. Optional remote Ask providers bill you under their own accounts; local WebLLM runs on your device when WebGPU works.',
+    a: 'Yes. The app is open source under the Apache License 2.0. Optional OpenRouter usage bills under your OpenRouter account; local WebLLM runs on your device when WebGPU works.',
   },
   {
     q: 'How do API keys work?',
-    a: 'In Settings you create an encrypted vault with a passphrase (PBKDF2 + AES-GCM). Ciphertext stays in IndexedDB. Keys exist in memory only while the vault is unlocked for the session.',
+    a: 'For OpenRouter, paste your API key and model id (for example openai/gpt-4o) in Settings. They are stored on this device in browser preferences only — not uploaded to a DataCheetah server. There is no passphrase vault.',
   },
   {
     q: 'Why does local Ask / Generate Data LLM seed fail on my PC?',
-    a: 'Local models need WebGPU. Driver resets (common on Windows) can block GPU device creation. Use a remote provider in Settings, or turn off LLM seeding and generate with sample inference + faker.js.',
+    a: 'Local models need WebGPU. Driver resets (common on Windows) can block GPU device creation. Switch to OpenRouter in Settings, or turn off LLM seeding and generate with sample inference + faker.js.',
   },
   {
     q: 'How is this different from installing DuckDB?',

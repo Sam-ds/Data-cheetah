@@ -7,7 +7,6 @@ import {
   PanelLeft,
   Bookmark,
   Keyboard,
-  Wrench,
   Trash2,
   Database,
   Braces,
@@ -30,23 +29,16 @@ import { useFileImport } from '@/features/files/hooks/useFileImport'
 import { useFilesStore } from '@/features/files/store/filesStore'
 import { useQueryStore } from '@/features/sql/store/sqlStore'
 import { useWorkspaceStore } from '@/features/workspace/store/workspaceStore'
-import { useToolsStore, TOOL_LABELS, type ToolId } from '@/features/tools/store/toolsStore'
+import { useToolsStore } from '@/features/tools/store/toolsStore'
 import { exportToCsv, exportToXlsx } from '@/services/exportService'
 import { SavedQueriesDialog } from '@/features/sql/components/SavedQueriesDialog'
 import { KeyboardShortcutsDialog } from '@/components/KeyboardShortcutsDialog'
+import { ExportNameDialog } from '@/components/ExportNameDialog'
 import { WorkspaceSwitcher } from '@/features/workspace/components/WorkspaceSwitcher'
 import { goHome } from '@/features/workspace/goHome'
 import { clearLocalDatasets } from '@/features/files/services/localDatasetService'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils/cn'
-
-const TOOL_MENU: ToolId[] = [
-  'json-format',
-  'json-minify',
-  'json-compare',
-  'text-compare',
-  'synthetic-data',
-]
 
 export function TopToolbar() {
   const appMode = useWorkspaceStore((s) => s.appMode)
@@ -63,6 +55,7 @@ export function TopToolbar() {
   const [savedOpen, setSavedOpen] = useState(false)
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
   const [clearing, setClearing] = useState(false)
+  const [exportFormat, setExportFormat] = useState<'csv' | 'xlsx' | null>(null)
 
   const isExplore = appMode === 'explore'
 
@@ -87,8 +80,8 @@ export function TopToolbar() {
     setAppMode('explore')
   }
 
-  const enterTools = (id: ToolId = 'json-format') => {
-    openTool(id)
+  const enterTools = () => {
+    openTool('json-format')
     setAppMode('tools')
   }
 
@@ -99,7 +92,7 @@ export function TopToolbar() {
 
   return (
     <>
-      <header className="flex h-12 shrink-0 items-center gap-1 border-b bg-background px-3">
+      <header className="flex h-12 shrink-0 items-center gap-1 border-b border-border bg-background/90 px-3 backdrop-blur-sm">
         <button
           type="button"
           onClick={goHome}
@@ -110,7 +103,7 @@ export function TopToolbar() {
           <img
             src={logo}
             alt="DataCheetah"
-            className="h-9 w-auto rounded-sm object-contain"
+            className="h-9 w-auto max-w-[2.75rem] rounded-md object-contain"
           />
         </button>
 
@@ -217,10 +210,10 @@ export function TopToolbar() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start">
-                <DropdownMenuItem onClick={() => result && exportToCsv(result)}>
+                <DropdownMenuItem onClick={() => result && setExportFormat('csv')}>
                   Export CSV
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => result && exportToXlsx(result)}>
+                <DropdownMenuItem onClick={() => result && setExportFormat('xlsx')}>
                   Export Excel
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -230,27 +223,6 @@ export function TopToolbar() {
               <Bookmark className="h-3.5 w-3.5" />
               Saved
             </Button>
-          </>
-        )}
-
-        {appMode === 'tools' && (
-          <>
-            <Separator orientation="vertical" className="mx-1 h-5" />
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm">
-                  <Wrench className="h-3.5 w-3.5" />
-                  Tool
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start">
-                {TOOL_MENU.map((id) => (
-                  <DropdownMenuItem key={id} onClick={() => enterTools(id)}>
-                    {TOOL_LABELS[id]}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
           </>
         )}
 
@@ -295,6 +267,19 @@ export function TopToolbar() {
 
       <SavedQueriesDialog open={savedOpen} onOpenChange={setSavedOpen} />
       <KeyboardShortcutsDialog open={shortcutsOpen} onOpenChange={setShortcutsOpen} />
+      <ExportNameDialog
+        open={!!exportFormat}
+        format={exportFormat}
+        defaultName="export"
+        onOpenChange={(open) => {
+          if (!open) setExportFormat(null)
+        }}
+        onConfirm={(fileName) => {
+          if (!result || !exportFormat) return
+          if (exportFormat === 'csv') exportToCsv(result, fileName)
+          else exportToXlsx(result, fileName)
+        }}
+      />
     </>
   )
 }

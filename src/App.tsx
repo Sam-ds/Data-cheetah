@@ -32,6 +32,7 @@ function App() {
         duckdbMemoryLimit: prefs.duckdbMemoryLimit,
         askProvider: prefs.askProvider,
         askRemoteModelId: prefs.askRemoteModelId,
+        openrouterApiKey: prefs.openrouterApiKey,
       })
     })
   }, [hydrateFromPreferences, setTheme])

@@ -1,13 +1,9 @@
 import type { LlmProvider } from '../llm/types'
 import { createAskLlmProvider as createLocalAskProvider } from '../llm/webLlmProvider'
-import {
-  createAnthropicProvider,
-  createGeminiProvider,
-  createOpenAiCompatibleProvider,
-} from '../llm/remoteProviders'
+import { createOpenAiCompatibleProvider } from '../llm/remoteProviders'
 import { usePreferencesStore } from '@/features/profiling/store/profileStore'
-import { getUnlockedSecrets, isVaultUnlocked } from '@/features/settings/services/secretsVault'
 import type { AskProviderId } from '@/types/askSettings'
+import { coerceAskProvider } from '@/types/askSettings'
 import { DEFAULT_ASK_MODEL_ID } from '../config/modelCatalog'
 import { useAskStore } from '../store/askStore'
 
@@ -19,60 +15,20 @@ function fingerprint(providerId: AskProviderId, modelId: string): string {
   return `${providerId}::${modelId}`
 }
 
-function requireSecret(
-  pick: (s: NonNullable<ReturnType<typeof getUnlockedSecrets>>) => string | undefined,
-): string | undefined {
-  if (!isVaultUnlocked()) return undefined
-  const secrets = getUnlockedSecrets()
-  if (!secrets) return undefined
-  const v = pick(secrets)?.trim()
-  return v || undefined
-}
-
 function buildProvider(askProvider: AskProviderId): LlmProvider {
-  switch (askProvider) {
-    case 'openai':
-      return createOpenAiCompatibleProvider({
-        id: 'openai',
-        getApiKey: () => requireSecret((s) => s.openaiApiKey),
-        getBaseUrl: () => 'https://api.openai.com/v1',
-        getModelId: () => usePreferencesStore.getState().askRemoteModelId,
-      })
-    case 'kimi':
-      return createOpenAiCompatibleProvider({
-        id: 'kimi',
-        getApiKey: () => requireSecret((s) => s.kimiApiKey),
-        getBaseUrl: () => 'https://api.moonshot.cn/v1',
-        getModelId: () => usePreferencesStore.getState().askRemoteModelId,
-      })
-    case 'openai-compatible':
-      return createOpenAiCompatibleProvider({
-        id: 'openai-compatible',
-        getApiKey: () => requireSecret((s) => s.openaiCompatibleApiKey),
-        getBaseUrl: () => {
-          const url = getUnlockedSecrets()?.openaiCompatibleBaseUrl?.trim()
-          return url || 'https://api.openai.com/v1'
-        },
-        getModelId: () => usePreferencesStore.getState().askRemoteModelId,
-      })
-    case 'anthropic':
-      return createAnthropicProvider({
-        getApiKey: () => requireSecret((s) => s.anthropicApiKey),
-        getModelId: () => usePreferencesStore.getState().askRemoteModelId,
-      })
-    case 'gemini':
-      return createGeminiProvider({
-        getApiKey: () => requireSecret((s) => s.geminiApiKey),
-        getModelId: () => usePreferencesStore.getState().askRemoteModelId,
-      })
-    case 'local':
-    default:
-      return createLocalAskProvider()
+  if (askProvider === 'openrouter') {
+    return createOpenAiCompatibleProvider({
+      id: 'openrouter',
+      getApiKey: () => usePreferencesStore.getState().openrouterApiKey?.trim() || undefined,
+      getBaseUrl: () => 'https://openrouter.ai/api/v1',
+      getModelId: () => usePreferencesStore.getState().askRemoteModelId || 'openai/gpt-4o',
+    })
   }
+  return createLocalAskProvider()
 }
 
 export function getAskLlmProvider(): LlmProvider {
-  const askProvider = usePreferencesStore.getState().askProvider
+  const askProvider = coerceAskProvider(usePreferencesStore.getState().askProvider)
   const modelId =
     askProvider === 'local'
       ? useAskStore.getState().selectedModelId || DEFAULT_ASK_MODEL_ID
@@ -90,7 +46,7 @@ export async function unloadAskLlm(): Promise<void> {
   }
 }
 
-/** After goHome / hard reset / provider switch, allow a fresh provider instance. */
+/** After hard reset / provider switch, allow a fresh provider instance. */
 export async function resetAskLlmSession(): Promise<void> {
   await unloadAskLlm()
   provider = null
@@ -98,9 +54,9 @@ export async function resetAskLlmSession(): Promise<void> {
 }
 
 export function getActiveAskModelId(): string {
-  const askProvider = usePreferencesStore.getState().askProvider
+  const askProvider = coerceAskProvider(usePreferencesStore.getState().askProvider)
   if (askProvider === 'local') {
     return useAskStore.getState().selectedModelId || DEFAULT_ASK_MODEL_ID
   }
-  return usePreferencesStore.getState().askRemoteModelId
+  return usePreferencesStore.getState().askRemoteModelId || 'openai/gpt-4o'
 }

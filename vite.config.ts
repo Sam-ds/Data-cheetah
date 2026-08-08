@@ -5,7 +5,8 @@ import { VitePWA } from 'vite-plugin-pwa'
 import path from 'path'
 
 export default defineConfig({
-  base: '/Data-cheetah/',
+  // GitHub Pages serves under /Data-cheetah/; local `dev` / `preview` use `/`
+  base: process.env.GITHUB_ACTIONS ? '/Data-cheetah/' : '/',
   plugins: [
     react(),
     tailwindcss(),

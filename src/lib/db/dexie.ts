@@ -4,9 +4,6 @@ import type { RecentFileMeta } from '@/types/dataset'
 import type { SavedQuery } from '@/types/query'
 import type { PersistedDataset } from '@/types/persistedDataset'
 import type { LocalWorkspace } from '@/types/workspace'
-import type { SecretsVaultRecord } from '@/types/secretsVault'
-
-export type { SecretsVaultRecord }
 
 export class DataCheetahDB extends Dexie {
   preferences!: Table<Preferences>
@@ -14,7 +11,6 @@ export class DataCheetahDB extends Dexie {
   savedQueries!: Table<SavedQuery>
   datasetBlobs!: Table<PersistedDataset>
   workspaces!: Table<LocalWorkspace>
-  secretsVault!: Table<SecretsVaultRecord>
 
   constructor() {
     super('datacheetah')
@@ -64,6 +60,15 @@ export class DataCheetahDB extends Dexie {
       datasetBlobs: 'id, workspaceId, savedAt, tableName',
       workspaces: 'id, name, updatedAt',
       secretsVault: 'id',
+    })
+    // Drop unused encrypted vault table
+    this.version(5).stores({
+      preferences: 'id',
+      recentFiles: 'id, lastOpenedAt',
+      savedQueries: 'id, name, updatedAt',
+      datasetBlobs: 'id, workspaceId, savedAt, tableName',
+      workspaces: 'id, name, updatedAt',
+      secretsVault: null,
     })
   }
 }

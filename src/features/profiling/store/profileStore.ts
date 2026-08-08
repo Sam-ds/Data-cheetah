@@ -4,7 +4,7 @@ import type { TableProfile } from '@/types/profile'
 import type { DuckDbMemoryLimit } from '@/types/preferences'
 import type { AskProviderId } from '@/types/askSettings'
 import { DEFAULT_PREFERENCES } from '@/types/preferences'
-import { defaultRemoteModelFor } from '@/types/askSettings'
+import { coerceAskProvider, defaultRemoteModelFor } from '@/types/askSettings'
 
 interface ProfileState {
   profile: TableProfile | null
@@ -19,6 +19,7 @@ interface PreferencesState {
   duckdbMemoryLimit: DuckDbMemoryLimit
   askProvider: AskProviderId
   askRemoteModelId: string
+  openrouterApiKey: string
   duckdbReady: boolean
   duckdbStatus: 'idle' | 'loading' | 'ready' | 'error'
   setTheme: (theme: 'light' | 'dark') => void
@@ -26,14 +27,16 @@ interface PreferencesState {
   setDuckdbMemoryLimit: (limit: DuckDbMemoryLimit) => void
   setAskProvider: (provider: AskProviderId) => void
   setAskRemoteModelId: (id: string) => void
+  setOpenrouterApiKey: (key: string) => void
   setDuckdbReady: (ready: boolean) => void
   setDuckdbStatus: (status: 'idle' | 'loading' | 'ready' | 'error') => void
   hydrateFromPreferences: (p: {
     theme?: 'light' | 'dark'
     defaultRowLimit?: number
     duckdbMemoryLimit?: DuckDbMemoryLimit
-    askProvider?: AskProviderId
+    askProvider?: AskProviderId | string
     askRemoteModelId?: string
+    openrouterApiKey?: string
   }) => void
 }
 
@@ -52,6 +55,7 @@ export const usePreferencesStore = create<PreferencesState>()(
       duckdbMemoryLimit: DEFAULT_PREFERENCES.duckdbMemoryLimit,
       askProvider: DEFAULT_PREFERENCES.askProvider,
       askRemoteModelId: DEFAULT_PREFERENCES.askRemoteModelId,
+      openrouterApiKey: DEFAULT_PREFERENCES.openrouterApiKey,
       duckdbReady: false,
       duckdbStatus: 'idle',
       setTheme: (theme) => {
@@ -67,16 +71,22 @@ export const usePreferencesStore = create<PreferencesState>()(
             provider === 'local' ? s.askRemoteModelId : defaultRemoteModelFor(provider),
         })),
       setAskRemoteModelId: (id) => set({ askRemoteModelId: id }),
+      setOpenrouterApiKey: (key) => set({ openrouterApiKey: key }),
       setDuckdbReady: (ready) => set({ duckdbReady: ready }),
       setDuckdbStatus: (status) => set({ duckdbStatus: status }),
       hydrateFromPreferences: (p) =>
-        set((s) => ({
-          theme: p.theme ?? s.theme,
-          defaultRowLimit: p.defaultRowLimit ?? s.defaultRowLimit,
-          duckdbMemoryLimit: p.duckdbMemoryLimit ?? s.duckdbMemoryLimit,
-          askProvider: p.askProvider ?? s.askProvider,
-          askRemoteModelId: p.askRemoteModelId ?? s.askRemoteModelId,
-        })),
+        set((s) => {
+          const nextProvider =
+            p.askProvider != null ? coerceAskProvider(p.askProvider) : coerceAskProvider(s.askProvider)
+          return {
+            theme: p.theme ?? s.theme,
+            defaultRowLimit: p.defaultRowLimit ?? s.defaultRowLimit,
+            duckdbMemoryLimit: p.duckdbMemoryLimit ?? s.duckdbMemoryLimit,
+            askProvider: nextProvider,
+            askRemoteModelId: p.askRemoteModelId ?? s.askRemoteModelId,
+            openrouterApiKey: p.openrouterApiKey ?? s.openrouterApiKey,
+          }
+        }),
     }),
     {
       name: 'datacheetah-preferences',
@@ -86,7 +96,17 @@ export const usePreferencesStore = create<PreferencesState>()(
         duckdbMemoryLimit: state.duckdbMemoryLimit,
         askProvider: state.askProvider,
         askRemoteModelId: state.askRemoteModelId,
+        openrouterApiKey: state.openrouterApiKey,
       }),
+      merge: (persisted, current) => {
+        const p = (persisted ?? {}) as Partial<PreferencesState>
+        return {
+          ...current,
+          ...p,
+          askProvider: coerceAskProvider(p.askProvider ?? current.askProvider),
+          openrouterApiKey: p.openrouterApiKey ?? current.openrouterApiKey ?? '',
+        }
+      },
     },
   ),
 )

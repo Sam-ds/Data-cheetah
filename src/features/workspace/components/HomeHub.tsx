@@ -1,128 +1,329 @@
-import { Braces, Database, Wand2 } from 'lucide-react'
-import logo from '@/assets/logo.png'
+import {
+  ArrowRight,
+  Braces,
+  Database,
+  FileDiff,
+  GitCompare,
+  Minimize2,
+  Wand2,
+  type LucideIcon,
+} from 'lucide-react'
+import hero from '@/assets/hero.png'
+import collabDashboard from '@/assets/illustrations/collab-dashboard.png'
+import dataPipeline from '@/assets/illustrations/data-pipeline.png'
+import exploreSolo from '@/assets/illustrations/explore-solo.png'
+import inspect from '@/assets/illustrations/inspect.png'
+import security from '@/assets/illustrations/security.png'
+import cloudSync from '@/assets/illustrations/cloud-sync.png'
+import team from '@/assets/illustrations/team.png'
+import mascotVisualize from '@/assets/illustrations/mascot-visualize.png'
+import mascotGenerate from '@/assets/illustrations/mascot-generate.png'
+import mascotFormatters from '@/assets/illustrations/mascot-formatters.png'
 import { useWorkspaceStore } from '@/features/workspace/store/workspaceStore'
-import { useToolsStore } from '@/features/tools/store/toolsStore'
-import { OPEN_SOURCE_CREDITS } from '@/features/workspace/content/openSourceCredits'
+import { TOOL_LABELS, useToolsStore, type ToolId } from '@/features/tools/store/toolsStore'
+import { PageStage } from './PageStage'
+
+type HomeItem =
+  | {
+      id: 'explore'
+      label: string
+      blurb: string
+      tag: string
+      icon: LucideIcon
+      kind: 'explore'
+    }
+  | {
+      id: ToolId
+      label: string
+      blurb: string
+      tag: string
+      icon: LucideIcon
+      kind: 'tool'
+      toolId: ToolId
+    }
+
+const WORKSPACE: HomeItem = {
+  id: 'explore',
+  label: 'Explore',
+  blurb: 'SQL, charts, stats, and Ask — on your machine',
+  tag: 'CSV · Parquet · JSON · Excel',
+  icon: Database,
+  kind: 'explore',
+}
+
+const TOOLS: Extract<HomeItem, { kind: 'tool' }>[] = [
+  {
+    id: 'json-format',
+    label: TOOL_LABELS['json-format'],
+    blurb: 'Pretty-print and tidy JSON in the browser',
+    tag: 'JSON',
+    icon: Braces,
+    kind: 'tool',
+    toolId: 'json-format',
+  },
+  {
+    id: 'json-minify',
+    label: TOOL_LABELS['json-minify'],
+    blurb: 'Compact JSON into a single line',
+    tag: 'JSON',
+    icon: Minimize2,
+    kind: 'tool',
+    toolId: 'json-minify',
+  },
+  {
+    id: 'json-compare',
+    label: TOOL_LABELS['json-compare'],
+    blurb: 'Diff two JSON documents side by side',
+    tag: 'JSON',
+    icon: GitCompare,
+    kind: 'tool',
+    toolId: 'json-compare',
+  },
+  {
+    id: 'text-compare',
+    label: TOOL_LABELS['text-compare'],
+    blurb: 'Diff plain text or code snippets',
+    tag: 'Text',
+    icon: FileDiff,
+    kind: 'tool',
+    toolId: 'text-compare',
+  },
+  {
+    id: 'synthetic-data',
+    label: TOOL_LABELS['synthetic-data'],
+    blurb: 'Seed rows with an LLM, expand with faker.js',
+    tag: 'Data',
+    icon: Wand2,
+    kind: 'tool',
+    toolId: 'synthetic-data',
+  },
+]
+
+const FEATURES = [
+  {
+    title: 'Connect & explore',
+    blurb: 'Bring CSV, Parquet, JSON, and Excel into DuckDB — all in the browser.',
+    image: dataPipeline,
+    alt: 'Data sources flowing into a dashboard',
+  },
+  {
+    title: 'Visualize insights',
+    blurb: 'Charts, profiles, and Ask help you see patterns without leaving your machine.',
+    image: exploreSolo,
+    alt: 'Person working with a data dashboard',
+  },
+  {
+    title: 'Inspect what matters',
+    blurb: 'Drill into stats, profiles, and results with a focused workspace.',
+    image: inspect,
+    alt: 'Inspecting charts with a magnifying glass',
+  },
+  {
+    title: 'Analyze together',
+    blurb: 'A shared workspace for SQL, results, and exploration side by side.',
+    image: collabDashboard,
+    alt: 'Two people reviewing an analytics dashboard',
+  },
+  {
+    title: 'Private by design',
+    blurb: 'Work stays on-device unless you choose a remote model for Insights.',
+    image: security,
+    alt: 'Security checklist and shield',
+  },
+  {
+    title: 'Sync when you choose',
+    blurb: 'Datasets stay local-first; optional remote models only when you connect them.',
+    image: cloudSync,
+    alt: 'Cloud sync between folder and database',
+  },
+  {
+    title: 'Built for teams of one',
+    blurb: 'Format, compare, generate, and explore — a full suite in one place.',
+    image: team,
+    alt: 'Small team collaborating with laptops',
+  },
+] as const
+
+function HomeRow({
+  item,
+  onClick,
+}: {
+  item: HomeItem
+  onClick: () => void
+}) {
+  const Icon = item.icon
+  return (
+    <button type="button" onClick={onClick} className="home-section group">
+      <span className="home-section-icon" aria-hidden>
+        <Icon className="h-5 w-5" strokeWidth={1.75} />
+      </span>
+      <span className="min-w-0 flex-1 text-left">
+        <span className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
+          <span className="text-base font-semibold tracking-tight text-foreground">{item.label}</span>
+          <span className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
+            {item.tag}
+          </span>
+        </span>
+        <span className="mt-1 block text-sm text-muted-foreground">{item.blurb}</span>
+      </span>
+      <ArrowRight
+        className="h-4 w-4 shrink-0 text-muted-foreground transition group-hover:translate-x-0.5 group-hover:text-[#f2a01f]"
+        aria-hidden
+      />
+    </button>
+  )
+}
 
 export function HomeHub() {
   const setAppMode = useWorkspaceStore((s) => s.setAppMode)
   const openTool = useToolsStore((s) => s.openTool)
 
-  return (
-    <div className="home-stage flex h-full flex-col items-center overflow-auto p-8 pb-10">
-      <div className="home-orb home-orb--amber" aria-hidden />
-      <div className="home-orb home-orb--sky" aria-hidden />
-      <div className="home-orb home-orb--mint" aria-hidden />
-      <div className="home-blazes" aria-hidden>
-        <span className="home-blaze" />
-        <span className="home-blaze" />
-        <span className="home-blaze" />
-        <span className="home-blaze" />
-        <span className="home-blaze" />
-      </div>
+  const openExplore = () => setAppMode('explore')
+  const openToolItem = (toolId: ToolId) => {
+    openTool(toolId)
+    setAppMode('tools')
+  }
 
-      <div className="home-content flex w-full max-w-4xl flex-1 flex-col items-center gap-10 text-center pt-6 sm:pt-10">
-        <div className="home-logo-frame">
+  return (
+    <PageStage
+      enterKey="home"
+      animateEnter={false}
+      showArt={false}
+      contentClassName="mx-auto flex w-full max-w-5xl flex-1 flex-col px-0 pb-12 sm:pb-16"
+    >
+      <header className="home-hero-header w-full px-6 pt-4 sm:px-8">
+        <div className="home-hero-frame">
           <img
-            src={logo}
+            src={hero}
             alt="DataCheetah"
-            className="home-logo h-40 w-auto max-w-[min(400px,85vw)] rounded-lg object-contain"
+            className="home-hero"
           />
         </div>
+        <p className="home-brand-name" aria-label="datacheetah">
+          <span className="home-brand-data">data</span>
+          <span className="home-brand-cheetah">cheetah</span>
+        </p>
+        <p className="home-tagline mx-auto mt-4 text-center">
+          <span className="home-tagline-text">A suite of data tools</span>
+        </p>
+      </header>
 
-        <div className="home-fade-up home-fade-up-delay-1 space-y-2">
-          <p className="text-base font-semibold tracking-tight text-black dark:text-foreground">
-            Blazing-fast data tools and exploration
-          </p>
-          <p className="mx-auto max-w-lg text-sm text-neutral-800 dark:text-muted-foreground">
-            Explore datasets and tidy JSON on your machine, with the option to keep your data from
-            ever leaving your device.
-          </p>
-        </div>
+      <div className="mt-12 flex flex-col gap-10 px-6 sm:px-8">
+        <section
+          className="home-feature-split home-fade-up"
+          aria-labelledby="home-workspace"
+        >
+          <div className="home-feature-copy">
+            <h2
+              id="home-workspace"
+              className="mb-1 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground"
+            >
+              Workspace
+            </h2>
+            <nav className="home-rows flex flex-col" aria-label="Workspace">
+              <HomeRow item={WORKSPACE} onClick={openExplore} />
+            </nav>
+          </div>
+          <img
+            src={mascotVisualize}
+            alt="DataCheetah visualizing charts"
+            className="home-illu home-illu--side home-illu--mascot"
+          />
+        </section>
 
-        <div className="home-fade-up home-fade-up-delay-2 grid w-full gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <button
-            type="button"
-            onClick={() => setAppMode('explore')}
-            className="group rounded-2xl border border-neutral-300 bg-white px-5 py-6 text-left transition hover:border-[#f2a01f]/50 hover:bg-[rgba(242,160,31,0.06)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f2a01f]/40 dark:border-border/60 dark:bg-background/55"
-          >
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[rgba(242,160,31,0.15)] text-[#f2a01f]">
-              <Database className="h-5 w-5" />
-            </div>
-            <p className="mt-4 text-sm font-semibold text-black dark:text-foreground">Data exploration</p>
-            <p className="mt-1.5 text-xs leading-relaxed text-neutral-800 dark:text-muted-foreground">
-              Open CSV, Parquet, JSON, or Excel. Query with SQL, charts, stats, and Ask, all in the
-              browser.
-            </p>
-            <p className="mt-3 text-[11px] font-medium text-[#b45309] group-hover:underline dark:text-[#f2a01f]">
-              Open workspace →
-            </p>
-          </button>
+        <section
+          className="home-feature-split home-feature-split--reverse home-fade-up home-fade-up-delay-1"
+          aria-labelledby="home-tools"
+        >
+          <div className="home-feature-copy">
+            <h2
+              id="home-tools"
+              className="mb-1 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground"
+            >
+              Tools
+            </h2>
+            <nav className="home-rows flex flex-col" aria-label="Tools">
+              {TOOLS.map((item) => (
+                <HomeRow
+                  key={item.id}
+                  item={item}
+                  onClick={() => openToolItem(item.toolId)}
+                />
+              ))}
+            </nav>
+          </div>
+          <img
+            src={mascotFormatters}
+            alt="DataCheetah formatting and tooling"
+            className="home-illu home-illu--side home-illu--mascot"
+          />
+        </section>
 
-          <button
-            type="button"
-            onClick={() => {
-              openTool('json-format')
-              setAppMode('tools')
-            }}
-            className="group rounded-2xl border border-neutral-300 bg-white px-5 py-6 text-left transition hover:border-sky-500/40 hover:bg-sky-500/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/30 dark:border-border/60 dark:bg-background/55"
-          >
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-500/15 text-sky-600 dark:text-sky-400">
-              <Braces className="h-5 w-5" />
-            </div>
-            <p className="mt-4 text-sm font-semibold text-black dark:text-foreground">JSON & text tools</p>
-            <p className="mt-1.5 text-xs leading-relaxed text-neutral-800 dark:text-muted-foreground">
-              Format, minify, and compare JSON or plain text.
-            </p>
-            <p className="mt-3 text-[11px] font-medium text-sky-700 group-hover:underline dark:text-sky-400">
-              Open tools →
-            </p>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              openTool('synthetic-data')
-              setAppMode('tools')
-            }}
-            className="group rounded-2xl border border-neutral-300 bg-white px-5 py-6 text-left transition hover:border-emerald-500/40 hover:bg-emerald-500/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/30 dark:border-border/60 dark:bg-background/55 sm:col-span-2 lg:col-span-1"
-          >
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-700 dark:text-emerald-400">
-              <Wand2 className="h-5 w-5" />
-            </div>
-            <p className="mt-4 text-sm font-semibold text-black dark:text-foreground">Generate data</p>
-            <p className="mt-1.5 text-xs leading-relaxed text-neutral-800 dark:text-muted-foreground">
-              Seed a few realistic rows with your LLM, then expand with faker.js entirely in the
-              browser.
-            </p>
-            <p className="mt-3 text-[11px] font-medium text-emerald-800 group-hover:underline dark:text-emerald-400">
-              Generate data →
-            </p>
-          </button>
-        </div>
-
-        <div className="home-fade-up home-fade-up-delay-3 mt-auto w-full space-y-2 border-t border-neutral-200 pt-8 dark:border-border/60">
-          <p className="text-xs font-semibold uppercase tracking-wide text-neutral-600 dark:text-muted-foreground">
-            Powered by open source
-          </p>
-          <p className="mx-auto max-w-2xl text-[11px] leading-relaxed text-neutral-700 dark:text-muted-foreground">
-            {OPEN_SOURCE_CREDITS.map((c, i) => (
-              <span key={c.name}>
-                {i > 0 && <span className="text-neutral-400"> · </span>}
-                <a
-                  href={c.url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="underline-offset-2 hover:underline"
-                  title={c.role}
-                >
-                  {c.name}
-                </a>
-              </span>
-            ))}
-          </p>
-        </div>
+        <button
+          type="button"
+          onClick={() => openToolItem('synthetic-data')}
+          className="home-mascot-cta home-fade-up group"
+        >
+          <img
+            src={mascotGenerate}
+            alt=""
+            className="home-illu home-illu--cta home-illu--mascot"
+            aria-hidden
+          />
+          <span className="home-mascot-cta-copy">
+            <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+              Generate Data
+            </span>
+            <span className="mt-1 block text-base font-semibold tracking-tight text-foreground">
+              Seed synthetic datasets in the browser
+            </span>
+            <span className="mt-1 block text-sm text-muted-foreground">
+              LLM seed rows, then expand with faker.js — nothing leaves your device unless you choose.
+            </span>
+            <span className="mt-3 inline-flex items-center gap-1 text-[11px] font-medium text-[#b45309] group-hover:underline dark:text-[#f2a01f]">
+              Open Generate Data
+              <ArrowRight className="h-3.5 w-3.5 transition group-hover:translate-x-0.5" />
+            </span>
+          </span>
+        </button>
       </div>
-    </div>
+
+      <section
+        className="home-fade-up home-fade-up-delay-2 mt-14 px-6 sm:px-8"
+        aria-labelledby="home-capabilities"
+      >
+        <h2
+          id="home-capabilities"
+          className="mb-6 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground"
+        >
+          Capabilities
+        </h2>
+        <div className="home-cap-grid">
+          {FEATURES.map((f, i) => (
+            <article
+              key={f.title}
+              className="home-cap"
+              style={{ animationDelay: `${0.08 * i + 0.15}s` }}
+            >
+              <img src={f.image} alt={f.alt} className="home-illu home-illu--cap" />
+              <h3 className="mt-3 text-sm font-semibold tracking-tight text-foreground">
+                {f.title}
+              </h3>
+              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{f.blurb}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <footer className="home-fade-up mt-auto px-6 pt-14 sm:px-8">
+        <button
+          type="button"
+          onClick={() => setAppMode('license')}
+          className="text-xs text-muted-foreground underline-offset-2 transition hover:text-foreground hover:underline"
+        >
+          Built using open source tools
+        </button>
+      </footer>
+    </PageStage>
   )
 }

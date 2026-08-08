@@ -1,5 +1,6 @@
 import { db } from '@/lib/db/dexie'
 import { DEFAULT_PREFERENCES, type Preferences } from '@/types/preferences'
+import { coerceAskProvider } from '@/types/askSettings'
 import type { RecentFileMeta } from '@/types/dataset'
 import type { SavedQuery } from '@/types/query'
 
@@ -9,6 +10,8 @@ export async function loadPreferences(): Promise<Preferences> {
   return {
     ...DEFAULT_PREFERENCES,
     ...stored,
+    askProvider: coerceAskProvider(stored.askProvider),
+    openrouterApiKey: stored.openrouterApiKey ?? '',
     layout: { ...DEFAULT_PREFERENCES.layout, ...stored.layout },
     editorSettings: { ...DEFAULT_PREFERENCES.editorSettings, ...stored.editorSettings },
   }

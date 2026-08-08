@@ -13,11 +13,9 @@ import {
   unloadAskLlm,
 } from '../services/llmSession'
 import { checkWebGpuSupport, probeWebGpu, resetWebGpuProbeCache } from '../llm/nullProvider'
-import { isVaultUnlocked } from '@/features/settings/services/secretsVault'
-import { useVaultSessionStore } from '@/features/settings/store/vaultSessionStore'
 import { savePreferences } from '@/services/storageService'
 import { ASK_MODEL_CATALOG } from '../config/modelCatalog'
-import { ASK_PROVIDER_LABELS, modelsForProvider } from '@/types/askSettings'
+import { ASK_PROVIDER_LABELS } from '@/types/askSettings'
 import { useSqlStore, useQueryStore } from '@/features/sql/store/sqlStore'
 import { useWorkspaceStore } from '@/features/workspace/store/workspaceStore'
 
@@ -33,9 +31,10 @@ export function useAsk() {
   const defaultRowLimit = usePreferencesStore((s) => s.defaultRowLimit)
   const askProvider = usePreferencesStore((s) => s.askProvider)
   const askRemoteModelId = usePreferencesStore((s) => s.askRemoteModelId)
+  const openrouterApiKey = usePreferencesStore((s) => s.openrouterApiKey)
   const setAskRemoteModelId = usePreferencesStore((s) => s.setAskRemoteModelId)
-  const vaultUnlocked = useVaultSessionStore((s) => s.unlocked)
   const isLocal = askProvider === 'local'
+  const remoteKeyReady = Boolean(openrouterApiKey?.trim())
   const setEditorContent = useSqlStore((s) => s.setEditorContent)
   const setResult = useQueryStore((s) => s.setResult)
   const setQueryError = useQueryStore((s) => s.setError)
@@ -79,8 +78,7 @@ export function useAsk() {
       const entry = ASK_MODEL_CATALOG.find((m) => m.id === selectedModelId)
       return entry ? `${entry.label} (${entry.sizeHint})` : selectedModelId
     }
-    const remote = modelsForProvider(askProvider).find((m) => m.id === askRemoteModelId)
-    return remote?.label ?? askRemoteModelId
+    return askRemoteModelId || 'openai/gpt-4o'
   })()
 
   /** Re-sync Ready if the engine is still in memory (e.g. after leaving Home). */
@@ -194,8 +192,8 @@ export function useAsk() {
         return
       }
       setWebGpuState(gpu)
-    } else if (!isVaultUnlocked()) {
-      const msg = 'Unlock the encrypted API vault in Settings before connecting a remote model.'
+    } else if (!remoteKeyReady) {
+      const msg = 'Paste an OpenRouter API key in Settings before connecting.'
       setError(msg)
       toast.error(msg)
       return
@@ -261,7 +259,7 @@ export function useAsk() {
       endBusy()
       toast.error(message, { id: 'ask-model-load' })
     }
-  }, [beginBusy, endBusy, isLocal, setError, setLoadProgress, setModelReady, setPhase])
+  }, [beginBusy, endBusy, isLocal, remoteKeyReady, setError, setLoadProgress, setModelReady, setPhase])
 
   const runGenerateInsights = useCallback(async () => {
     const provider = getAskLlmProvider()
@@ -500,7 +498,7 @@ export function useAsk() {
     askRemoteModelId,
     isLocal,
     webGpu: webGpuState,
-    vaultUnlocked,
+    remoteKeyReady,
     setSelectedModelId: selectModel,
     setAskRemoteModelId: selectRemoteModel,
     setSelectedFileIds,

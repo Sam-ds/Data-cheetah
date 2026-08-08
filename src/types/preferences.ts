@@ -19,8 +19,10 @@ export interface Preferences {
   /** DuckDB WASM memory_limit (applied on engine init) */
   duckdbMemoryLimit: DuckDbMemoryLimit
   askProvider: AskProviderId
-  /** Remote / compatible model id when not using local WebLLM */
+  /** OpenRouter (or legacy remote) model id when not using local WebLLM */
   askRemoteModelId: string
+  /** OpenRouter API key — stored on this device only (not encrypted) */
+  openrouterApiKey: string
   updatedAt: Date
 }
 
@@ -47,6 +49,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
   defaultRowLimit: 10000,
   duckdbMemoryLimit: '1GB',
   askProvider: 'local',
-  askRemoteModelId: 'gpt-4o-mini',
+  askRemoteModelId: 'openai/gpt-4o',
+  openrouterApiKey: '',
   updatedAt: new Date(),
 }

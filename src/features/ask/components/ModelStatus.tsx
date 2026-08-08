@@ -9,7 +9,7 @@ interface ModelStatusProps {
   loading: boolean
   progressText: string
   progress: number
-  vaultUnlocked: boolean
+  remoteKeyReady: boolean
   disabled?: boolean
   onLoad: () => void
   onClear: () => void
@@ -24,7 +24,7 @@ export function ModelStatus({
   loading,
   progressText,
   progress,
-  vaultUnlocked,
+  remoteKeyReady,
   disabled,
   onLoad,
   onClear,
@@ -41,8 +41,8 @@ export function ModelStatus({
           <p className="mt-0.5 text-[11px] text-muted-foreground">
             Provider: <span className="text-foreground">{providerLabel}</span>
             <span className="text-muted-foreground"> · configured in Settings</span>
-            {!isLocal && !vaultUnlocked && (
-              <span className="text-destructive"> — unlock API vault in Settings</span>
+            {!isLocal && !remoteKeyReady && (
+              <span className="text-destructive"> — add OpenRouter API key in Settings</span>
             )}
           </p>
           <p className="mt-1 text-[11px] text-muted-foreground">
