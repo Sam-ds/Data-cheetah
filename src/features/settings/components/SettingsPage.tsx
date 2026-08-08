@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Database, FlaskConical, Sparkles, Trash2 } from 'lucide-react'
+import { ArrowLeft, Database, FlaskConical, Sparkles, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import {
@@ -19,6 +19,7 @@ import { rehydratePersistedFiles } from '@/features/files/services/localDatasetS
 import { resetAskLlmSession, unloadAskLlm, useAskStore, ASK_MODEL_CATALOG } from '@/features/ask'
 import { toast } from 'sonner'
 import { PageStage } from '@/features/workspace/components/PageStage'
+import { goHome } from '@/features/workspace/goHome'
 
 const PROVIDERS: AskProviderId[] = ['local', 'openrouter']
 
@@ -131,22 +132,27 @@ export function SettingsPage() {
   }
 
   return (
-    <PageStage enterKey="settings" contentClassName="mx-auto flex h-full max-w-2xl flex-col gap-6 p-6">
+    <PageStage enterKey="settings" contentClassName="mx-auto flex h-full w-full max-w-3xl flex-col gap-6 px-6 py-8 pb-16">
       <div>
-        <h1 className="home-title text-lg font-semibold">Settings</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
+        <Button variant="ghost" size="sm" className="mb-6 -ml-2 gap-1.5" onClick={goHome}>
+          <ArrowLeft className="h-3.5 w-3.5" />
+          Back
+        </Button>
+        <h1 className="page-title">Settings</h1>
+        <span className="page-eyebrow mt-2">On-device preferences</span>
+        <p className="mt-3 max-w-xl text-sm leading-relaxed text-muted-foreground">
           DuckDB memory, Insights provider (local or OpenRouter), and on-device preferences.
         </p>
       </div>
 
       <div className="page-stagger flex flex-col gap-6">
-      <section className="page-panel space-y-3 p-4">
+      <section className="page-panel space-y-4 p-5">
         <div className="flex items-center gap-2 text-sm font-medium">
-          <Database className="h-4 w-4 text-[#f2a01f]" />
+          <span className="page-heading-icon"><Database className="h-4 w-4" /></span>
           DuckDB engine memory
         </div>
         <select
-          className="h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
+          className="page-field"
           value={duckdbMemoryLimit}
           onChange={(e) => void onMemoryChange(e.target.value as DuckDbMemoryLimit)}
         >
@@ -164,9 +170,9 @@ export function SettingsPage() {
         </Button>
       </section>
 
-      <section className="page-panel space-y-3 p-4">
+      <section className="page-panel space-y-4 p-5">
         <div className="flex items-center gap-2 text-sm font-medium">
-          <Sparkles className="h-4 w-4 text-[#f2a01f]" />
+          <span className="page-heading-icon"><Sparkles className="h-4 w-4" /></span>
           Insights / Ask provider
         </div>
         <p className="text-[11px] text-muted-foreground">
@@ -174,7 +180,7 @@ export function SettingsPage() {
           id yourself (for example <code className="text-foreground">openai/gpt-4o</code>).
         </p>
         <select
-          className="h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
+          className="page-field"
           value={askProvider}
           onChange={(e) => void onProviderChange(e.target.value as AskProviderId)}
         >
@@ -189,7 +195,7 @@ export function SettingsPage() {
           <>
             <label className="block text-xs text-muted-foreground">Local WebLLM model</label>
             <select
-              className="h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
+              className="page-field"
               value={selectedLocalModelId}
               onChange={(e) => void onLocalModelChange(e.target.value)}
             >
@@ -225,14 +231,14 @@ export function SettingsPage() {
             <input
               type="password"
               autoComplete="off"
-              className="h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
+              className="page-field"
               value={draftKey}
               onChange={(e) => setDraftKey(e.target.value)}
               placeholder="sk-or-…"
             />
             <label className="block text-xs text-muted-foreground">Model id</label>
             <input
-              className="h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
+              className="page-field"
               value={draftModel}
               onChange={(e) => setDraftModel(e.target.value)}
               placeholder="openai/gpt-4o"
@@ -241,7 +247,7 @@ export function SettingsPage() {
               Key and model are stored on this device only (browser preferences). Not encrypted at rest.
               Get a key at{' '}
               <a
-                className="underline underline-offset-2"
+                className="brand-link underline underline-offset-2"
                 href="https://openrouter.ai/keys"
                 target="_blank"
                 rel="noreferrer"

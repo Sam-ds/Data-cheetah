@@ -41,22 +41,3 @@ export const FAQ_ITEMS: FaqItem[] = [
     a: 'DataCheetah is a full browser workspace: editor, grid, charts, stats, Ask, tools, and local workspaces. DuckDB itself is the SQL engine underneath.',
   },
 ]
-
-export const HOW_USEFUL = [
-  {
-    title: 'Explore spreadsheets and extracts',
-    body: 'Open CSV or Excel, run SQL, and skim results without installing a desktop database.',
-  },
-  {
-    title: 'Keep sensitive files local',
-    body: 'Query on-device. No account required. Optional remote Ask only if you choose it.',
-  },
-  {
-    title: 'Prototype SQL quickly',
-    body: 'Format, lint, save queries, and export results to CSV or Excel.',
-  },
-  {
-    title: 'Charts, stats, and Ask',
-    body: 'Profile columns, chart results, or ask questions that become SQL against your tables.',
-  },
-]

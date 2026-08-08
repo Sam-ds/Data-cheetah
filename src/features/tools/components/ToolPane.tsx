@@ -23,9 +23,10 @@ export function ToolPane({
 }: ToolPaneProps) {
   return (
     <div className={cn('flex h-full flex-col gap-4 p-4 sm:p-5', className)}>
-      <div className="flex flex-wrap items-start justify-between gap-3 rounded-xl border bg-gradient-to-br from-muted/50 via-background to-background px-4 py-3">
+      <div className="tool-pane-header flex flex-wrap items-start justify-between gap-3 px-4 py-3.5">
         <div className="min-w-0">
-          <h2 className="text-sm font-semibold tracking-tight text-foreground">{title}</h2>
+          <span className="page-eyebrow">Active tool</span>
+          <h2 className="mt-1 text-base font-semibold tracking-tight text-foreground">{title}</h2>
           {description && (
             <p className="mt-1 max-w-2xl text-xs leading-relaxed text-muted-foreground">
               {description}
@@ -49,13 +50,32 @@ export function ToolPane({
   )
 }
 
-interface ToolTextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
-  label: string
+export function ToolEmptyState({
+  icon,
+  title,
+  description,
+}: {
+  icon: ReactNode
+  title: string
+  description: ReactNode
+}) {
+  return (
+    <div className="tool-empty-state">
+      <span className="tool-empty-state-icon" aria-hidden>{icon}</span>
+      <p className="mt-3 text-sm font-semibold text-foreground">{title}</p>
+      <div className="mt-1 max-w-md text-xs leading-relaxed text-muted-foreground">{description}</div>
+    </div>
+  )
 }
 
-export function ToolTextarea({ label, className, ...props }: ToolTextareaProps) {
+interface ToolTextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
+  label: string
+  containerClassName?: string
+}
+
+export function ToolTextarea({ label, className, containerClassName, ...props }: ToolTextareaProps) {
   return (
-    <label className="flex h-full min-h-0 flex-col gap-1.5">
+    <label className={cn('flex h-full min-h-0 flex-col gap-1.5', containerClassName)}>
       <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
         {label}
       </span>

@@ -5,11 +5,12 @@ import {
   ToolPane,
   ToolTextarea,
   ToolActionButton,
+  ToolEmptyState,
   sizeWarning,
 } from '../components/ToolPane'
 import { inferPlanFromSample } from './inferFromSample'
 import { generateSyntheticRows } from './generateSynthetic'
-import { downloadText, rowsToCsv, rowsToFile, rowsToJson } from './exportSynthetic'
+import { downloadText, rowsToCsv, rowsToFile, rowsToJson, streamPlanToCsv } from './exportSynthetic'
 import { seedPlanWithLlm } from './llmSeedService'
 import {
   applyColumnRules,
@@ -28,6 +29,7 @@ import { useFilesStore } from '@/features/files/store/filesStore'
 import { useSqlStore } from '@/features/sql/store/sqlStore'
 import { buildDefaultQuery } from '@/features/profiling/services/profilingService'
 import { ensureDuckDB } from '@/hooks/useDuckDB'
+import { playSuccess } from '@/lib/audio/uiSounds'
 import { cn } from '@/lib/utils/cn'
 
 const SAMPLE_PLACEHOLDER = `order_id,customer_email,quantity,order_date
@@ -39,6 +41,10 @@ quantity: integer, not null, from 1, to 20
 price: number, from 0.5, to 99.99
 order_date: date, from 2020-01-01, to 2026-12-31
 customer_email: string, unique, not null`
+
+const IN_MEMORY_ROW_LIMIT = 50_000
+const MAX_ROW_LIMIT = 50_000_000
+const LARGE_PREVIEW_ROWS = 50
 
 /** Turn raw WebGPU / API errors into short actionable copy for the toast. */
 function friendlyLlmSeedError(err: unknown, askProvider: AskProviderId): string {
@@ -72,6 +78,7 @@ export function SyntheticDataTool() {
     'E-commerce orders for a small bookstore. Keep emails realistic.',
   )
   const [targetRows, setTargetRows] = useState(100)
+  const [generatedTargetRows, setGeneratedTargetRows] = useState<number | null>(null)
   const [seedCount, setSeedCount] = useState(10)
   const [useLlm, setUseLlm] = useState(true)
   const [busy, setBusy] = useState(false)
@@ -137,7 +144,7 @@ export function SyntheticDataTool() {
     setLlmProgress(null)
     try {
       const seedN = Math.min(20, Math.max(3, seedCount))
-      const target = Math.min(50_000, Math.max(1, targetRows))
+      const target = Math.min(MAX_ROW_LIMIT, Math.max(1, Math.floor(targetRows)))
       const rules = parseColumnRules(columnRulesText)
       const hasSample = sample.trim().length > 0
       if (!hasSample && rules.length === 0) {
@@ -171,7 +178,6 @@ export function SyntheticDataTool() {
             setLlmProgress({ text: 'Loading model…', progress: 0.02 })
             await provider.load(getActiveAskModelId(), (p) => {
               setLlmProgress({ text: p.text, progress: p.progress })
-              setStatus(p.text)
             })
           }
           nextPlan = await seedPlanWithLlm(
@@ -181,7 +187,6 @@ export function SyntheticDataTool() {
             seedN,
             (text, progress) => {
               setLlmProgress({ text, progress })
-              setStatus(text)
             },
             rules,
           )
@@ -201,14 +206,28 @@ export function SyntheticDataTool() {
         nextPlan = buildFallbackPlan()
       }
 
-      setStatus(`Generating ${target} rows with faker.js…`)
-      const generated = generateSyntheticRows(nextPlan, { targetRows: target })
+      const streamed = target > IN_MEMORY_ROW_LIMIT
+      const previewTarget = streamed ? LARGE_PREVIEW_ROWS : target
+      setStatus(
+        streamed
+          ? `Preparing a ${previewTarget}-row preview for ${target.toLocaleString()} streamed rows…`
+          : `Generating ${target.toLocaleString()} rows with faker.js…`,
+      )
+      const generated = generateSyntheticRows(nextPlan, { targetRows: previewTarget })
       setPlan(nextPlan)
       setRows(generated)
+      setGeneratedTargetRows(target)
       setStatus(
-        `Done: ${generated.length} rows (${nextPlan.source === 'llm' ? 'LLM seed' : 'sample/rules'} + faker).`,
+        streamed
+          ? `Preview ready. Click Stream CSV to write ${target.toLocaleString()} rows directly to disk.`
+          : `Done: ${generated.length} rows (${nextPlan.source === 'llm' ? 'LLM seed' : 'sample/rules'} + faker).`,
       )
-      toast.success(`Generated ${generated.length.toLocaleString()} synthetic rows`)
+      playSuccess()
+      toast.success(
+        streamed
+          ? `Ready to stream ${target.toLocaleString()} rows`
+          : `Generated ${generated.length.toLocaleString()} synthetic rows`,
+      )
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Generation failed'
       setError(message)
@@ -219,13 +238,44 @@ export function SyntheticDataTool() {
     }
   }
 
-  const handleDownload = (format: 'csv' | 'json') => {
+  const handleDownload = async (format: 'csv' | 'json') => {
     if (rows.length === 0) return
+    if (
+      format === 'csv' &&
+      plan &&
+      generatedTargetRows != null &&
+      generatedTargetRows > IN_MEMORY_ROW_LIMIT
+    ) {
+      setBusy(true)
+      try {
+        await streamPlanToCsv(plan, generatedTargetRows, (completed, total) => {
+          const percent = Math.round((completed / total) * 100)
+          setStatus(
+            `Streaming ${completed.toLocaleString()} of ${total.toLocaleString()} rows (${percent}%)…`,
+          )
+        })
+        setStatus(`Saved ${generatedTargetRows.toLocaleString()} rows to synthetic_data.csv`)
+        playSuccess()
+        toast.success('Large CSV export complete')
+      } catch (err) {
+        if (err instanceof DOMException && err.name === 'AbortError') {
+          setStatus('Large CSV export cancelled')
+        } else {
+          const message = err instanceof Error ? err.message : 'Large CSV export failed'
+          setError(message)
+          toast.error(message)
+        }
+      } finally {
+        setBusy(false)
+      }
+      return
+    }
     if (format === 'csv') {
       downloadText('synthetic_data.csv', rowsToCsv(rows), 'text/csv;charset=utf-8')
     } else {
       downloadText('synthetic_data.json', rowsToJson(rows), 'application/json')
     }
+    playSuccess()
     toast.success(`Downloaded synthetic_data.${format}`)
   }
 
@@ -250,7 +300,7 @@ export function SyntheticDataTool() {
   return (
     <ToolPane
       title="Generate Data"
-      description="Optional sample + column rules (type, unique, not null, from/to). Max 50,000 rows. LLM can seed a few rows; faker.js fills the rest in the browser."
+      description="Optional sample + column rules (type, unique, not null, from/to). Up to 50 million rows via streamed CSV; faker.js fills rows locally."
       error={error}
       warning={sizeWarning(sample, columnRulesText, context) ?? llmReadyHint}
       actions={
@@ -262,21 +312,23 @@ export function SyntheticDataTool() {
           <ToolActionButton
             variant="outline"
             disabled={!rows.length || busy}
-            onClick={() => handleDownload('csv')}
+            onClick={() => void handleDownload('csv')}
           >
             <Download className="h-3.5 w-3.5" />
-            CSV
+            {generatedTargetRows != null && generatedTargetRows > IN_MEMORY_ROW_LIMIT
+              ? 'Stream CSV'
+              : 'CSV'}
           </ToolActionButton>
           <ToolActionButton
             variant="outline"
-            disabled={!rows.length || busy}
-            onClick={() => handleDownload('json')}
+            disabled={!rows.length || busy || (generatedTargetRows ?? 0) > IN_MEMORY_ROW_LIMIT}
+            onClick={() => void handleDownload('json')}
           >
             JSON
           </ToolActionButton>
           <ToolActionButton
             variant="secondary"
-            disabled={!rows.length || busy}
+            disabled={!rows.length || busy || (generatedTargetRows ?? 0) > IN_MEMORY_ROW_LIMIT}
             onClick={() => void handleOpenExplore()}
           >
             <Database className="h-3.5 w-3.5" />
@@ -285,14 +337,14 @@ export function SyntheticDataTool() {
         </>
       }
     >
-      <div className="flex h-full min-h-0 flex-col gap-3">
+      <div className="flex h-full min-h-0 flex-col gap-3 overflow-y-auto pr-1">
         <div className="flex flex-wrap items-end gap-3 rounded-lg border border-border/60 bg-muted/20 px-3 py-2">
           <label className="space-y-1 text-[11px]">
             <span className="text-muted-foreground">Rows</span>
             <input
               type="number"
               min={1}
-              max={50000}
+              max={MAX_ROW_LIMIT}
               className="block h-8 w-24 rounded-md border border-input bg-background px-2 text-xs"
               value={targetRows}
               onChange={(e) => setTargetRows(Number(e.target.value) || 1)}
@@ -322,14 +374,14 @@ export function SyntheticDataTool() {
           {askProvider === 'local' && gpuProbe === 'failed' && (
             <button
               type="button"
-              className="pb-1 text-[11px] font-medium text-[#b45309] underline dark:text-[#f2a01f]"
+              className="brand-link pb-1 text-[11px] font-medium underline"
               onClick={() => setAppMode('settings')}
             >
               Switch to remote model in Settings
             </button>
           )}
           <div className="ml-auto flex items-center gap-1.5 pb-1 text-[11px] text-muted-foreground">
-            <Sparkles className="h-3.5 w-3.5 text-[#f2a01f]" />
+            <Sparkles className="h-3.5 w-3.5 text-[var(--brand)]" />
             Provider: {ASK_PROVIDER_LABELS[askProvider]}
           </div>
         </div>
@@ -346,7 +398,7 @@ export function SyntheticDataTool() {
                 </div>
                 <div className="h-1.5 overflow-hidden rounded-full bg-muted">
                   <div
-                    className="h-full rounded-full bg-[#f2a01f] transition-[width] duration-200"
+                    className="h-full rounded-full bg-[var(--brand)] transition-[width] duration-200"
                     style={{
                       width: `${Math.min(100, Math.max(2, Math.round(llmProgress.progress * 100)))}%`,
                     }}
@@ -354,7 +406,7 @@ export function SyntheticDataTool() {
                 </div>
               </div>
             )}
-            {(status || plan) && (
+            {!(llmProgress && busy) && (status || plan) && (
               <p className="text-[11px] text-muted-foreground">
                 {status}
                 {plan && !busy && (
@@ -368,32 +420,35 @@ export function SyntheticDataTool() {
           </div>
         )}
 
-        <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 lg:grid-cols-2">
-          <div className="flex min-h-0 flex-col gap-3">
+        <div className="grid min-h-[480px] flex-none grid-cols-1 gap-3 lg:flex-1 lg:grid-cols-2">
+          <div className="grid min-h-0 gap-3 lg:grid-rows-[minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,0.7fr)]">
             <ToolTextarea
-              label="Sample (CSV or JSON, optional if rules define columns)"
+              label="Sample (CSV or JSON)"
               placeholder={SAMPLE_PLACEHOLDER}
               value={sample}
               onChange={(e) => setSample(e.target.value)}
-              className="min-h-[120px]"
+              containerClassName="synthetic-input-card synthetic-input-card--sample h-[164px] lg:h-full"
+              className="border-blue-500/20 bg-background/70 focus:ring-blue-500/30"
             />
             <ToolTextarea
               label="Column rules (optional — type, unique, not null, from/to)"
               placeholder={RULES_PLACEHOLDER}
               value={columnRulesText}
               onChange={(e) => setColumnRulesText(e.target.value)}
-              className="min-h-[100px]"
+              containerClassName="synthetic-input-card synthetic-input-card--rules h-[144px] lg:h-full"
+              className="border-amber-500/20 bg-background/70 focus:ring-amber-500/30"
             />
             <ToolTextarea
               label="Context"
               placeholder="Describe the domain, constraints, locale…"
               value={context}
               onChange={(e) => setContext(e.target.value)}
-              className="min-h-[72px]"
+              containerClassName="synthetic-input-card synthetic-input-card--context h-[120px] lg:h-full"
+              className="border-violet-500/20 bg-background/70 focus:ring-violet-500/30"
             />
           </div>
 
-          <div className="flex min-h-0 flex-col gap-1.5">
+          <div className="flex min-h-[240px] flex-col gap-1.5 lg:min-h-0">
             <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
               Preview ({previewRows.length}
               {rows.length > previewRows.length ? ` of ${rows.length}` : ''} rows)
@@ -405,9 +460,11 @@ export function SyntheticDataTool() {
               )}
             >
               {!rows.length ? (
-                <p className="p-4 text-center text-xs text-muted-foreground">
-                  Generated rows will appear here
-                </p>
+                <ToolEmptyState
+                  icon={<Database className="h-5 w-5" />}
+                  title="Preview your dataset"
+                  description="Generated rows will appear here before you download or open them in Explore."
+                />
               ) : (
                 <table className="w-full border-collapse text-left text-[11px]">
                   <thead className="sticky top-0 bg-muted/80 backdrop-blur">

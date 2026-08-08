@@ -268,6 +268,28 @@ export interface GenerateOptions {
   seed?: number
 }
 
+/**
+ * Generate one row without retaining cross-row state. Used by large streamed
+ * exports where keeping millions of rows or uniqueness Sets would exhaust RAM.
+ */
+export function generateSyntheticRow(
+  plan: SchemaPlan,
+  rowIndex: number,
+): Record<string, unknown> {
+  const seed = plan.rows[rowIndex]
+  if (seed) return normalizeSeedRow(seed, plan.columns)
+
+  const row: Record<string, unknown> = {}
+  for (const col of plan.columns) {
+    if (col.notNull === false && !col.unique && faker.number.int({ min: 1, max: 10 }) === 1) {
+      row[col.name] = null
+    } else {
+      row[col.name] = valueForColumn(col, col.unique ? rowIndex : 0)
+    }
+  }
+  return row
+}
+
 export function generateSyntheticRows(plan: SchemaPlan, opts: GenerateOptions): Record<string, unknown>[] {
   const target = Math.max(1, Math.min(50_000, Math.floor(opts.targetRows)))
   if (opts.seed != null && Number.isFinite(opts.seed)) {

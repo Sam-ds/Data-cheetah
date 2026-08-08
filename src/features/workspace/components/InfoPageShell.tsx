@@ -17,11 +17,11 @@ export function InfoPageShell({ title, subtitle, children }: InfoPageShellProps)
         <ArrowLeft className="h-3.5 w-3.5" />
         Back
       </Button>
-      <h1 className="home-title text-2xl font-semibold tracking-tight sm:text-3xl">{title}</h1>
+      <h1 className="page-title">{title}</h1>
       {subtitle && (
         <p className="mt-3 max-w-xl text-sm leading-relaxed text-muted-foreground">{subtitle}</p>
       )}
-      <div className="page-stagger mt-10 space-y-10 text-left">{children}</div>
+      <div className="page-stagger mt-10 space-y-6 text-left">{children}</div>
     </PageStage>
   )
 }

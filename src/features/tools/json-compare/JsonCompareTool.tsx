@@ -6,9 +6,11 @@ import {
   ToolPane,
   ToolTextarea,
   ToolActionButton,
+  ToolEmptyState,
   sizeWarning,
 } from '../components/ToolPane'
 import { cn } from '@/lib/utils/cn'
+import { GitCompare } from 'lucide-react'
 
 export function JsonCompareTool() {
   const [left, setLeft] = useState('')
@@ -102,14 +104,16 @@ export function JsonCompareTool() {
               rightTitle="Right (normalized)"
             />
           ) : (
-            <div className="flex h-full items-center justify-center rounded-md border px-4 text-center text-sm text-muted-foreground">
-              Paste valid JSON on both sides and click Compare.
-              <br />
-              <span className="mt-1 text-xs">
+            <ToolEmptyState
+              icon={<GitCompare className="h-5 w-5" />}
+              title="Ready to compare"
+              description={<>
+                Paste valid JSON on both sides and click Compare.
+                <br />
                 Tip: booleans must be <code className="font-mono">true</code> /{' '}
                 <code className="font-mono">false</code> (not <code className="font-mono">fale</code>).
-              </span>
-            </div>
+              </>}
+            />
           )}
         </div>
       </div>

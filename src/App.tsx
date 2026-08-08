@@ -1,5 +1,6 @@
 import { WorkspaceLayout } from '@/features/workspace/components/WorkspaceLayout'
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts'
+import { useUiClickSound } from '@/hooks/useUiClickSound'
 import { useEffect, useRef } from 'react'
 import { usePreferencesStore } from '@/features/profiling/store/profileStore'
 import { loadPreferences } from '@/services/storageService'
@@ -10,6 +11,7 @@ import { Toaster, toast } from 'sonner'
 
 function App() {
   useKeyboardShortcuts()
+  useUiClickSound()
   const setTheme = usePreferencesStore((s) => s.setTheme)
   const hydrateFromPreferences = usePreferencesStore((s) => s.hydrateFromPreferences)
   const setAppMode = useWorkspaceStore((s) => s.setAppMode)

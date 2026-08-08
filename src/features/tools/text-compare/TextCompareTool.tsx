@@ -6,8 +6,10 @@ import {
   ToolPane,
   ToolTextarea,
   ToolActionButton,
+  ToolEmptyState,
   sizeWarning,
 } from '../components/ToolPane'
+import { FileDiff } from 'lucide-react'
 
 export function TextCompareTool() {
   const [left, setLeft] = useState('')
@@ -60,9 +62,11 @@ export function TextCompareTool() {
           {compared ? (
             <SideBySideDiff lines={lines} />
           ) : (
-            <div className="flex h-full items-center justify-center rounded-md border text-sm text-muted-foreground">
-              Paste text on both sides and click Compare
-            </div>
+            <ToolEmptyState
+              icon={<FileDiff className="h-5 w-5" />}
+              title="See every change"
+              description="Paste the original and revised text above, then click Compare."
+            />
           )}
         </div>
       </div>

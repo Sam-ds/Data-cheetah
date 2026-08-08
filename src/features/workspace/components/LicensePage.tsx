@@ -198,17 +198,17 @@ export function LicensePage() {
       title="License"
       subtitle="DataCheetah is Apache 2.0-licensed and is powered by open source tools."
     >
-      <section className="space-y-3">
-        <h2 className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+      <section className="page-panel space-y-3 p-5 sm:p-6">
+        <h2 className="page-eyebrow">
           DataCheetah
         </h2>
-        <pre className="overflow-x-auto whitespace-pre-wrap rounded-xl border border-border bg-card/80 p-4 text-[11px] leading-relaxed text-muted-foreground">
+        <pre className="max-h-[34rem] overflow-auto whitespace-pre-wrap rounded-lg border border-border/70 bg-background/60 p-4 text-[11px] leading-relaxed text-muted-foreground">
           {APACHE_2_TEXT}
         </pre>
       </section>
 
-      <section className="space-y-3">
-        <h2 className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+      <section className="page-panel space-y-3 p-5 sm:p-6">
+        <h2 className="page-eyebrow">
           Third-party licenses
         </h2>
         <p className="text-xs leading-relaxed text-muted-foreground">
@@ -216,7 +216,7 @@ export function LicensePage() {
           authors and communities. Each project remains under its own license. Visit the linked
           project sites for the full license terms.
         </p>
-        <div className="overflow-x-auto rounded-xl border border-border">
+        <div className="overflow-x-auto rounded-lg border border-border/70 bg-background/45">
           <table className="w-full border-collapse text-left text-xs">
             <thead className="bg-muted/50 text-[11px] uppercase tracking-wide text-muted-foreground">
               <tr>
@@ -233,7 +233,7 @@ export function LicensePage() {
                       href={item.url}
                       target="_blank"
                       rel="noreferrer"
-                      className="font-medium text-[#b45309] underline-offset-2 hover:underline dark:text-[#f2a01f]"
+                      className="brand-link font-medium underline-offset-2 hover:underline"
                     >
                       {item.name}
                     </a>

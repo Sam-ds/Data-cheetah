@@ -48,7 +48,6 @@ export function TopToolbar() {
   const hasFiles = useFilesStore((s) => s.files.length > 0)
   const result = useQueryStore((s) => s.result)
   const { toggleSidebar } = useWorkspaceStore()
-  const openTool = useToolsStore((s) => s.openTool)
   const closeTools = useToolsStore((s) => s.close)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const folderInputRef = useRef<HTMLInputElement>(null)
@@ -81,7 +80,7 @@ export function TopToolbar() {
   }
 
   const enterTools = () => {
-    openTool('json-format')
+    closeTools()
     setAppMode('tools')
   }
 
@@ -92,7 +91,7 @@ export function TopToolbar() {
 
   return (
     <>
-      <header className="flex h-12 shrink-0 items-center gap-1 border-b border-border bg-background/90 px-3 backdrop-blur-sm">
+      <header className="app-top-toolbar flex h-12 shrink-0 items-center gap-1 px-3">
         <button
           type="button"
           onClick={goHome}
