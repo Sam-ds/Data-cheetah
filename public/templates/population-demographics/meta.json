@@ -1,0 +1,17 @@
+{
+  "id": "population-demographics",
+  "name": "Population Demographics",
+  "category": "demographics",
+  "description": "Age–sex structure plus country population choropleth.",
+  "version": "2.0.0",
+  "author": "DataCheetah",
+  "insights": [
+    "Age–sex pyramid — population structure by band",
+    "Age × region heatmap — where age groups concentrate",
+    "World population map — country totals",
+    "Population by region — geographic mix",
+    "Region mix — share of people",
+    "Country bar chart — largest populations"
+  ],
+  "publisher": "DataCheetah"
+}

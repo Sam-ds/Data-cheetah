@@ -1,22 +1,45 @@
 /// <reference lib="webworker" />
 
 import * as duckdb from '@duckdb/duckdb-wasm'
-import duckdb_wasm from '@duckdb/duckdb-wasm/dist/duckdb-mvp.wasm?url'
-import mvp_worker from '@duckdb/duckdb-wasm/dist/duckdb-browser-mvp.worker.js?url'
-import duckdb_wasm_eh from '@duckdb/duckdb-wasm/dist/duckdb-eh.wasm?url'
-import eh_worker from '@duckdb/duckdb-wasm/dist/duckdb-browser-eh.worker.js?url'
+import duckdbMvpWasm from '@duckdb/duckdb-wasm/dist/duckdb-mvp.wasm?url'
+import duckdbEhWasm from '@duckdb/duckdb-wasm/dist/duckdb-eh.wasm?url'
+import duckdbMvpWorker from '@duckdb/duckdb-wasm/dist/duckdb-browser-mvp.worker.js?url'
+import duckdbEhWorker from '@duckdb/duckdb-wasm/dist/duckdb-browser-eh.worker.js?url'
 import type { DuckDBRequest, DuckDBResponse } from './types/messages'
 import type { ColumnSchema, FileFormat } from '@/types/dataset'
 import type { ColumnProfile } from '@/types/profile'
 
+/** Bundle DuckDB WASM + workers with the app build (demo / initial release). */
 const MANUAL_BUNDLES: duckdb.DuckDBBundles = {
-  mvp: { mainModule: duckdb_wasm, mainWorker: mvp_worker },
-  eh: { mainModule: duckdb_wasm_eh, mainWorker: eh_worker },
+  mvp: {
+    mainModule: duckdbMvpWasm,
+    mainWorker: duckdbMvpWorker,
+  },
+  eh: {
+    mainModule: duckdbEhWasm,
+    mainWorker: duckdbEhWorker,
+  },
 }
+
+let pendingMemoryLimit = '1GB'
 
 let db: duckdb.AsyncDuckDB | null = null
 let conn: duckdb.AsyncDuckDBConnection | null = null
 const registeredTables = new Map<string, string>()
+
+async function ensureDb(): Promise<duckdb.AsyncDuckDBConnection> {
+  if (conn) return conn
+
+  const bundle = await duckdb.selectBundle(MANUAL_BUNDLES)
+  const worker = new Worker(bundle.mainWorker!)
+  const logger = new duckdb.ConsoleLogger()
+  db = new duckdb.AsyncDuckDB(logger, worker)
+  await db.instantiate(bundle.mainModule, bundle.pthreadWorker)
+  conn = await db.connect()
+  const limit = pendingMemoryLimit.replace(/'/g, '')
+  await conn.query(`SET memory_limit='${limit}'`)
+  return conn
+}
 
 /** Convert Arrow/DuckDB Row proxies into plain objects safe for postMessage. */
 function formatYmdUtc(value: Date): string {
@@ -227,22 +250,6 @@ function serializeRows(result: ArrowLikeResult): Record<string, unknown>[] {
   }
 
   return []
-}
-
-let pendingMemoryLimit = '1GB'
-
-async function ensureDb(): Promise<duckdb.AsyncDuckDBConnection> {
-  if (conn) return conn
-
-  const bundle = await duckdb.selectBundle(MANUAL_BUNDLES)
-  const worker = new Worker(bundle.mainWorker!)
-  const logger = new duckdb.ConsoleLogger()
-  db = new duckdb.AsyncDuckDB(logger, worker)
-  await db.instantiate(bundle.mainModule, bundle.pthreadWorker)
-  conn = await db.connect()
-  const limit = pendingMemoryLimit.replace(/'/g, '')
-  await conn.query(`SET memory_limit='${limit}'`)
-  return conn
 }
 
 function sqlQuoteIdent(name: string): string {

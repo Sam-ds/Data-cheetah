@@ -129,8 +129,9 @@ export function pickColumnsForChartType(
 
   switch (chartType) {
     case 'line':
+    case 'area':
       return {
-        type: 'line',
+        type: chartType,
         xColumn: preferred?.xColumn && temporalCols.includes(preferred.xColumn)
           ? preferred.xColumn
           : temporalCols[0] ?? stringCols[0] ?? columns[0],
@@ -140,6 +141,9 @@ export function pickColumnsForChartType(
       }
     case 'bar':
     case 'pie':
+    case 'funnel':
+    case 'treemap':
+    case 'radar':
       return {
         type: chartType,
         xColumn: preferred?.xColumn && (stringCols.includes(preferred.xColumn) || temporalCols.includes(preferred.xColumn))
@@ -158,6 +162,20 @@ export function pickColumnsForChartType(
         yColumn: preferred?.yColumn && numericCols.includes(preferred.yColumn)
           ? preferred.yColumn
           : numericCols[1] ?? numericCols[0] ?? columns[1],
+      }
+    case 'heatmap':
+      return {
+        type: 'heatmap',
+        xColumn: preferred?.xColumn ?? stringCols[0] ?? columns[0],
+        yColumn: preferred?.yColumn ?? stringCols[1] ?? columns[1],
+        y2Column: numericCols[0],
+      }
+    case 'pyramid':
+      return {
+        type: 'pyramid',
+        xColumn: preferred?.xColumn ?? stringCols[0] ?? columns[0],
+        yColumn: preferred?.yColumn ?? numericCols[0],
+        y2Column: numericCols[1] ?? numericCols[0],
       }
     case 'histogram':
       return {
@@ -280,12 +298,25 @@ export function buildChartOption(
   xColumn?: string,
   yColumn?: string,
   theme: ChartTheme = 'light',
+  extras?: {
+    y2Column?: string
+    seriesColumn?: string
+    sourceColumn?: string
+    targetColumn?: string
+    mapId?: 'world' | 'usa-states'
+  },
 ): Record<string, unknown> | null {
-  if (chartType === 'none' || !xColumn) return null
+  if (chartType === 'none') return null
+  if (chartType !== 'sankey' && !xColumn) return null
 
   const { rows } = result
   const accent = '#F2A01F'
   const styles = themeStyles(theme)
+  const y2Column = extras?.y2Column
+  const seriesColumn = extras?.seriesColumn
+  const sourceColumn = extras?.sourceColumn
+  const targetColumn = extras?.targetColumn
+  const mapId = extras?.mapId ?? 'world'
 
   const axisCommon = {
     axisLabel: { color: styles.text },
@@ -298,7 +329,18 @@ export function buildChartOption(
   const baseOption = {
     backgroundColor: 'transparent',
     tooltip: {
-      trigger: chartType === 'pie' ? 'item' : 'axis',
+      trigger:
+        chartType === 'pie' ||
+        chartType === 'funnel' ||
+        chartType === 'treemap' ||
+        chartType === 'radar' ||
+        chartType === 'sankey' ||
+        chartType === 'sunburst' ||
+        chartType === 'map'
+          ? 'item'
+          : chartType === 'heatmap'
+            ? 'item'
+            : 'axis',
       backgroundColor: styles.tooltipBg,
       borderColor: styles.tooltipBorder,
       textStyle: { color: styles.text },
@@ -318,8 +360,9 @@ export function buildChartOption(
   }
 
   switch (chartType) {
-    case 'line': {
-      const xData = rows.map((r) => String(r[xColumn]))
+    case 'line':
+    case 'area': {
+      const xData = rows.map((r) => String(r[xColumn!]))
       const yData = yColumn ? rows.map((r) => Number(r[yColumn]) || 0) : rows.map(() => 1)
       return {
         ...baseOption,
@@ -330,12 +373,20 @@ export function buildChartOption(
           axisLabel: { ...axisCommon.axisLabel, rotate: xData.length > 8 ? 35 : 0 },
         },
         yAxis: { type: 'value', ...axisCommon },
-        series: [{ type: 'line', data: yData, smooth: true, showSymbol: rows.length < 40 }],
+        series: [
+          {
+            type: 'line',
+            data: yData,
+            smooth: true,
+            showSymbol: rows.length < 40,
+            ...(chartType === 'area' ? { areaStyle: { opacity: 0.35 } } : {}),
+          },
+        ],
       }
     }
 
     case 'bar': {
-      const { labels, values } = aggregateByCategory(rows, xColumn, yColumn)
+      const { labels, values } = aggregateByCategory(rows, xColumn!, yColumn)
       return {
         ...baseOption,
         xAxis: {
@@ -350,7 +401,7 @@ export function buildChartOption(
     }
 
     case 'pie': {
-      const { labels, values } = aggregateByCategory(rows, xColumn, yColumn)
+      const { labels, values } = aggregateByCategory(rows, xColumn!, yColumn)
       return {
         ...baseOption,
         tooltip: {
@@ -403,7 +454,7 @@ export function buildChartOption(
         series: [
           {
             type: 'scatter',
-            data: rows.map((r) => [Number(r[xColumn]) || 0, Number(r[yColumn]) || 0]),
+            data: rows.map((r) => [Number(r[xColumn!]) || 0, Number(r[yColumn!]) || 0]),
             symbolSize: 8,
           },
         ],
@@ -412,7 +463,7 @@ export function buildChartOption(
 
     case 'histogram': {
       const values = rows
-        .map((r) => Number(r[xColumn]))
+        .map((r) => Number(r[xColumn!]))
         .filter((v) => Number.isFinite(v))
       if (values.length === 0) return null
       const min = Math.min(...values)
@@ -442,6 +493,355 @@ export function buildChartOption(
           ...axisCommon,
         },
         series: [{ type: 'bar', data: histogram, itemStyle: { borderRadius: [3, 3, 0, 0] } }],
+      }
+    }
+
+    case 'funnel': {
+      const { labels, values } = aggregateByCategory(rows, xColumn!, yColumn)
+      return {
+        ...baseOption,
+        tooltip: {
+          trigger: 'item',
+          backgroundColor: styles.tooltipBg,
+          borderColor: styles.tooltipBorder,
+          textStyle: { color: styles.text },
+        },
+        series: [
+          {
+            type: 'funnel',
+            left: '12%',
+            width: '76%',
+            minSize: '15%',
+            maxSize: '100%',
+            sort: 'descending',
+            label: { color: styles.text },
+            data: labels.map((name, i) => ({ name, value: values[i] })),
+          },
+        ],
+      }
+    }
+
+    case 'treemap': {
+      const { labels, values } = aggregateByCategory(rows, xColumn!, yColumn)
+      return {
+        ...baseOption,
+        tooltip: {
+          trigger: 'item',
+          backgroundColor: styles.tooltipBg,
+          borderColor: styles.tooltipBorder,
+          textStyle: { color: styles.text },
+        },
+        series: [
+          {
+            type: 'treemap',
+            roam: false,
+            nodeClick: false,
+            breadcrumb: { show: false },
+            label: { color: '#fff', fontSize: 11 },
+            data: labels.map((name, i) => ({ name, value: values[i] })),
+          },
+        ],
+      }
+    }
+
+    case 'heatmap': {
+      if (!yColumn) return null
+      const valueCol =
+        rows[0] && 'value' in rows[0]
+          ? 'value'
+          : Object.keys(rows[0] ?? {}).find((k) => k !== xColumn && k !== yColumn) ?? yColumn
+      const xCats = [...new Set(rows.map((r) => String(r[xColumn!])))]
+      const yCats = [...new Set(rows.map((r) => String(r[yColumn])))]
+      const data = rows.map((r) => [
+        xCats.indexOf(String(r[xColumn!])),
+        yCats.indexOf(String(r[yColumn])),
+        Number(r[valueCol]) || 0,
+      ])
+      const maxV = Math.max(1, ...data.map((d) => Number(d[2]) || 0))
+      return {
+        ...baseOption,
+        tooltip: {
+          position: 'top',
+          backgroundColor: styles.tooltipBg,
+          borderColor: styles.tooltipBorder,
+          textStyle: { color: styles.text },
+        },
+        grid: { left: 72, right: 24, top: 40, bottom: 56, containLabel: false },
+        xAxis: {
+          type: 'category',
+          data: xCats,
+          splitArea: { show: true },
+          ...axisCommon,
+        },
+        yAxis: {
+          type: 'category',
+          data: yCats,
+          splitArea: { show: true },
+          ...axisCommon,
+        },
+        visualMap: {
+          min: 0,
+          max: maxV,
+          calculable: true,
+          orient: 'horizontal',
+          left: 'center',
+          bottom: 4,
+          textStyle: { color: styles.text },
+          inRange: { color: ['#fff7ed', accent, '#9a3412'] },
+        },
+        series: [
+          {
+            type: 'heatmap',
+            data,
+            label: { show: data.length < 80, color: styles.text, fontSize: 10 },
+            emphasis: { itemStyle: { shadowBlur: 8, shadowColor: 'rgba(0,0,0,0.25)' } },
+          },
+        ],
+      }
+    }
+
+    case 'radar': {
+      const { labels, values } = aggregateByCategory(rows, xColumn!, yColumn)
+      if (!labels.length) return null
+      const maxV = Math.max(1, ...values)
+      return {
+        ...baseOption,
+        tooltip: {
+          trigger: 'item',
+          backgroundColor: styles.tooltipBg,
+          borderColor: styles.tooltipBorder,
+          textStyle: { color: styles.text },
+        },
+        radar: {
+          indicator: labels.map((name) => ({ name, max: maxV * 1.15 })),
+          axisName: { color: styles.text },
+          splitLine: { lineStyle: { color: styles.splitLine } },
+          splitArea: { show: false },
+          axisLine: { lineStyle: { color: styles.axisLine } },
+        },
+        series: [
+          {
+            type: 'radar',
+            data: [{ value: values, name: yColumn ?? 'value', areaStyle: { opacity: 0.25 } }],
+          },
+        ],
+      }
+    }
+
+    case 'pyramid': {
+      if (!yColumn || !y2Column) return null
+      const bands = rows.map((r) => String(r[xColumn!]))
+      const left = rows.map((r) => -(Number(r[yColumn]) || 0))
+      const right = rows.map((r) => Number(r[y2Column]) || 0)
+      return {
+        ...baseOption,
+        legend: { ...styles.legend, data: [yColumn, y2Column], top: 0 },
+        grid: { left: 56, right: 56, top: 40, bottom: 32, containLabel: true },
+        tooltip: {
+          trigger: 'axis',
+          axisPointer: { type: 'shadow' },
+          backgroundColor: styles.tooltipBg,
+          borderColor: styles.tooltipBorder,
+          textStyle: { color: styles.text },
+          formatter: (params: unknown) => {
+            const list = Array.isArray(params) ? params : [params]
+            const band = (list[0] as { axisValue?: string })?.axisValue ?? ''
+            return [
+              band,
+              ...list.map((p) => {
+                const item = p as { seriesName?: string; value?: number }
+                const v = Math.abs(Number(item.value) || 0)
+                return `${item.seriesName}: ${v}`
+              }),
+            ].join('<br/>')
+          },
+        },
+        xAxis: {
+          type: 'value',
+          ...axisCommon,
+          axisLabel: {
+            ...axisCommon.axisLabel,
+            formatter: (v: number) => String(Math.abs(v)),
+          },
+        },
+        yAxis: {
+          type: 'category',
+          data: bands,
+          ...axisCommon,
+          axisTick: { show: false },
+        },
+        series: [
+          {
+            name: yColumn,
+            type: 'bar',
+            stack: 'pyramid',
+            data: left,
+            itemStyle: { color: '#2563EB' },
+          },
+          {
+            name: y2Column,
+            type: 'bar',
+            stack: 'pyramid',
+            data: right,
+            itemStyle: { color: accent },
+          },
+        ],
+      }
+    }
+
+    case 'stacked_bar':
+    case 'stacked_area': {
+      if (!xColumn || !seriesColumn || !yColumn) return null
+      const cats = [...new Set(rows.map((r) => String(r[xColumn])))]
+      const seriesKeys = [...new Set(rows.map((r) => String(r[seriesColumn])))]
+      const lookup = new Map<string, number>()
+      for (const r of rows) {
+        lookup.set(`${String(r[xColumn])}||${String(r[seriesColumn])}`, Number(r[yColumn]) || 0)
+      }
+      return {
+        ...baseOption,
+        legend: { ...styles.legend, data: seriesKeys, top: 0 },
+        xAxis: {
+          type: 'category',
+          data: cats,
+          ...axisCommon,
+          axisLabel: { ...axisCommon.axisLabel, rotate: cats.length > 8 ? 35 : 0 },
+        },
+        yAxis: { type: 'value', ...axisCommon },
+        series: seriesKeys.map((sk) => ({
+          name: sk,
+          type: chartType === 'stacked_area' ? 'line' : 'bar',
+          stack: 'total',
+          ...(chartType === 'stacked_area'
+            ? { areaStyle: { opacity: 0.45 }, smooth: true, showSymbol: false }
+            : { itemStyle: { borderRadius: [0, 0, 0, 0] } }),
+          data: cats.map((c) => lookup.get(`${c}||${sk}`) ?? 0),
+        })),
+      }
+    }
+
+    case 'sankey': {
+      const srcCol = sourceColumn ?? xColumn
+      const tgtCol = targetColumn ?? y2Column
+      const valCol = yColumn ?? 'value'
+      if (!srcCol || !tgtCol) return null
+      const links = rows.map((r) => ({
+        source: String(r[srcCol]),
+        target: String(r[tgtCol]),
+        value: Number(r[valCol]) || 0,
+      }))
+      const nodes = [
+        ...new Set(links.flatMap((l) => [l.source, l.target])),
+      ].map((name) => ({ name }))
+      return {
+        ...baseOption,
+        tooltip: {
+          trigger: 'item',
+          backgroundColor: styles.tooltipBg,
+          borderColor: styles.tooltipBorder,
+          textStyle: { color: styles.text },
+        },
+        series: [
+          {
+            type: 'sankey',
+            emphasis: { focus: 'adjacency' },
+            data: nodes,
+            links,
+            lineStyle: { color: 'gradient', curveness: 0.5 },
+            label: { color: styles.text },
+          },
+        ],
+      }
+    }
+
+    case 'sunburst': {
+      if (!xColumn) return null
+      const valCol = yColumn ?? 'value'
+      const { labels, values } = aggregateByCategory(rows, xColumn, valCol === 'value' ? undefined : yColumn)
+      // If path-like "A/B/C", build hierarchy; else flat ring
+      const hasPath = labels.some((l) => l.includes('/'))
+      let data: Record<string, unknown>[]
+      if (hasPath) {
+        type Node = { name: string; value?: number; children?: Node[] }
+        const root: Node = { name: 'root', children: [] }
+        labels.forEach((path, i) => {
+          const parts = path.split('/').map((p) => p.trim()).filter(Boolean)
+          let cur = root
+          parts.forEach((part, idx) => {
+            cur.children ??= []
+            let next = cur.children.find((c) => c.name === part)
+            if (!next) {
+              next = { name: part, children: [] }
+              cur.children.push(next)
+            }
+            if (idx === parts.length - 1) next.value = (next.value ?? 0) + values[i]
+            cur = next
+          })
+        })
+        data = root.children ?? []
+      } else {
+        data = labels.map((name, i) => ({ name, value: values[i] }))
+      }
+      return {
+        ...baseOption,
+        tooltip: {
+          trigger: 'item',
+          backgroundColor: styles.tooltipBg,
+          borderColor: styles.tooltipBorder,
+          textStyle: { color: styles.text },
+        },
+        series: [
+          {
+            type: 'sunburst',
+            data,
+            radius: [0, '90%'],
+            label: { color: styles.text, fontSize: 10 },
+            itemStyle: { borderWidth: 1, borderColor: styles.tooltipBg },
+          },
+        ],
+      }
+    }
+
+    case 'map': {
+      if (!xColumn || !yColumn) return null
+      const { labels, values } = aggregateByCategory(rows, xColumn, yColumn)
+      const maxV = Math.max(1, ...values)
+      return {
+        ...baseOption,
+        tooltip: {
+          trigger: 'item',
+          backgroundColor: styles.tooltipBg,
+          borderColor: styles.tooltipBorder,
+          textStyle: { color: styles.text },
+        },
+        visualMap: {
+          min: 0,
+          max: maxV,
+          left: 'left',
+          bottom: 8,
+          text: ['High', 'Low'],
+          textStyle: { color: styles.text },
+          inRange: { color: ['#fff7ed', accent, '#9a3412'] },
+          calculable: true,
+        },
+        series: [
+          {
+            type: 'map',
+            map: mapId,
+            roam: true,
+            data: labels.map((name, i) => ({ name, value: values[i] })),
+            label: { show: false },
+            emphasis: {
+              label: { show: true, color: styles.text },
+              itemStyle: { areaColor: '#fbbf24' },
+            },
+            itemStyle: {
+              borderColor: styles.axisLine,
+              borderWidth: 0.6,
+              areaColor: styles.splitLine,
+            },
+          },
+        ],
       }
     }
 

@@ -14,12 +14,14 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg'],
       manifest: false,
-      workbox: {
-        // Cache app shell only — DuckDB WASM (~40MB) and WebLLM (~6MB) load on demand
-        globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
-        globIgnores: ['**/web-llm-*.js'],
+          workbox: {
+        // App shell + static assets. DuckDB .wasm is large — browser HTTP-caches hashed /assets/*.wasm
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,json,csv}'],
+        globIgnores: ['**/web-llm-*.js', '**/*.wasm'],
         // Allow slightly larger app chunks; WebLLM is split out and ignored above
         maximumFileSizeToCacheInBytes: 8 * 1024 * 1024,
+        // Never treat Discover template / geo assets as SPA navigations
+        navigateFallbackDenylist: [/^\/templates\//, /\/templates\//, /^\/geo\//, /\/geo\//],
       },
     }),
   ],

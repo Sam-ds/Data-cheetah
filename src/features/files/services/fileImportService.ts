@@ -33,7 +33,11 @@ async function convertXlsxToCsvBuffer(file: File): Promise<{ buffer: ArrayBuffer
   return { buffer, name }
 }
 
-export async function importFile(file: File): Promise<RegisteredDataset & { replaced?: boolean }> {
+async function prepareImportBuffer(file: File): Promise<{
+  buffer: ArrayBuffer
+  registerName: string
+  format: NonNullable<ReturnType<typeof detectFormat>>
+}> {
   const format = detectFormat(file.name)
   if (!format) {
     throw new Error(`Unsupported file format: ${file.name}`)
@@ -54,6 +58,12 @@ export async function importFile(file: File): Promise<RegisteredDataset & { repl
   } else {
     buffer = await readFileAsBuffer(file)
   }
+
+  return { buffer, registerName, format }
+}
+
+export async function importFile(file: File): Promise<RegisteredDataset & { replaced?: boolean }> {
+  const { buffer, registerName, format } = await prepareImportBuffer(file)
 
   const tableName = sanitizeTableName(file.name)
   const result = await duckdbClient.registerFile(registerName, buffer, format, tableName)
@@ -113,6 +123,22 @@ export async function importFile(file: File): Promise<RegisteredDataset & { repl
   }
 
   return dataset
+}
+
+/**
+ * Register a file in DuckDB for this session only (Discover templates / BYOD).
+ * Does not write to IndexedDB, recent files, or the Explore workspace library.
+ */
+export async function importFileEphemeral(
+  file: File,
+  preferredTableName?: string,
+): Promise<{ tableName: string; schema: RegisteredDataset['schema']; rowCount: number }> {
+  const { buffer, registerName, format } = await prepareImportBuffer(file)
+  const base = preferredTableName
+    ? sanitizeTableName(`${preferredTableName}.csv`)
+    : sanitizeTableName(file.name)
+  const tableName = base.startsWith('discover_') ? base : `discover_${base}`
+  return duckdbClient.registerFile(registerName, buffer, format, tableName)
 }
 
 export function validateFile(file: File): boolean {

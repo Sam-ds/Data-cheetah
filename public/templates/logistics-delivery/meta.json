@@ -1,0 +1,17 @@
+{
+  "id": "logistics-delivery",
+  "name": "Logistics Delivery",
+  "category": "operations",
+  "description": "Shipments, delays, hub performance, and route heat.",
+  "version": "2.0.0",
+  "author": "DataCheetah",
+  "insights": [
+    "Distance vs cost scatter — efficiency",
+    "Shipments by hub — volume leaders",
+    "Delay over time — service trend",
+    "Hub × region heatmap — lane load",
+    "Avg delay by hub — bar watchlist",
+    "Cost distribution — ops histogram"
+  ],
+  "publisher": "DataCheetah"
+}

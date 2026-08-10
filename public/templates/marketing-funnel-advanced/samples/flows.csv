@@ -1,0 +1,13 @@
+source,target,channel,value
+Impression,Click,Paid Search,9268
+Impression,Click,Social,9339
+Impression,Click,Email,9071
+Click,Signup,Paid Search,7056
+Click,Signup,Social,7800
+Click,Signup,Email,6855
+Signup,Activate,Paid Search,6803
+Signup,Activate,Social,5941
+Signup,Activate,Email,6382
+Activate,Purchase,Paid Search,5477
+Activate,Purchase,Social,5213
+Activate,Purchase,Email,3556

@@ -1,0 +1,146 @@
+{
+  "tables": [
+    {
+      "id": "categories",
+      "file": "categories",
+      "requiredColumns": [
+        {
+          "role": "path",
+          "aliases": [
+            "path",
+            "category",
+            "name"
+          ],
+          "type": "string",
+          "kind": "dimension"
+        },
+        {
+          "role": "revenue",
+          "aliases": [
+            "revenue",
+            "sales",
+            "amount"
+          ],
+          "type": "number",
+          "kind": "measure"
+        }
+      ]
+    },
+    {
+      "id": "orders",
+      "file": "orders",
+      "requiredColumns": [
+        {
+          "role": "date",
+          "aliases": [
+            "date",
+            "order_date"
+          ],
+          "type": "date",
+          "kind": "dimension"
+        },
+        {
+          "role": "channel",
+          "aliases": [
+            "channel",
+            "source"
+          ],
+          "type": "string",
+          "kind": "dimension"
+        },
+        {
+          "role": "orders",
+          "aliases": [
+            "orders",
+            "count"
+          ],
+          "type": "integer",
+          "kind": "measure"
+        },
+        {
+          "role": "revenue",
+          "aliases": [
+            "revenue",
+            "sales",
+            "amount"
+          ],
+          "type": "number",
+          "kind": "measure"
+        }
+      ]
+    },
+    {
+      "id": "checkout",
+      "file": "checkout",
+      "requiredColumns": [
+        {
+          "role": "stage",
+          "aliases": [
+            "stage",
+            "step"
+          ],
+          "type": "string",
+          "kind": "dimension"
+        },
+        {
+          "role": "users",
+          "aliases": [
+            "users",
+            "count"
+          ],
+          "type": "integer",
+          "kind": "measure"
+        }
+      ]
+    }
+  ],
+  "charts": [
+    {
+      "type": "sunburst",
+      "title": "Category hierarchy",
+      "x": "path",
+      "y": "revenue",
+      "agg": "sum",
+      "table": "categories"
+    },
+    {
+      "type": "scatter",
+      "title": "Orders vs revenue",
+      "x": "orders",
+      "y": "revenue",
+      "table": "orders"
+    },
+    {
+      "type": "line",
+      "title": "Revenue trend",
+      "x": "date",
+      "y": "revenue",
+      "agg": "sum",
+      "table": "orders"
+    },
+    {
+      "type": "pie",
+      "title": "Channel mix",
+      "dimension": "channel",
+      "measure": "orders",
+      "agg": "sum",
+      "table": "orders"
+    },
+    {
+      "type": "funnel",
+      "title": "Checkout funnel",
+      "x": "stage",
+      "y": "users",
+      "agg": "sum",
+      "table": "checkout"
+    },
+    {
+      "type": "bar",
+      "title": "Revenue by channel",
+      "x": "channel",
+      "y": "revenue",
+      "agg": "sum",
+      "table": "orders"
+    }
+  ]
+}

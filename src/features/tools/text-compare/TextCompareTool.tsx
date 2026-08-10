@@ -47,12 +47,14 @@ export function TextCompareTool() {
         <div className="grid h-[40%] min-h-[140px] grid-cols-1 gap-3 md:grid-cols-2">
           <ToolTextarea
             label="Left text"
+            tone="sky"
             placeholder="Paste original text…"
             value={left}
             onChange={(e) => setLeft(e.target.value)}
           />
           <ToolTextarea
             label="Right text"
+            tone="rose"
             placeholder="Paste modified text…"
             value={right}
             onChange={(e) => setRight(e.target.value)}

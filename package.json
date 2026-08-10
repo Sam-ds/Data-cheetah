@@ -11,7 +11,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@duckdb/duckdb-wasm": "^1.33.1-dev57.0",
+    "@duckdb/duckdb-wasm": "^1.32.0",
     "@faker-js/faker": "^10.5.0",
     "@mlc-ai/web-llm": "^0.2.84",
     "@monaco-editor/react": "^4.7.0",
@@ -26,8 +26,10 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "dexie": "^4.4.4",
+    "dompurify": "^3.4.13",
     "echarts": "^6.1.0",
     "echarts-for-react": "^3.0.6",
+    "jszip": "^3.10.1",
     "lucide-react": "^1.27.0",
     "papaparse": "^5.5.4",
     "react": "^19.2.7",
@@ -36,11 +38,14 @@
     "sonner": "^2.0.7",
     "sqlglot-ts": "^0.1.5",
     "tailwind-merge": "^3.6.0",
+    "three": "^0.185.1",
     "xlsx": "^0.18.5",
     "zustand": "^5.0.14"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.3",
+    "@types/dompurify": "^3.0.5",
+    "@types/jszip": "^3.4.0",
     "@types/node": "^24.13.2",
     "@types/papaparse": "^5.5.2",
     "@types/react": "^19.2.17",

@@ -1,6 +1,6 @@
 import Papa from 'papaparse'
 import type { SchemaPlan } from './schemaPlan'
-import { generateSyntheticRow } from './generateSynthetic'
+import { generateSyntheticRow, type GenerateValueOptions } from './generateSynthetic'
 
 export function rowsToCsv(rows: Record<string, unknown>[]): string {
   if (rows.length === 0) return ''
@@ -54,6 +54,7 @@ export async function streamPlanToCsv(
   plan: SchemaPlan,
   totalRows: number,
   onProgress?: (completed: number, total: number) => void,
+  valueOpts?: GenerateValueOptions,
 ): Promise<void> {
   const picker = (window as Window & { showSaveFilePicker?: SaveFilePicker }).showSaveFilePicker
   if (!picker) {
@@ -74,7 +75,7 @@ export async function streamPlanToCsv(
       const end = Math.min(totalRows, start + chunkSize)
       const lines = new Array<string>(end - start)
       for (let index = start; index < end; index += 1) {
-        const row = generateSyntheticRow(plan, index)
+        const row = generateSyntheticRow(plan, index, valueOpts)
         lines[index - start] = columns.map((column) => csvCell(row[column])).join(',')
       }
       await writable.write(`${lines.join('\r\n')}\r\n`)

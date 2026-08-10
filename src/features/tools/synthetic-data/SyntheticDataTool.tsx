@@ -9,7 +9,7 @@ import {
   sizeWarning,
 } from '../components/ToolPane'
 import { inferPlanFromSample } from './inferFromSample'
-import { generateSyntheticRows } from './generateSynthetic'
+import { generateSyntheticRows, parseEmailProviders } from './generateSynthetic'
 import { downloadText, rowsToCsv, rowsToFile, rowsToJson, streamPlanToCsv } from './exportSynthetic'
 import { seedPlanWithLlm } from './llmSeedService'
 import {
@@ -82,6 +82,10 @@ export function SyntheticDataTool() {
   const [targetRows, setTargetRows] = useState(100)
   const [generatedTargetRows, setGeneratedTargetRows] = useState<number | null>(null)
   const [seedCount, setSeedCount] = useState(10)
+  const [emailDomains, setEmailDomains] = useState('gmail.com')
+  const [activeEmailProviders, setActiveEmailProviders] = useState<string[]>(() =>
+    parseEmailProviders('gmail.com'),
+  )
   const [useLlm, setUseLlm] = useState(true)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -162,6 +166,13 @@ export function SyntheticDataTool() {
         return planFromColumnRules(rules)
       }
 
+      const emailProviders = parseEmailProviders(emailDomains)
+      setActiveEmailProviders(emailProviders)
+      const llmContext =
+        emailProviders.length > 0
+          ? `${context.trim()}\n\nEmails must use only these domains: ${emailProviders.join(', ')}.`
+          : context
+
       let nextPlan: SchemaPlan
       let llmFallbackReason: string | null = null
       if (useLlm) {
@@ -190,7 +201,7 @@ export function SyntheticDataTool() {
           nextPlan = await seedPlanWithLlm(
             provider,
             sample,
-            context,
+            llmContext,
             seedN,
             (text, progress) => {
               setLlmProgress({ text, progress })
@@ -223,7 +234,10 @@ export function SyntheticDataTool() {
           ? `Preparing a ${previewTarget}-row preview for ${target.toLocaleString()} streamed rows…`
           : `Generating ${target.toLocaleString()} rows with faker.js…`,
       )
-      const generated = generateSyntheticRows(nextPlan, { targetRows: previewTarget })
+      const generated = generateSyntheticRows(nextPlan, {
+        targetRows: previewTarget,
+        emailProviders,
+      })
       setPlan(nextPlan)
       setRows(generated)
       setGeneratedTargetRows(target)
@@ -264,12 +278,17 @@ export function SyntheticDataTool() {
     ) {
       setBusy(true)
       try {
-        await streamPlanToCsv(plan, generatedTargetRows, (completed, total) => {
-          const percent = Math.round((completed / total) * 100)
-          setStatus(
-            `Streaming ${completed.toLocaleString()} of ${total.toLocaleString()} rows (${percent}%)…`,
-          )
-        })
+        await streamPlanToCsv(
+          plan,
+          generatedTargetRows,
+          (completed, total) => {
+            const percent = Math.round((completed / total) * 100)
+            setStatus(
+              `Streaming ${completed.toLocaleString()} of ${total.toLocaleString()} rows (${percent}%)…`,
+            )
+          },
+          { emailProviders: activeEmailProviders },
+        )
         setStatus(`Saved ${generatedTargetRows.toLocaleString()} rows to synthetic_data.csv`)
         playSuccess()
         toast.success('Large CSV export complete')
@@ -378,6 +397,17 @@ export function SyntheticDataTool() {
               disabled={!useLlm}
             />
           </label>
+          <label className="space-y-1 text-[11px]">
+            <span className="text-muted-foreground">Email domains</span>
+            <input
+              type="text"
+              className="block h-8 w-44 rounded-md border border-input bg-background px-2 text-xs"
+              value={emailDomains}
+              onChange={(e) => setEmailDomains(e.target.value)}
+              placeholder="gmail.com"
+              title="Comma-separated domains for generated emails (e.g. gmail.com, outlook.com)"
+            />
+          </label>
           <label className="flex items-center gap-2 pb-1 text-xs text-foreground">
             <input
               type="checkbox"
@@ -440,27 +470,27 @@ export function SyntheticDataTool() {
           <div className="grid min-h-0 gap-3 lg:grid-rows-[minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,0.7fr)]">
             <ToolTextarea
               label="Sample (CSV or JSON)"
+              tone="sky"
               placeholder={SAMPLE_PLACEHOLDER}
               value={sample}
               onChange={(e) => setSample(e.target.value)}
-              containerClassName="synthetic-input-card synthetic-input-card--sample h-[164px] lg:h-full"
-              className="border-blue-500/20 bg-background/70 focus:ring-blue-500/30"
+              containerClassName="h-[164px] lg:h-full"
             />
             <ToolTextarea
               label="Column rules (optional — type, unique, not null, from/to)"
+              tone="amber"
               placeholder={RULES_PLACEHOLDER}
               value={columnRulesText}
               onChange={(e) => setColumnRulesText(e.target.value)}
-              containerClassName="synthetic-input-card synthetic-input-card--rules h-[144px] lg:h-full"
-              className="border-amber-500/20 bg-background/70 focus:ring-amber-500/30"
+              containerClassName="h-[144px] lg:h-full"
             />
             <ToolTextarea
               label="Context"
+              tone="violet"
               placeholder="Describe the domain, constraints, locale…"
               value={context}
               onChange={(e) => setContext(e.target.value)}
-              containerClassName="synthetic-input-card synthetic-input-card--context h-[120px] lg:h-full"
-              className="border-violet-500/20 bg-background/70 focus:ring-violet-500/30"
+              containerClassName="h-[120px] lg:h-full"
             />
           </div>
 

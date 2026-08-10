@@ -68,6 +68,7 @@ export function JsonCompareTool() {
           <div className="flex min-h-0 flex-col gap-1">
             <ToolTextarea
               label="Left JSON"
+              tone="sky"
               placeholder='{"a":1}'
               value={left}
               onChange={(e) => {
@@ -83,6 +84,7 @@ export function JsonCompareTool() {
           <div className="flex min-h-0 flex-col gap-1">
             <ToolTextarea
               label="Right JSON"
+              tone="violet"
               placeholder='{"a":2}'
               value={right}
               onChange={(e) => {

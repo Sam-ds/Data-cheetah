@@ -1,0 +1,15 @@
+{
+  "id": "product-growth-race",
+  "name": "Product Growth Race",
+  "category": "product",
+  "description": "Animate multi-product sales over years in Three.js — watch one product overtake another as ranks shift.",
+  "version": "1.0.0",
+  "author": "DataCheetah",
+  "publisher": "DataCheetah",
+  "insights": [
+    "Year playthrough — sales rise from mapped data over time",
+    "Overtake moments — products swap rank as leaders change",
+    "Scrubber + play/pause — inspect any year on demand",
+    "Bring your own CSV — map year, product, and revenue roles"
+  ]
+}

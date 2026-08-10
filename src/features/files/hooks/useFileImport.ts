@@ -75,7 +75,7 @@ export function useFileImport() {
           const firstTime = !hasSeenDuckDBEngine()
           toast.info(
             firstTime
-              ? 'Downloading SQL engine (~10 MB) — one-time, stays in your browser'
+              ? 'Loading SQL engine (~40 MB) — stays cached in this browser'
               : 'Starting SQL engine…',
             {
               duration: firstTime ? 8000 : 4000,

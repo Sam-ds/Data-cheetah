@@ -1,0 +1,136 @@
+{
+  "tables": [
+    {
+      "id": "mrr",
+      "file": "mrr",
+      "requiredColumns": [
+        {
+          "role": "month",
+          "aliases": [
+            "month",
+            "date",
+            "period"
+          ],
+          "type": "string",
+          "kind": "dimension"
+        },
+        {
+          "role": "plan",
+          "aliases": [
+            "plan",
+            "tier",
+            "product"
+          ],
+          "type": "string",
+          "kind": "dimension"
+        },
+        {
+          "role": "mrr",
+          "aliases": [
+            "mrr",
+            "revenue",
+            "amount"
+          ],
+          "type": "number",
+          "kind": "measure"
+        }
+      ]
+    },
+    {
+      "id": "kpis",
+      "file": "kpis",
+      "requiredColumns": [
+        {
+          "role": "month",
+          "aliases": [
+            "month",
+            "date",
+            "period"
+          ],
+          "type": "string",
+          "kind": "dimension"
+        },
+        {
+          "role": "customers",
+          "aliases": [
+            "customers",
+            "users",
+            "accounts"
+          ],
+          "type": "integer",
+          "kind": "measure"
+        },
+        {
+          "role": "churn",
+          "aliases": [
+            "churn",
+            "churn_rate"
+          ],
+          "type": "number",
+          "kind": "measure"
+        },
+        {
+          "role": "retention",
+          "aliases": [
+            "retention",
+            "retention_rate"
+          ],
+          "type": "number",
+          "kind": "measure"
+        }
+      ]
+    }
+  ],
+  "charts": [
+    {
+      "type": "line",
+      "title": "MRR trend",
+      "x": "month",
+      "y": "mrr",
+      "agg": "sum",
+      "table": "mrr"
+    },
+    {
+      "type": "stacked_area",
+      "title": "MRR by plan",
+      "x": "month",
+      "series": "plan",
+      "y": "mrr",
+      "agg": "sum",
+      "table": "mrr"
+    },
+    {
+      "type": "stacked_bar",
+      "title": "Plan mix by month",
+      "x": "month",
+      "series": "plan",
+      "y": "mrr",
+      "agg": "sum",
+      "table": "mrr"
+    },
+    {
+      "type": "pie",
+      "title": "Plan share",
+      "dimension": "plan",
+      "measure": "mrr",
+      "agg": "sum",
+      "table": "mrr"
+    },
+    {
+      "type": "line",
+      "title": "Customers over time",
+      "x": "month",
+      "y": "customers",
+      "agg": "sum",
+      "table": "kpis"
+    },
+    {
+      "type": "bar",
+      "title": "Churn by month",
+      "x": "month",
+      "y": "churn",
+      "agg": "avg",
+      "table": "kpis"
+    }
+  ]
+}

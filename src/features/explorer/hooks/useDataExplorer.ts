@@ -1,7 +1,7 @@
-import { useCallback, useEffect } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useFilesStore } from '@/features/files/store/filesStore'
 import { duckdbClient } from '@/services/duckdbClient'
-import { useState } from 'react'
+import { ensureDuckDB } from '@/hooks/useDuckDB'
 import type { ColumnSchema } from '@/types/dataset'
 
 export function useDataExplorer() {
@@ -22,6 +22,7 @@ export function useDataExplorer() {
 
     setLoading(true)
     try {
+      await ensureDuckDB()
       const [previewRows, schemaData] = await Promise.all([
         duckdbClient.getPreview(activeFile.tableName, 100),
         duckdbClient.getSchema(activeFile.tableName),

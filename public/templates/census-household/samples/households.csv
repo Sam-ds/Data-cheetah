@@ -1,0 +1,17 @@
+region_id,hh_type,tenure,households,income_band,avg_size
+R1,Family,Own,4200,<50k,3.2
+R1,Family,Rent,2800,50-100k,2.9
+R1,Nonfamily,Own,1500,50-100k,1.4
+R1,Nonfamily,Rent,2100,<50k,1.2
+R2,Family,Own,5100,100k+,3.4
+R2,Family,Rent,1900,50-100k,2.7
+R2,Nonfamily,Own,1200,100k+,1.5
+R2,Nonfamily,Rent,2400,<50k,1.1
+R3,Family,Own,3800,50-100k,3.1
+R3,Family,Rent,3200,<50k,2.8
+R3,Nonfamily,Own,900,50-100k,1.3
+R3,Nonfamily,Rent,1800,<50k,1.2
+R4,Family,Own,2900,100k+,3.5
+R4,Family,Rent,1600,50-100k,2.6
+R4,Nonfamily,Own,1100,100k+,1.6
+R4,Nonfamily,Rent,2000,50-100k,1.3

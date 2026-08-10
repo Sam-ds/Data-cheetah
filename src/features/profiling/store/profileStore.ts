@@ -19,6 +19,7 @@ interface PreferencesState {
   duckdbMemoryLimit: DuckDbMemoryLimit
   askProvider: AskProviderId
   askRemoteModelId: string
+  /** In-memory only — never written to localStorage; source of truth is IndexedDB. */
   openrouterApiKey: string
   duckdbReady: boolean
   duckdbStatus: 'idle' | 'loading' | 'ready' | 'error'
@@ -96,15 +97,17 @@ export const usePreferencesStore = create<PreferencesState>()(
         duckdbMemoryLimit: state.duckdbMemoryLimit,
         askProvider: state.askProvider,
         askRemoteModelId: state.askRemoteModelId,
-        openrouterApiKey: state.openrouterApiKey,
+        // openrouterApiKey intentionally omitted — IndexedDB only
       }),
       merge: (persisted, current) => {
         const p = (persisted ?? {}) as Partial<PreferencesState>
+        // Never rehydrate the API key from localStorage
+        const { openrouterApiKey: _drop, ...safe } = p
         return {
           ...current,
-          ...p,
-          askProvider: coerceAskProvider(p.askProvider ?? current.askProvider),
-          openrouterApiKey: p.openrouterApiKey ?? current.openrouterApiKey ?? '',
+          ...safe,
+          askProvider: coerceAskProvider(safe.askProvider ?? current.askProvider),
+          openrouterApiKey: current.openrouterApiKey ?? '',
         }
       },
     },

@@ -7,29 +7,38 @@ export function AppFooter() {
   const appMode = useWorkspaceStore((s) => s.appMode)
 
   return (
-    <footer className="shrink-0 border-t border-border bg-background/80 px-4 py-2.5 backdrop-blur-sm">
-      <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-4 gap-y-1.5">
-        <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
-          DataCheetah · Apache 2.0
-        </p>
-        <nav className="flex items-center gap-4 text-xs">
+    <footer className="app-footer shrink-0">
+      <div className="app-footer-inner">
+        <button
+          type="button"
+          className="app-footer-brand"
+          onClick={() => setAppMode('home')}
+          aria-label="DataCheetah home"
+        >
+          <span className="app-footer-name" aria-hidden>
+            <span className="app-footer-data">data</span>
+            <span className="app-footer-cheetah">cheetah</span>
+          </span>
+        </button>
+        <nav className="app-footer-nav" aria-label="Site">
+          <button
+            type="button"
+            onClick={() => setAppMode('template-design')}
+            className={cn('app-footer-link', appMode === 'template-design' && 'app-footer-link--active')}
+          >
+            For developers
+          </button>
           <button
             type="button"
             onClick={() => setAppMode('faq')}
-            className={cn(
-              'font-medium underline-offset-2 transition hover:text-foreground hover:underline',
-              appMode === 'faq' ? 'text-foreground' : 'text-muted-foreground',
-            )}
+            className={cn('app-footer-link', appMode === 'faq' && 'app-footer-link--active')}
           >
             FAQ
           </button>
           <button
             type="button"
             onClick={() => setAppMode('license')}
-            className={cn(
-              'font-medium underline-offset-2 transition hover:text-foreground hover:underline',
-              appMode === 'license' ? 'text-foreground' : 'text-muted-foreground',
-            )}
+            className={cn('app-footer-link', appMode === 'license' && 'app-footer-link--active')}
           >
             License
           </button>

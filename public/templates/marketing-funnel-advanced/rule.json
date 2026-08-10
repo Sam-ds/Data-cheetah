@@ -1,0 +1,167 @@
+{
+  "tables": [
+    {
+      "id": "funnel",
+      "file": "funnel",
+      "requiredColumns": [
+        {
+          "role": "stage",
+          "aliases": [
+            "stage",
+            "step",
+            "funnel_stage"
+          ],
+          "type": "string",
+          "kind": "dimension"
+        },
+        {
+          "role": "users",
+          "aliases": [
+            "users",
+            "count",
+            "volume"
+          ],
+          "type": "integer",
+          "kind": "measure"
+        },
+        {
+          "role": "rate",
+          "aliases": [
+            "rate",
+            "conversion_rate"
+          ],
+          "type": "number",
+          "kind": "measure"
+        },
+        {
+          "role": "date",
+          "aliases": [
+            "date",
+            "day"
+          ],
+          "type": "date",
+          "kind": "dimension"
+        }
+      ]
+    },
+    {
+      "id": "flows",
+      "file": "flows",
+      "requiredColumns": [
+        {
+          "role": "source",
+          "aliases": [
+            "source",
+            "from_stage"
+          ],
+          "type": "string",
+          "kind": "dimension"
+        },
+        {
+          "role": "target",
+          "aliases": [
+            "target",
+            "to_stage"
+          ],
+          "type": "string",
+          "kind": "dimension"
+        },
+        {
+          "role": "channel",
+          "aliases": [
+            "channel",
+            "medium"
+          ],
+          "type": "string",
+          "kind": "dimension"
+        },
+        {
+          "role": "value",
+          "aliases": [
+            "value",
+            "users",
+            "count"
+          ],
+          "type": "integer",
+          "kind": "measure"
+        }
+      ]
+    },
+    {
+      "id": "daily",
+      "file": "daily",
+      "requiredColumns": [
+        {
+          "role": "date",
+          "aliases": [
+            "date",
+            "day"
+          ],
+          "type": "date",
+          "kind": "dimension"
+        },
+        {
+          "role": "users",
+          "aliases": [
+            "users",
+            "count",
+            "volume"
+          ],
+          "type": "integer",
+          "kind": "measure"
+        }
+      ]
+    }
+  ],
+  "charts": [
+    {
+      "type": "funnel",
+      "title": "Conversion funnel",
+      "x": "stage",
+      "y": "users",
+      "agg": "sum",
+      "table": "funnel"
+    },
+    {
+      "type": "sankey",
+      "title": "Stage flow",
+      "source": "source",
+      "target": "target",
+      "measure": "value",
+      "agg": "sum",
+      "table": "flows"
+    },
+    {
+      "type": "area",
+      "title": "Users over time",
+      "x": "date",
+      "y": "users",
+      "agg": "sum",
+      "table": "daily"
+    },
+    {
+      "type": "radar",
+      "title": "Stage rates",
+      "x": "stage",
+      "y": "rate",
+      "agg": "avg",
+      "table": "funnel"
+    },
+    {
+      "type": "bar",
+      "title": "Users by stage",
+      "x": "stage",
+      "y": "users",
+      "agg": "sum",
+      "table": "funnel"
+    },
+    {
+      "type": "pie",
+      "title": "Channel in flows",
+      "dimension": "channel",
+      "measure": "value",
+      "agg": "sum",
+      "table": "flows"
+    }
+  ]
+}

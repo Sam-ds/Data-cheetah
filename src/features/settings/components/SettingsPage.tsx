@@ -12,7 +12,10 @@ import {
   defaultRemoteModelFor,
 } from '@/types/askSettings'
 import { usePreferencesStore } from '@/features/profiling/store/profileStore'
-import { savePreferences } from '@/services/storageService'
+import {
+  clearOpenRouterApiKey,
+  savePreferences,
+} from '@/services/storageService'
 import { testOpenRouterApiKey } from '@/features/settings/services/testApiKey'
 import { resetDuckDB, ensureDuckDB } from '@/hooks/useDuckDB'
 import { rehydratePersistedFiles } from '@/features/files/services/localDatasetService'
@@ -36,13 +39,16 @@ export function SettingsPage() {
   const modelReady = useAskStore((s) => s.modelReady)
   const setModelReady = useAskStore((s) => s.setModelReady)
 
-  const [draftKey, setDraftKey] = useState(openrouterApiKey)
+  const hasSavedKey = Boolean(openrouterApiKey?.trim())
+  const [draftKey, setDraftKey] = useState('')
   const [draftModel, setDraftModel] = useState(askRemoteModelId)
   const [restarting, setRestarting] = useState(false)
   const [testing, setTesting] = useState(false)
+  const [clearingKey, setClearingKey] = useState(false)
 
   useEffect(() => {
-    setDraftKey(openrouterApiKey)
+    // Keep the full key out of the input after hydrate — mask via placeholder.
+    setDraftKey('')
   }, [openrouterApiKey])
 
   useEffect(() => {
@@ -102,15 +108,37 @@ export function SettingsPage() {
   }
 
   const saveOpenRouter = async () => {
-    const key = draftKey.trim()
+    const typed = draftKey.trim()
     const model = draftModel.trim() || defaultRemoteModelFor('openrouter')
+    const key = typed || openrouterApiKey.trim()
+    if (!key) {
+      toast.error('Paste an OpenRouter API key to save')
+      return
+    }
     setOpenrouterApiKey(key)
     setAskRemoteModelId(model)
     setDraftModel(model)
+    setDraftKey('')
     await persistAskPrefs({ openrouterApiKey: key, askRemoteModelId: model })
     await resetAskLlmSession()
     setModelReady(false)
     toast.success('OpenRouter settings saved on this device')
+  }
+
+  const clearKey = async () => {
+    setClearingKey(true)
+    try {
+      await clearOpenRouterApiKey()
+      setOpenrouterApiKey('')
+      setDraftKey('')
+      await resetAskLlmSession()
+      setModelReady(false)
+      toast.success('OpenRouter API key cleared from this browser')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Could not clear API key')
+    } finally {
+      setClearingKey(false)
+    }
   }
 
   const clearModelFromMemory = async () => {
@@ -123,7 +151,8 @@ export function SettingsPage() {
   const handleTest = async () => {
     setTesting(true)
     try {
-      const result = await testOpenRouterApiKey(draftKey, draftModel)
+      const key = draftKey.trim() || openrouterApiKey.trim()
+      const result = await testOpenRouterApiKey(key, draftModel)
       if (result.ok) toast.success(result.detail)
       else toast.error(result.detail)
     } finally {
@@ -138,9 +167,9 @@ export function SettingsPage() {
           <ArrowLeft className="h-3.5 w-3.5" />
           Back
         </Button>
-        <h1 className="page-title">Settings</h1>
-        <span className="page-eyebrow mt-2">On-device preferences</span>
-        <p className="mt-3 max-w-xl text-sm leading-relaxed text-muted-foreground">
+        <span className="page-eyebrow">On-device preferences</span>
+        <h1 className="page-title mt-3">Settings</h1>
+        <p className="mt-4 max-w-xl text-sm leading-relaxed text-muted-foreground">
           DuckDB memory, Insights provider (local or OpenRouter), and on-device preferences.
         </p>
       </div>
@@ -234,8 +263,12 @@ export function SettingsPage() {
               className="page-field"
               value={draftKey}
               onChange={(e) => setDraftKey(e.target.value)}
-              placeholder="sk-or-…"
+              placeholder={hasSavedKey ? '•••• saved on this device' : 'sk-or-…'}
             />
+            <p className="text-[11px] leading-relaxed text-muted-foreground">
+              Your key is stored locally in your browser and sent directly to OpenRouter. We never see
+              or store your key.
+            </p>
             <label className="block text-xs text-muted-foreground">Model id</label>
             <input
               className="page-field"
@@ -244,8 +277,7 @@ export function SettingsPage() {
               placeholder="openai/gpt-4o"
             />
             <p className="text-[11px] text-muted-foreground">
-              Key and model are stored on this device only (browser preferences). Not encrypted at rest.
-              Get a key at{' '}
+              Key stays in this browser&apos;s IndexedDB only (not synced). Get a key at{' '}
               <a
                 className="brand-link underline underline-offset-2"
                 href="https://openrouter.ai/keys"
@@ -264,11 +296,22 @@ export function SettingsPage() {
                 size="sm"
                 variant="outline"
                 className="gap-1.5"
-                disabled={testing || !draftKey.trim()}
+                disabled={testing || (!draftKey.trim() && !hasSavedKey)}
                 onClick={() => void handleTest()}
               >
                 <FlaskConical className="h-3.5 w-3.5" />
                 {testing ? 'Testing…' : 'Test key'}
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="destructive"
+                className="gap-1.5"
+                disabled={!hasSavedKey || clearingKey}
+                onClick={() => void clearKey()}
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                {clearingKey ? 'Clearing…' : 'Clear Key'}
               </Button>
               <Button
                 type="button"

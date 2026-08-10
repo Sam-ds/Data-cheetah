@@ -2,7 +2,15 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { DEFAULT_PREFERENCES } from '@/types/preferences'
 
-export type AppMode = 'home' | 'explore' | 'tools' | 'settings' | 'faq' | 'license'
+export type AppMode =
+  | 'home'
+  | 'explore'
+  | 'discover'
+  | 'tools'
+  | 'settings'
+  | 'faq'
+  | 'license'
+  | 'template-design'
 
 interface WorkspaceState {
   appMode: AppMode
@@ -12,7 +20,10 @@ interface WorkspaceState {
   sidebarCollapsed: boolean
   activeBottomTab: 'results' | 'charts'
   activeRightTab: 'explorer' | 'statistics' | 'ask'
+  /** Scroll target on For developers after navigation (e.g. open-dashboard). */
+  guideScrollTarget: string | null
   setAppMode: (mode: AppMode) => void
+  setGuideScrollTarget: (id: string | null) => void
   setSidebarSize: (size: number) => void
   setBottomSize: (size: number) => void
   setRightSize: (size: number) => void
@@ -31,7 +42,9 @@ export const useWorkspaceStore = create<WorkspaceState>()(
       sidebarCollapsed: false,
       activeBottomTab: 'results',
       activeRightTab: 'explorer',
+      guideScrollTarget: null,
       setAppMode: (mode) => set({ appMode: mode }),
+      setGuideScrollTarget: (id) => set({ guideScrollTarget: id }),
       setSidebarSize: (size) => set({ sidebarSize: size }),
       setBottomSize: (size) => set({ bottomSize: size }),
       setRightSize: (size) => set({ rightSize: size }),

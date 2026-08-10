@@ -1,9 +1,10 @@
-import Dexie, { type Table } from 'dexie'
 import type { Preferences } from '@/types/preferences'
 import type { RecentFileMeta } from '@/types/dataset'
 import type { SavedQuery } from '@/types/query'
 import type { PersistedDataset } from '@/types/persistedDataset'
 import type { LocalWorkspace } from '@/types/workspace'
+import type { PersistedDashboardPack } from '@/types/persistedDashboardPack'
+import Dexie, { type Table } from 'dexie'
 
 export class DataCheetahDB extends Dexie {
   preferences!: Table<Preferences>
@@ -11,6 +12,7 @@ export class DataCheetahDB extends Dexie {
   savedQueries!: Table<SavedQuery>
   datasetBlobs!: Table<PersistedDataset>
   workspaces!: Table<LocalWorkspace>
+  dashboardPacks!: Table<PersistedDashboardPack>
 
   constructor() {
     super('datacheetah')
@@ -69,6 +71,23 @@ export class DataCheetahDB extends Dexie {
       datasetBlobs: 'id, workspaceId, savedAt, tableName',
       workspaces: 'id, name, updatedAt',
       secretsVault: null,
+    })
+    this.version(6).stores({
+      preferences: 'id',
+      recentFiles: 'id, lastOpenedAt',
+      savedQueries: 'id, name, updatedAt',
+      datasetBlobs: 'id, workspaceId, savedAt, tableName',
+      workspaces: 'id, name, updatedAt',
+      dashboardPacks: 'id, installedAt',
+    })
+    // Multifile Discover packs (samplesJson); sampleCsv kept for legacy rows
+    this.version(7).stores({
+      preferences: 'id',
+      recentFiles: 'id, lastOpenedAt',
+      savedQueries: 'id, name, updatedAt',
+      datasetBlobs: 'id, workspaceId, savedAt, tableName',
+      workspaces: 'id, name, updatedAt',
+      dashboardPacks: 'id, installedAt',
     })
   }
 }

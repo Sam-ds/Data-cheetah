@@ -15,13 +15,16 @@ function isMissingTableError(message: string): boolean {
 
 /** Run SQL; if the engine was reset and tables vanished, restore from local cache once and retry. */
 export async function executeQuery(sql: string, limit?: number): Promise<QueryResult> {
+  const { ensureDuckDB } = await import('@/hooks/useDuckDB')
+  await ensureDuckDB()
+
   try {
     return await duckdbClient.executeSql(sql, limit)
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
     if (!isMissingTableError(message)) throw err
 
-    const { resetDuckDB, ensureDuckDB } = await import('@/hooks/useDuckDB')
+    const { resetDuckDB } = await import('@/hooks/useDuckDB')
     const { rehydratePersistedFiles } = await import(
       '@/features/files/services/localDatasetService'
     )

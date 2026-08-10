@@ -1,26 +1,28 @@
 import {
   ArrowRight,
   Braces,
+  Compass,
   Database,
   FileDiff,
   GitCompare,
   Minimize2,
+  Scale,
   Wand2,
   type LucideIcon,
 } from 'lucide-react'
-import hero from '@/assets/hero.png'
-import collabDashboard from '@/assets/illustrations/collab-dashboard.png'
+import hero from '@/assets/illustrations/datacheetah-suite-logo.png'
 import dataPipeline from '@/assets/illustrations/data-pipeline.png'
-import exploreSolo from '@/assets/illustrations/explore-solo.png'
 import inspect from '@/assets/illustrations/inspect.png'
 import security from '@/assets/illustrations/security.png'
-import cloudSync from '@/assets/illustrations/cloud-sync.png'
+import collabDashboard from '@/assets/illustrations/collab-dashboard.png'
 import team from '@/assets/illustrations/team.png'
+import cloudSync from '@/assets/illustrations/cloud-sync.png'
 import mascotVisualize from '@/assets/illustrations/mascot-visualize.png'
 import mascotGenerate from '@/assets/illustrations/mascot-generate.png'
 import mascotFormatters from '@/assets/illustrations/mascot-formatters.png'
 import { useWorkspaceStore } from '@/features/workspace/store/workspaceStore'
 import { TOOL_LABELS, useToolsStore, type ToolId } from '@/features/tools/store/toolsStore'
+import { DISCOVER_BLURB } from '@/features/discover/content/discoverCopy'
 import { PageStage } from './PageStage'
 
 function GitHubLogo({ className }: { className?: string }) {
@@ -49,6 +51,14 @@ type HomeItem =
       kind: 'explore'
     }
   | {
+      id: 'discover'
+      label: string
+      blurb: string
+      tag: string
+      icon: LucideIcon
+      kind: 'discover'
+    }
+  | {
       id: ToolId
       label: string
       blurb: string
@@ -65,6 +75,15 @@ const WORKSPACE: HomeItem = {
   tag: 'CSV · Parquet · JSON · Excel',
   icon: Database,
   kind: 'explore',
+}
+
+const DISCOVER: HomeItem = {
+  id: 'discover',
+  label: 'Discover',
+  blurb: DISCOVER_BLURB,
+  tag: 'Templates',
+  icon: Compass,
+  kind: 'discover',
 }
 
 const TOOLS: Extract<HomeItem, { kind: 'tool' }>[] = [
@@ -118,43 +137,37 @@ const TOOLS: Extract<HomeItem, { kind: 'tool' }>[] = [
 const FEATURES = [
   {
     title: 'Connect & explore',
-    blurb: 'Bring CSV, Parquet, JSON, and Excel into DuckDB — all in the browser.',
+    blurb: 'Load CSV, Parquet, JSON, and Excel — query it and visualize with preset rules.',
     image: dataPipeline,
     alt: 'Data sources flowing into a dashboard',
   },
   {
-    title: 'Visualize insights',
-    blurb: 'Charts, profiles, and Ask help you see patterns without leaving your machine.',
-    image: exploreSolo,
-    alt: 'Person working with a data dashboard',
+    title: 'Templates & live packs',
+    blurb: 'Discover ready-made dashboards and interactive packs — map your columns and run them on your data.',
+    image: collabDashboard,
+    alt: 'Dashboard templates and interactive packs',
   },
   {
-    title: 'Inspect what matters',
-    blurb: 'Drill into stats, profiles, and results with a focused workspace.',
+    title: 'Ask your data',
+    blurb: 'Natural-language Insights with local WebLLM or a remote model you configure.',
     image: inspect,
     alt: 'Inspecting charts with a magnifying glass',
   },
   {
-    title: 'Analyze together',
-    blurb: 'A shared workspace for SQL, results, and exploration side by side.',
-    image: collabDashboard,
-    alt: 'Two people reviewing an analytics dashboard',
-  },
-  {
     title: 'Private by design',
-    blurb: 'Work stays on-device unless you choose a remote model for Insights.',
+    blurb: 'Files and queries stay on-device unless you opt into a remote model for Ask.',
     image: security,
     alt: 'Security checklist and shield',
   },
   {
-    title: 'Sync when you choose',
-    blurb: 'Datasets stay local-first; optional remote models only when you connect them.',
+    title: 'Everyday data tools',
+    blurb: 'Format and diff JSON or text, and generate synthetic rows with faker.js.',
     image: cloudSync,
-    alt: 'Cloud sync between folder and database',
+    alt: 'Local tools syncing data workflows',
   },
   {
-    title: 'Built for teams of one',
-    blurb: 'Format, compare, generate, and explore — a full suite in one place.',
+    title: 'Build & share packs',
+    blurb: 'Publish portable dashboard ZIPs — others install them and run on their own data.',
     image: team,
     alt: 'Small team collaborating with laptops',
   },
@@ -195,6 +208,7 @@ export function HomeHub() {
   const openTool = useToolsStore((s) => s.openTool)
 
   const openExplore = () => setAppMode('explore')
+  const openDiscover = () => setAppMode('discover')
   const openToolItem = (toolId: ToolId) => {
     openTool(toolId)
     setAppMode('tools')
@@ -208,30 +222,20 @@ export function HomeHub() {
       contentClassName="mx-auto flex w-full max-w-5xl flex-1 flex-col px-0 pb-12 sm:pb-16"
     >
       <header className="home-hero-header w-full pt-2">
-        <div className="home-hero-track">
-          <div className="home-hero-frame">
-            <span className="home-hero-blast" aria-hidden>
-              <span className="home-hero-spark home-hero-spark--a" />
-              <span className="home-hero-spark home-hero-spark--b" />
-              <span className="home-hero-spark home-hero-spark--c" />
-              <span className="home-hero-spark home-hero-spark--d" />
-              <span className="home-hero-spark home-hero-spark--e" />
-              <span className="home-hero-spark home-hero-spark--f" />
-              <span className="home-hero-spark home-hero-spark--g" />
-              <span className="home-hero-spark home-hero-spark--h" />
-              <span className="home-hero-spark home-hero-spark--i" />
-            </span>
-            <img
-              src={hero}
-              alt="DataCheetah"
-              className="home-hero"
-            />
+        <div className="home-hero-stage">
+          <div className="home-hero-track home-hero-track--suite">
+            <div className="home-hero-frame home-hero-frame--suite">
+              <img
+                src={hero}
+                alt="DataCheetah Suite"
+                className="home-hero home-hero--suite"
+                width={1024}
+                height={390}
+                decoding="async"
+              />
+            </div>
           </div>
         </div>
-        <p className="home-brand-name px-6 sm:px-8" aria-label="datacheetah">
-          <span className="home-brand-data">data</span>
-          <span className="home-brand-cheetah">cheetah</span>
-        </p>
         <p className="home-tagline mx-auto mt-2 px-6 text-center sm:px-8">
           <span className="home-tagline-text">A suite of data tools</span>
         </p>
@@ -250,6 +254,7 @@ export function HomeHub() {
               Workspace
             </h2>
             <nav className="home-rows flex flex-col" aria-label="Workspace">
+              <HomeRow item={DISCOVER} onClick={openDiscover} />
               <HomeRow item={WORKSPACE} onClick={openExplore} />
             </nav>
           </div>
@@ -369,6 +374,21 @@ export function HomeHub() {
             </span>
             <ArrowRight className="ml-auto h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-1" />
           </a>
+          <button
+            type="button"
+            onClick={() => setAppMode('license')}
+            className="home-community-link group text-left"
+            aria-label="View DataCheetah license and open source credits"
+          >
+            <span className="home-community-icon">
+              <Scale className="h-5 w-5" />
+            </span>
+            <span>
+              <span className="block text-sm font-semibold text-foreground">License & credits</span>
+              <span className="mt-0.5 block text-xs text-muted-foreground">Apache 2.0 and third-party licenses</span>
+            </span>
+            <ArrowRight className="ml-auto h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-1" />
+          </button>
           <a
             href="https://www.linkedin.com/in/sampath-kumar-385a0892/"
             target="_blank"

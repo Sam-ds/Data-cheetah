@@ -1,0 +1,150 @@
+{
+  "tables": [
+    {
+      "id": "shipments",
+      "file": "shipments",
+      "requiredColumns": [
+        {
+          "role": "date",
+          "aliases": [
+            "date",
+            "ship_date"
+          ],
+          "type": "date",
+          "kind": "dimension"
+        },
+        {
+          "role": "hub",
+          "aliases": [
+            "hub",
+            "warehouse",
+            "origin"
+          ],
+          "type": "string",
+          "kind": "dimension"
+        },
+        {
+          "role": "delay_hrs",
+          "aliases": [
+            "delay_hrs",
+            "delay",
+            "late_hours"
+          ],
+          "type": "number",
+          "kind": "measure"
+        },
+        {
+          "role": "distance_mi",
+          "aliases": [
+            "distance_mi",
+            "distance",
+            "miles"
+          ],
+          "type": "number",
+          "kind": "measure"
+        },
+        {
+          "role": "cost",
+          "aliases": [
+            "cost",
+            "spend",
+            "amount"
+          ],
+          "type": "number",
+          "kind": "measure"
+        }
+      ]
+    },
+    {
+      "id": "routes",
+      "file": "routes",
+      "requiredColumns": [
+        {
+          "role": "hub",
+          "aliases": [
+            "hub",
+            "warehouse"
+          ],
+          "type": "string",
+          "kind": "dimension"
+        },
+        {
+          "role": "region",
+          "aliases": [
+            "region",
+            "dest_region"
+          ],
+          "type": "string",
+          "kind": "dimension"
+        },
+        {
+          "role": "shipments",
+          "aliases": [
+            "shipments",
+            "count",
+            "volume"
+          ],
+          "type": "integer",
+          "kind": "measure"
+        },
+        {
+          "role": "avg_delay",
+          "aliases": [
+            "avg_delay",
+            "delay"
+          ],
+          "type": "number",
+          "kind": "measure"
+        }
+      ]
+    }
+  ],
+  "charts": [
+    {
+      "type": "scatter",
+      "title": "Distance vs cost",
+      "x": "distance_mi",
+      "y": "cost",
+      "table": "shipments"
+    },
+    {
+      "type": "bar",
+      "title": "Shipments by hub",
+      "x": "hub",
+      "y": "shipments",
+      "agg": "sum",
+      "table": "routes"
+    },
+    {
+      "type": "line",
+      "title": "Delay over time",
+      "x": "date",
+      "y": "delay_hrs",
+      "agg": "avg",
+      "table": "shipments"
+    },
+    {
+      "type": "heatmap",
+      "title": "Hub × region",
+      "x": "hub",
+      "y": "region",
+      "measure": "shipments",
+      "agg": "sum",
+      "table": "routes"
+    },
+    {
+      "type": "bar",
+      "title": "Avg delay by hub",
+      "x": "hub",
+      "y": "avg_delay",
+      "agg": "avg",
+      "table": "routes"
+    },
+    {
+      "type": "histogram",
+      "title": "Cost distribution",
+      "x": "cost",
+      "table": "shipments"
+    }
+  ]
+}

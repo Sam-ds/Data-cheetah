@@ -1,0 +1,151 @@
+{
+  "tables": [
+    {
+      "id": "households",
+      "file": "households",
+      "requiredColumns": [
+        {
+          "role": "region_id",
+          "aliases": [
+            "region_id",
+            "region"
+          ],
+          "type": "string",
+          "kind": "dimension"
+        },
+        {
+          "role": "hh_type",
+          "aliases": [
+            "hh_type",
+            "type",
+            "household_type"
+          ],
+          "type": "string",
+          "kind": "dimension"
+        },
+        {
+          "role": "tenure",
+          "aliases": [
+            "tenure",
+            "own_rent"
+          ],
+          "type": "string",
+          "kind": "dimension"
+        },
+        {
+          "role": "households",
+          "aliases": [
+            "households",
+            "count",
+            "hh"
+          ],
+          "type": "integer",
+          "kind": "measure"
+        },
+        {
+          "role": "income_band",
+          "aliases": [
+            "income_band",
+            "income"
+          ],
+          "type": "string",
+          "kind": "dimension"
+        },
+        {
+          "role": "avg_size",
+          "aliases": [
+            "avg_size",
+            "size"
+          ],
+          "type": "number",
+          "kind": "measure"
+        }
+      ]
+    },
+    {
+      "id": "regions",
+      "file": "regions",
+      "requiredColumns": [
+        {
+          "role": "region_id",
+          "aliases": [
+            "region_id",
+            "id"
+          ],
+          "type": "string",
+          "kind": "dimension"
+        },
+        {
+          "role": "region_name",
+          "aliases": [
+            "region_name",
+            "name"
+          ],
+          "type": "string",
+          "kind": "dimension"
+        }
+      ]
+    }
+  ],
+  "joins": [
+    {
+      "left": "households",
+      "right": "regions",
+      "on": [
+        "region_id",
+        "region_id"
+      ]
+    }
+  ],
+  "charts": [
+    {
+      "type": "treemap",
+      "title": "Households by type",
+      "x": "hh_type",
+      "y": "households",
+      "agg": "sum",
+      "table": "households"
+    },
+    {
+      "type": "bar",
+      "title": "Households by region",
+      "x": "region_name",
+      "y": "households",
+      "agg": "sum",
+      "table": "joined"
+    },
+    {
+      "type": "funnel",
+      "title": "Income funnel",
+      "x": "income_band",
+      "y": "households",
+      "agg": "sum",
+      "table": "households"
+    },
+    {
+      "type": "stacked_bar",
+      "title": "Type × tenure",
+      "x": "hh_type",
+      "series": "tenure",
+      "y": "households",
+      "agg": "sum",
+      "table": "households"
+    },
+    {
+      "type": "bar",
+      "title": "Avg size by type",
+      "x": "hh_type",
+      "y": "avg_size",
+      "agg": "avg",
+      "table": "households"
+    },
+    {
+      "type": "pie",
+      "title": "Region share",
+      "dimension": "region_name",
+      "measure": "households",
+      "agg": "sum",
+      "table": "joined"
+    }
+  ]
+}

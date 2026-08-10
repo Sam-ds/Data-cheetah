@@ -1,0 +1,16 @@
+{
+  "id": "commerce-command-center",
+  "name": "Commerce Command Center",
+  "category": "sales",
+  "description": "A cinematic Three.js ops floor — region platforms, category towers, channel particle flows, and a multi-KPI HUD driven by rich mapped commerce data.",
+  "version": "1.0.0",
+  "author": "DataCheetah",
+  "publisher": "DataCheetah",
+  "insights": [
+    "Region platforms — compare markets on a circular command floor",
+    "Category towers — see product-line mix rise on each pad",
+    "Channel flows — particle streams show Direct, Marketplace, and Retail share",
+    "Multi-KPI HUD — revenue, orders, customers, and margin while you scrub years",
+    "Bring your own CSV — map year, region, category, channel, and measures"
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "id": "healthcare-clinic",
+  "name": "Healthcare Clinic",
+  "category": "healthcare",
+  "description": "Visits by clinic and specialty with wait-time mix.",
+  "version": "2.0.0",
+  "author": "DataCheetah",
+  "insights": [
+    "Visits stacked by specialty — clinic load",
+    "Visits over time — volume area",
+    "Specialty mix — pie share",
+    "Wait time histogram — patient experience",
+    "Visits by clinic — bar comparison",
+    "Avg wait by specialty — ops bar"
+  ],
+  "publisher": "DataCheetah"
+}

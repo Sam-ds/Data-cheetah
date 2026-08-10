@@ -1,0 +1,55 @@
+{
+  "renderer": "dynamic",
+  "tables": [
+    {
+      "id": "sales",
+      "file": "sample.csv",
+      "requiredColumns": [
+        {
+          "role": "date",
+          "aliases": ["date", "day", "order_date"],
+          "type": "date",
+          "kind": "dimension"
+        },
+        {
+          "role": "region",
+          "aliases": ["region", "territory", "market"],
+          "type": "string",
+          "kind": "dimension"
+        },
+        {
+          "role": "channel",
+          "aliases": ["channel", "source", "sales_channel"],
+          "type": "string",
+          "kind": "dimension"
+        },
+        {
+          "role": "revenue",
+          "aliases": ["revenue", "sales", "amount"],
+          "type": "number",
+          "kind": "measure"
+        },
+        {
+          "role": "orders",
+          "aliases": ["orders", "order_count", "count"],
+          "type": "integer",
+          "kind": "measure"
+        }
+      ]
+    }
+  ],
+  "charts": [],
+  "dynamic": {
+    "visualizationId": "pack",
+    "entry": "visualization.js",
+    "title": "Three.js sales landscape",
+    "table": "sales",
+    "columns": ["date", "region", "channel", "revenue", "orders"],
+    "maxRows": 1000,
+    "settings": {
+      "dimension": "region",
+      "measure": "revenue",
+      "secondaryMeasure": "orders"
+    }
+  }
+}

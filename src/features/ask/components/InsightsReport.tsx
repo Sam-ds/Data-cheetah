@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { ChevronDown, ChevronRight, Database, FileSearch } from 'lucide-react'
 import type { InsightFinding, InsightReport } from '../llm/types'
 import { cn } from '@/lib/utils/cn'
+import { sanitizeLlmText } from '@/lib/sanitizeLlmText'
 
 interface InsightsReportProps {
   report: InsightReport | null
@@ -33,7 +34,7 @@ export function InsightsReportView({ report }: InsightsReportProps) {
           </p>
         </div>
         <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-foreground">
-          {report.summary}
+          {sanitizeLlmText(report.summary)}
         </p>
       </section>
 
@@ -88,12 +89,14 @@ function FindingEvidence({ finding, index }: { finding: InsightFinding; index: n
         )}
         <div className="min-w-0 flex-1">
           <p className="text-xs font-medium text-foreground">
-            <span className="text-muted-foreground">{index}.</span> {finding.title}
+            <span className="text-muted-foreground">{index}.</span>{' '}
+            {sanitizeLlmText(finding.title)}
           </p>
           <p className="mt-0.5 line-clamp-2 text-[11px] text-muted-foreground">
             {hasError
-              ? finding.error
-              : finding.answer || (empty ? 'No rows returned' : `${finding.rowCount} rows`)}
+              ? sanitizeLlmText(finding.error)
+              : sanitizeLlmText(finding.answer) ||
+                (empty ? 'No rows returned' : `${finding.rowCount} rows`)}
           </p>
         </div>
         <span className="shrink-0 rounded-md bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
@@ -108,7 +111,9 @@ function FindingEvidence({ finding, index }: { finding: InsightFinding; index: n
               <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
                 Finding note
               </p>
-              <p className="mt-1 text-xs leading-relaxed whitespace-pre-wrap">{finding.answer}</p>
+              <p className="mt-1 text-xs leading-relaxed whitespace-pre-wrap">
+                {sanitizeLlmText(finding.answer)}
+              </p>
             </div>
           )}
           {finding.sql && (

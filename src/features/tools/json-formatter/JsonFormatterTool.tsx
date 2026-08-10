@@ -58,11 +58,18 @@ export function JsonFormatterTool() {
       <div className="grid h-full min-h-0 grid-cols-1 gap-3 md:grid-cols-2">
         <ToolTextarea
           label="Input"
+          tone="sky"
           placeholder='{"hello":"world"}'
           value={input}
           onChange={(e) => setInput(e.target.value)}
         />
-        <ToolTextarea label="Output" readOnly placeholder="Formatted JSON appears here" value={output} />
+        <ToolTextarea
+          label="Output"
+          tone="emerald"
+          readOnly
+          placeholder="Formatted JSON appears here"
+          value={output}
+        />
       </div>
     </ToolPane>
   )

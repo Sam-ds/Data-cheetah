@@ -1,0 +1,135 @@
+{
+  "tables": [
+    {
+      "id": "states",
+      "file": "states",
+      "requiredColumns": [
+        {
+          "role": "state",
+          "aliases": [
+            "state",
+            "name",
+            "region"
+          ],
+          "type": "string",
+          "kind": "dimension"
+        },
+        {
+          "role": "population",
+          "aliases": [
+            "population",
+            "pop",
+            "total"
+          ],
+          "type": "integer",
+          "kind": "measure"
+        },
+        {
+          "role": "median_income",
+          "aliases": [
+            "median_income",
+            "income"
+          ],
+          "type": "integer",
+          "kind": "measure"
+        },
+        {
+          "role": "density",
+          "aliases": [
+            "density",
+            "pop_density"
+          ],
+          "type": "number",
+          "kind": "measure"
+        }
+      ]
+    },
+    {
+      "id": "demographics",
+      "file": "demographics",
+      "requiredColumns": [
+        {
+          "role": "state",
+          "aliases": [
+            "state",
+            "name"
+          ],
+          "type": "string",
+          "kind": "dimension"
+        },
+        {
+          "role": "age_band",
+          "aliases": [
+            "age_band",
+            "age",
+            "band"
+          ],
+          "type": "string",
+          "kind": "dimension"
+        },
+        {
+          "role": "count",
+          "aliases": [
+            "count",
+            "population",
+            "people"
+          ],
+          "type": "integer",
+          "kind": "measure"
+        }
+      ]
+    }
+  ],
+  "charts": [
+    {
+      "type": "map",
+      "title": "US population map",
+      "x": "state",
+      "y": "population",
+      "agg": "sum",
+      "map": "usa-states",
+      "table": "states"
+    },
+    {
+      "type": "treemap",
+      "title": "Population treemap",
+      "x": "state",
+      "y": "population",
+      "agg": "sum",
+      "table": "states"
+    },
+    {
+      "type": "bar",
+      "title": "Median income by state",
+      "x": "state",
+      "y": "median_income",
+      "agg": "avg",
+      "table": "states"
+    },
+    {
+      "type": "heatmap",
+      "title": "Age × state",
+      "x": "age_band",
+      "y": "state",
+      "measure": "count",
+      "agg": "sum",
+      "table": "demographics"
+    },
+    {
+      "type": "bar",
+      "title": "Density by state",
+      "x": "state",
+      "y": "density",
+      "agg": "avg",
+      "table": "states"
+    },
+    {
+      "type": "pie",
+      "title": "Age band mix",
+      "dimension": "age_band",
+      "measure": "count",
+      "agg": "sum",
+      "table": "demographics"
+    }
+  ]
+}

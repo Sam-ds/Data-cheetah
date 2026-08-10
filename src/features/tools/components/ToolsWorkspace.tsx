@@ -34,7 +34,7 @@ export function ToolsWorkspace() {
     <PageStage
       enterKey={open ? activeToolId : 'tools'}
       scroll={false}
-      showArt={!open}
+      showArt={false}
       contentClassName="flex h-full min-h-0 flex-col"
     >
       {!open ? (

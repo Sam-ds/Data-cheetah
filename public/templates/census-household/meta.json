@@ -1,0 +1,17 @@
+{
+  "id": "census-household",
+  "name": "Census Household",
+  "category": "demographics",
+  "description": "Households joined to regions — treemap, funnel, stacked bars.",
+  "version": "2.0.0",
+  "author": "DataCheetah",
+  "insights": [
+    "Households by type — family structure treemap",
+    "Households by region — where people live",
+    "Income funnel — households by income band",
+    "Type × tenure stacked bar — ownership mix",
+    "Avg size by type — household composition",
+    "Region share — pie of households"
+  ],
+  "publisher": "DataCheetah"
+}

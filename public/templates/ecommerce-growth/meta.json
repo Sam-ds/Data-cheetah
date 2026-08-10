@@ -1,0 +1,17 @@
+{
+  "id": "ecommerce-growth",
+  "name": "E-commerce Growth",
+  "category": "ecommerce",
+  "description": "Category hierarchy, channel orders, and checkout funnel.",
+  "version": "2.0.0",
+  "author": "DataCheetah",
+  "insights": [
+    "Category sunburst — revenue hierarchy",
+    "Orders vs revenue scatter — efficiency",
+    "Revenue trend — sales over time",
+    "Channel mix — order share",
+    "Checkout funnel — conversion stages",
+    "Revenue by channel — bar leaders"
+  ],
+  "publisher": "DataCheetah"
+}

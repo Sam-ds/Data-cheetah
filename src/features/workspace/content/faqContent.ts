@@ -30,14 +30,14 @@ export const FAQ_ITEMS: FaqItem[] = [
   },
   {
     q: 'How do API keys work?',
-    a: 'For OpenRouter, paste your API key and model id (for example openai/gpt-4o) in Settings. They are stored on this device in browser preferences only — not uploaded to a DataCheetah server. There is no passphrase vault.',
+    a: 'For OpenRouter, paste your API key and model id (for example openai/gpt-4o) in Settings. The key is stored only in this browser’s IndexedDB and sent directly to OpenRouter — never to a DataCheetah server. Use Clear Key in Settings to wipe it.',
   },
   {
     q: 'Why does local Ask / Generate Data LLM seed fail on my PC?',
     a: 'Local models need WebGPU. Driver resets (common on Windows) can block GPU device creation. Switch to OpenRouter in Settings, or turn off LLM seeding and generate with sample inference + faker.js.',
   },
   {
-    q: 'How is this different from installing DuckDB?',
-    a: 'DataCheetah is a full browser workspace: editor, grid, charts, stats, Ask, tools, and local workspaces. DuckDB itself is the SQL engine underneath.',
+    q: 'How do I design my own Discover template?',
+    a: 'That guide is for the developer community. Open For developers in the footer or Discover → Dev packs. Regular packs declare roles and charts in rule.json. Three.js packs add visualization.js. Zip the pack and use Install template; custom JS asks for risk acceptance.',
   },
 ]

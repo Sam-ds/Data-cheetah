@@ -13,6 +13,9 @@ import {
   Home,
   Settings,
   FolderOpen,
+  Compass,
+  ArrowLeft,
+  Code2,
 } from 'lucide-react'
 import logo from '@/assets/hero.png'
 import { Button } from '@/components/ui/button'
@@ -79,6 +82,11 @@ export function TopToolbar() {
     setAppMode('explore')
   }
 
+  const enterDiscover = () => {
+    closeTools()
+    setAppMode('discover')
+  }
+
   const enterTools = () => {
     closeTools()
     setAppMode('tools')
@@ -87,6 +95,11 @@ export function TopToolbar() {
   const enterSettings = () => {
     closeTools()
     setAppMode('settings')
+  }
+
+  const enterTemplateDesign = () => {
+    closeTools()
+    setAppMode('template-design')
   }
 
   return (
@@ -124,6 +137,17 @@ export function TopToolbar() {
                 <Database className="h-3.5 w-3.5" />
                 Explore
               </Button>
+              <button
+                type="button"
+                className={cn(
+                  'home-hero-discover app-toolbar-discover',
+                  appMode === 'discover' && 'app-toolbar-discover--active',
+                )}
+                onClick={enterDiscover}
+              >
+                <Compass className="home-hero-discover-icon" aria-hidden />
+                Discover
+              </button>
               <Button
                 variant="ghost"
                 size="sm"
@@ -139,6 +163,11 @@ export function TopToolbar() {
 
         {isExplore && (
           <>
+            <Separator orientation="vertical" className="mx-1 h-5" />
+            <Button variant="ghost" size="sm" onClick={goHome} title="Back to home">
+              <ArrowLeft className="h-3.5 w-3.5" />
+              Back
+            </Button>
             <Separator orientation="vertical" className="mx-1 h-5" />
             <WorkspaceSwitcher />
             <Separator orientation="vertical" className="mx-1 h-5" />
@@ -245,6 +274,18 @@ export function TopToolbar() {
             </Button>
           </>
         )}
+
+        <button
+          type="button"
+          className={cn(
+            'home-hero-discover app-toolbar-discover',
+            appMode === 'template-design' && 'app-toolbar-discover--active',
+          )}
+          onClick={enterTemplateDesign}
+        >
+          <Code2 className="home-hero-discover-icon" aria-hidden />
+          For developers
+        </button>
 
         <Button
           variant="ghost"

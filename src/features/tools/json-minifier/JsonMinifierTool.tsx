@@ -58,12 +58,14 @@ export function JsonMinifierTool() {
       <div className="grid h-full min-h-0 grid-cols-1 gap-3 md:grid-cols-2">
         <ToolTextarea
           label="Input"
+          tone="amber"
           placeholder={'{\n  "hello": "world"\n}'}
           value={input}
           onChange={(e) => setInput(e.target.value)}
         />
         <ToolTextarea
           label="Output"
+          tone="violet"
           readOnly
           placeholder="Minified JSON appears here"
           value={output}

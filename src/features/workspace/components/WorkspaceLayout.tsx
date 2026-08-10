@@ -20,6 +20,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Table2, LineChart, Compass, BarChart3, Sparkles, Loader2 } from 'lucide-react'
 import { ToolsWorkspace } from '@/features/tools/components/ToolsWorkspace'
 import { SettingsPage } from '@/features/settings/components/SettingsPage'
+import { DiscoverTool } from '@/features/discover/components/DiscoverTool'
+import { TemplateDesignPage } from '@/features/discover/components/TemplateDesignPage'
 
 export function WorkspaceLayout() {
   const files = useFilesStore((s) => s.files)
@@ -41,6 +43,19 @@ export function WorkspaceLayout() {
         <TopToolbar />
         <div className="min-h-0 flex-1 overflow-hidden">
           <HomeHub />
+        </div>
+        <AppFooter />
+        <StatusBar />
+      </div>
+    )
+  }
+
+  if (appMode === 'discover') {
+    return (
+      <div className="flex h-full flex-col">
+        <TopToolbar />
+        <div className="min-h-0 flex-1 overflow-hidden">
+          <DiscoverTool />
         </div>
         <AppFooter />
         <StatusBar />
@@ -80,6 +95,19 @@ export function WorkspaceLayout() {
         <TopToolbar />
         <div className="min-h-0 flex-1 overflow-hidden">
           <FaqPage />
+        </div>
+        <AppFooter />
+        <StatusBar />
+      </div>
+    )
+  }
+
+  if (appMode === 'template-design') {
+    return (
+      <div className="flex h-full flex-col">
+        <TopToolbar />
+        <div className="min-h-0 flex-1 overflow-hidden">
+          <TemplateDesignPage />
         </div>
         <AppFooter />
         <StatusBar />

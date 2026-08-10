@@ -1,4 +1,11 @@
 /** Tiny authenticated probe — does not send your datasets. */
+
+const OPENROUTER_HEADERS = (key: string) => ({
+  Authorization: `Bearer ${key}`,
+  'HTTP-Referer': typeof window !== 'undefined' ? window.location.origin : 'https://datacheetah.app',
+  'X-Title': 'DataCheetah',
+})
+
 export async function testOpenRouterApiKey(
   apiKey: string,
   modelId?: string,
@@ -8,7 +15,7 @@ export async function testOpenRouterApiKey(
     if (!key) return { ok: false, detail: 'Paste an OpenRouter API key first' }
 
     const res = await fetch('https://openrouter.ai/api/v1/models', {
-      headers: { Authorization: `Bearer ${key}` },
+      headers: OPENROUTER_HEADERS(key),
     })
     if (res.ok) return { ok: true, detail: 'OpenRouter key works' }
 
@@ -16,9 +23,7 @@ export async function testOpenRouterApiKey(
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${key}`,
-        'HTTP-Referer': typeof window !== 'undefined' ? window.location.origin : 'https://datacheetah.app',
-        'X-Title': 'DataCheetah',
+        ...OPENROUTER_HEADERS(key),
       },
       body: JSON.stringify({
         model: modelId?.trim() || 'openai/gpt-4o',

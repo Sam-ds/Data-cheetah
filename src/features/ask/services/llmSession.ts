@@ -2,6 +2,7 @@ import type { LlmProvider } from '../llm/types'
 import { createAskLlmProvider as createLocalAskProvider } from '../llm/webLlmProvider'
 import { createOpenAiCompatibleProvider } from '../llm/remoteProviders'
 import { usePreferencesStore } from '@/features/profiling/store/profileStore'
+import { getOpenRouterApiKey } from '@/services/storageService'
 import type { AskProviderId } from '@/types/askSettings'
 import { coerceAskProvider } from '@/types/askSettings'
 import { DEFAULT_ASK_MODEL_ID } from '../config/modelCatalog'
@@ -19,7 +20,7 @@ function buildProvider(askProvider: AskProviderId): LlmProvider {
   if (askProvider === 'openrouter') {
     return createOpenAiCompatibleProvider({
       id: 'openrouter',
-      getApiKey: () => usePreferencesStore.getState().openrouterApiKey?.trim() || undefined,
+      getApiKey: () => getOpenRouterApiKey(),
       getBaseUrl: () => 'https://openrouter.ai/api/v1',
       getModelId: () => usePreferencesStore.getState().askRemoteModelId || 'openai/gpt-4o',
     })

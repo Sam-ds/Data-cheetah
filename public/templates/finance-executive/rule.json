@@ -1,0 +1,76 @@
+{
+  "requiredColumns": [
+    {
+      "role": "month",
+      "aliases": [
+        "month",
+        "date",
+        "period"
+      ],
+      "type": "string",
+      "kind": "dimension"
+    },
+    {
+      "role": "category",
+      "aliases": [
+        "category",
+        "line_item",
+        "account"
+      ],
+      "type": "string",
+      "kind": "dimension"
+    },
+    {
+      "role": "amount",
+      "aliases": [
+        "amount",
+        "value",
+        "spend"
+      ],
+      "type": "number",
+      "kind": "measure"
+    }
+  ],
+  "charts": [
+    {
+      "type": "line",
+      "title": "Amount over time",
+      "x": "month",
+      "y": "amount",
+      "agg": "sum"
+    },
+    {
+      "type": "bar",
+      "title": "Amount by category",
+      "x": "category",
+      "y": "amount",
+      "agg": "sum"
+    },
+    {
+      "type": "pie",
+      "title": "Category mix",
+      "dimension": "category",
+      "measure": "amount",
+      "agg": "sum"
+    },
+    {
+      "type": "histogram",
+      "title": "Amount distribution",
+      "x": "amount"
+    },
+    {
+      "type": "area",
+      "title": "Running monthly total",
+      "x": "month",
+      "y": "amount",
+      "agg": "sum"
+    },
+    {
+      "type": "bar",
+      "title": "Monthly totals",
+      "x": "month",
+      "y": "amount",
+      "agg": "sum"
+    }
+  ]
+}

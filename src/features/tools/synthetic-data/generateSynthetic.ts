@@ -1,6 +1,32 @@
 import { faker } from '@faker-js/faker'
 import type { FakerPath, SchemaColumn, SchemaPlan } from './schemaPlan'
 
+const DEFAULT_EMAIL_PROVIDERS = [
+  'gmail.com',
+  'outlook.com',
+  'yahoo.com',
+  'proton.me',
+  'icloud.com',
+] as const
+
+export interface GenerateValueOptions {
+  /** Domains for internet.email (e.g. gmail.com). Empty/invalid falls back to defaults. */
+  emailProviders?: string[]
+}
+
+/** Parse a user field like "gmail.com, outlook.com" into clean domain list. */
+export function parseEmailProviders(input: string | undefined | null): string[] {
+  if (!input?.trim()) return [...DEFAULT_EMAIL_PROVIDERS]
+  const domains = input
+    .split(/[,;\s]+/)
+    .map((part) => part.trim().toLowerCase().replace(/^@/, ''))
+    .map((part) => (part.includes('@') ? part.slice(part.lastIndexOf('@') + 1) : part))
+    .filter((part) =>
+      /^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/.test(part),
+    )
+  return domains.length > 0 ? [...new Set(domains)] : [...DEFAULT_EMAIL_PROVIDERS]
+}
+
 function formatYmdUtc(d: Date): string {
   const y = d.getUTCFullYear()
   const m = String(d.getUTCMonth() + 1).padStart(2, '0')
@@ -35,7 +61,7 @@ function dateBetweenBounds(col: SchemaColumn, attempt = 0): string {
   return formatYmdUtc(d)
 }
 
-function valueForColumn(col: SchemaColumn, attempt = 0): unknown {
+function valueForColumn(col: SchemaColumn, attempt = 0, opts?: GenerateValueOptions): unknown {
   const path = col.fakerPath as FakerPath
   switch (path) {
     case 'person.fullName':
@@ -45,20 +71,15 @@ function valueForColumn(col: SchemaColumn, attempt = 0): unknown {
     case 'person.lastName':
       return attempt > 0 ? `${faker.person.lastName()}${attempt}` : faker.person.lastName()
     case 'internet.email': {
-      const providers = [
-        'gmail.com',
-        'outlook.com',
-        'yahoo.com',
-        'proton.me',
-        'icloud.com',
-        'mailhaven.net',
-        'northleaf.io',
-      ] as const
+      const providers =
+        opts?.emailProviders && opts.emailProviders.length > 0
+          ? opts.emailProviders
+          : [...DEFAULT_EMAIL_PROVIDERS]
       const local = faker.internet
         .username()
         .toLowerCase()
         .replace(/[^a-z0-9._-]/g, '')
-      const provider = faker.helpers.arrayElement(providers)
+      const provider = providers[attempt % providers.length] ?? providers[0]!
       const email = `${local || 'user'}@${provider}`
       if (attempt === 0) return email
       const at = email.indexOf('@')
@@ -176,6 +197,7 @@ function valueKey(v: unknown): string {
 function normalizeSeedRow(
   row: Record<string, unknown>,
   columns: SchemaColumn[],
+  opts?: GenerateValueOptions,
 ): Record<string, unknown> {
   const out: Record<string, unknown> = {}
   for (const col of columns) {
@@ -188,13 +210,13 @@ function normalizeSeedRow(
       if (col.notNull === false) {
         out[col.name] = null
       } else {
-        out[col.name] = valueForColumn(col)
+        out[col.name] = valueForColumn(col, 0, opts)
       }
       continue
     }
     if (col.type === 'integer' || col.type === 'number') {
       const n = Number(v)
-      out[col.name] = Number.isNaN(n) ? valueForColumn(col) : n
+      out[col.name] = Number.isNaN(n) ? valueForColumn(col, 0, opts) : n
     } else if (col.type === 'boolean') {
       if (typeof v === 'boolean') out[col.name] = v
       else out[col.name] = /^(true|1|yes)$/i.test(String(v))
@@ -212,6 +234,7 @@ function uniqueValueForColumn(
   col: SchemaColumn,
   seen: Set<string>,
   sequentialStarts: Map<string, number>,
+  opts?: GenerateValueOptions,
 ): unknown {
   const maxAttempts = Math.max(50, seen.size + 20)
 
@@ -232,14 +255,14 @@ function uniqueValueForColumn(
   }
 
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
-    const value = valueForColumn(col, attempt)
+    const value = valueForColumn(col, attempt, opts)
     if (isEmptyValue(value) && col.notNull !== false) continue
     const key = valueKey(value)
     if (!seen.has(key)) return value
   }
 
   // Last resort: force uniqueness
-  const fallback = `${valueForColumn(col, 0)}-${faker.string.alphanumeric({ length: 6 })}`
+  const fallback = `${valueForColumn(col, 0, opts)}-${faker.string.alphanumeric({ length: 6 })}`
   return fallback
 }
 
@@ -247,6 +270,7 @@ function fillColumnValue(
   col: SchemaColumn,
   seen: Map<string, Set<string>>,
   sequentialStarts: Map<string, number>,
+  opts?: GenerateValueOptions,
 ): unknown {
   const requireNotNull = col.notNull !== false
   const requireUnique = Boolean(col.unique)
@@ -258,9 +282,9 @@ function fillColumnValue(
   if (requireUnique) {
     const set = seen.get(col.name) ?? new Set<string>()
     seen.set(col.name, set)
-    const value = uniqueValueForColumn(col, set, sequentialStarts)
+    const value = uniqueValueForColumn(col, set, sequentialStarts, opts)
     if (requireNotNull && isEmptyValue(value)) {
-      const retry = uniqueValueForColumn(col, set, sequentialStarts)
+      const retry = uniqueValueForColumn(col, set, sequentialStarts, opts)
       set.add(valueKey(retry))
       return retry
     }
@@ -268,14 +292,14 @@ function fillColumnValue(
     return value
   }
 
-  let value = valueForColumn(col)
+  let value = valueForColumn(col, 0, opts)
   if (requireNotNull && isEmptyValue(value)) {
-    value = valueForColumn(col, 1)
+    value = valueForColumn(col, 1, opts)
   }
   return value
 }
 
-export interface GenerateOptions {
+export interface GenerateOptions extends GenerateValueOptions {
   targetRows: number
   /** Optional RNG seed for reproducible faker output */
   seed?: number
@@ -288,16 +312,17 @@ export interface GenerateOptions {
 export function generateSyntheticRow(
   plan: SchemaPlan,
   rowIndex: number,
+  opts?: GenerateValueOptions,
 ): Record<string, unknown> {
   const seed = plan.rows[rowIndex]
-  if (seed) return normalizeSeedRow(seed, plan.columns)
+  if (seed) return normalizeSeedRow(seed, plan.columns, opts)
 
   const row: Record<string, unknown> = {}
   for (const col of plan.columns) {
     if (col.notNull === false && !col.unique && faker.number.int({ min: 1, max: 10 }) === 1) {
       row[col.name] = null
     } else {
-      row[col.name] = valueForColumn(col, col.unique ? rowIndex : 0)
+      row[col.name] = valueForColumn(col, col.unique ? rowIndex : 0, opts)
     }
   }
   return row
@@ -308,6 +333,7 @@ export function generateSyntheticRows(plan: SchemaPlan, opts: GenerateOptions): 
   if (opts.seed != null && Number.isFinite(opts.seed)) {
     faker.seed(opts.seed)
   }
+  const valueOpts: GenerateValueOptions = { emailProviders: opts.emailProviders }
 
   const seen = new Map<string, Set<string>>()
   const sequentialStarts = new Map<string, number>()
@@ -315,7 +341,7 @@ export function generateSyntheticRows(plan: SchemaPlan, opts: GenerateOptions): 
     if (col.unique) seen.set(col.name, new Set())
   }
 
-  const seedRows = plan.rows.map((r) => normalizeSeedRow(r, plan.columns)).slice(0, target)
+  const seedRows = plan.rows.map((r) => normalizeSeedRow(r, plan.columns, valueOpts)).slice(0, target)
   const out: Record<string, unknown>[] = []
 
   for (const row of seedRows) {
@@ -323,7 +349,7 @@ export function generateSyntheticRows(plan: SchemaPlan, opts: GenerateOptions): 
     for (const col of plan.columns) {
       let v = fixed[col.name]
       if (col.notNull !== false && isEmptyValue(v)) {
-        v = fillColumnValue(col, seen, sequentialStarts)
+        v = fillColumnValue(col, seen, sequentialStarts, valueOpts)
         fixed[col.name] = v
         continue
       }
@@ -332,7 +358,7 @@ export function generateSyntheticRows(plan: SchemaPlan, opts: GenerateOptions): 
         seen.set(col.name, set)
         const key = valueKey(v)
         if (set.has(key) || isEmptyValue(v)) {
-          v = uniqueValueForColumn(col, set, sequentialStarts)
+          v = uniqueValueForColumn(col, set, sequentialStarts, valueOpts)
           fixed[col.name] = v
         }
         set.add(valueKey(fixed[col.name]))
@@ -344,7 +370,7 @@ export function generateSyntheticRows(plan: SchemaPlan, opts: GenerateOptions): 
   while (out.length < target) {
     const row: Record<string, unknown> = {}
     for (const col of plan.columns) {
-      row[col.name] = fillColumnValue(col, seen, sequentialStarts)
+      row[col.name] = fillColumnValue(col, seen, sequentialStarts, valueOpts)
     }
     out.push(row)
   }

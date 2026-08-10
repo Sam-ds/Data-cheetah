@@ -198,58 +198,77 @@ export function LicensePage() {
       title="License"
       subtitle="DataCheetah is Apache 2.0-licensed and is powered by open source tools."
     >
-      <section className="page-panel space-y-3 p-5 sm:p-6">
-        <h2 className="page-eyebrow">
-          DataCheetah
-        </h2>
-        <pre className="max-h-[34rem] overflow-auto whitespace-pre-wrap rounded-lg border border-border/70 bg-background/60 p-4 text-[11px] leading-relaxed text-muted-foreground">
-          {APACHE_2_TEXT}
-        </pre>
+      <section className="license-hero page-panel">
+        <div className="license-hero-copy">
+          <p className="page-eyebrow">Open source</p>
+          <h2 className="license-hero-title">
+            <span className="app-footer-data">data</span>
+            <span className="app-footer-cheetah">cheetah</span>
+          </h2>
+          <p className="license-hero-blurb">
+            Free to use, modify, and share under the Apache License, Version 2.0. Full terms below;
+            third-party packages keep their own licenses.
+          </p>
+          <a
+            href="https://github.com/Sam-ds/Data-cheetah"
+            target="_blank"
+            rel="noreferrer"
+            className="brand-link mt-4 inline-flex text-sm font-medium"
+          >
+            View source code on GitHub
+          </a>
+        </div>
+        <div className="license-hero-badge" aria-label="Apache License 2.0">
+          <span className="license-hero-badge-kicker">License</span>
+          <span className="license-hero-badge-name">Apache 2.0</span>
+        </div>
       </section>
 
-      <section className="page-panel space-y-3 p-5 sm:p-6">
-        <h2 className="page-eyebrow">
-          Third-party licenses
-        </h2>
-        <p className="text-xs leading-relaxed text-muted-foreground">
-          DataCheetah uses the following open source projects. We appreciate and acknowledge their
-          authors and communities. Each project remains under its own license. Visit the linked
-          project sites for the full license terms.
-        </p>
-        <div className="overflow-x-auto rounded-lg border border-border/70 bg-background/45">
-          <table className="w-full border-collapse text-left text-xs">
-            <thead className="bg-muted/50 text-[11px] uppercase tracking-wide text-muted-foreground">
-              <tr>
-                <th className="px-4 py-2.5 font-semibold">Project</th>
-                <th className="px-4 py-2.5 font-semibold">Role</th>
-                <th className="px-4 py-2.5 font-semibold">License</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {OPEN_SOURCE_CREDITS.map((item) => (
-                <tr key={item.name}>
-                  <td className="px-4 py-2.5">
-                    <a
-                      href={item.url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="brand-link font-medium underline-offset-2 hover:underline"
-                    >
-                      {item.name}
-                    </a>
-                  </td>
-                  <td className="px-4 py-2.5 text-muted-foreground">{item.role}</td>
-                  <td className="px-4 py-2.5">
-                    <span className="rounded-md bg-muted px-1.5 py-0.5 font-mono text-[11px] text-foreground">
-                      {item.license}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      <section className="page-panel license-section">
+        <div className="license-section-head">
+          <h2 className="page-eyebrow">Apache License 2.0</h2>
+          <a
+            href="https://www.apache.org/licenses/LICENSE-2.0"
+            target="_blank"
+            rel="noreferrer"
+            className="brand-link text-xs font-medium"
+          >
+            View on apache.org
+          </a>
         </div>
+        <article className="license-doc">
+          <pre className="license-doc-body">{APACHE_2_TEXT}</pre>
+        </article>
+      </section>
+
+      <section className="page-panel license-section">
+        <div className="license-section-head">
+          <h2 className="page-eyebrow">Third-party licenses</h2>
+        </div>
+        <p className="license-section-intro">
+          DataCheetah builds on these open source projects. Each remains under its own license —
+          follow the project link for full terms.
+        </p>
+        <ul className="license-credit-grid">
+          {OPEN_SOURCE_CREDITS.map((item) => (
+            <li key={item.name} className="license-credit">
+              <div className="license-credit-top">
+                <a
+                  href={item.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="license-credit-name"
+                >
+                  {item.name}
+                </a>
+                <span className="license-credit-tag">{item.license}</span>
+              </div>
+              <p className="license-credit-role">{item.role}</p>
+            </li>
+          ))}
+        </ul>
       </section>
     </InfoPageShell>
   )
 }
+

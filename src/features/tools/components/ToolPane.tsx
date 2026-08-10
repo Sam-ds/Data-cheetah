@@ -22,30 +22,33 @@ export function ToolPane({
   className,
 }: ToolPaneProps) {
   return (
-    <div className={cn('flex h-full flex-col gap-4 p-4 sm:p-5', className)}>
+    <div className={cn('tool-pane flex h-full flex-col gap-4 p-4 sm:p-5', className)}>
       <div className="tool-pane-header flex flex-wrap items-start justify-between gap-3 px-4 py-3.5">
-        <div className="min-w-0">
+        <div className="tool-pane-header-glow" aria-hidden />
+        <div className="relative min-w-0">
           <span className="page-eyebrow">Active tool</span>
-          <h2 className="mt-1 text-base font-semibold tracking-tight text-foreground">{title}</h2>
+          <h2 className="tool-pane-title mt-1 text-base font-semibold tracking-tight">{title}</h2>
           {description && (
-            <p className="mt-1 max-w-2xl text-xs leading-relaxed text-muted-foreground">
+            <p className="tool-pane-desc mt-1 max-w-2xl text-xs leading-relaxed">
               {description}
             </p>
           )}
         </div>
-        {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
+        {actions && (
+          <div className="relative flex flex-wrap items-center gap-2">{actions}</div>
+        )}
       </div>
       {error && (
-        <div className="rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+        <div className="tool-pane-banner tool-pane-banner--error rounded-lg px-3 py-2 text-xs">
           {error}
         </div>
       )}
       {warning && !error && (
-        <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-300">
+        <div className="tool-pane-banner tool-pane-banner--warn rounded-lg px-3 py-2 text-xs">
           {warning}
         </div>
       )}
-      <div className="min-h-0 flex-1">{children}</div>
+      <div className="tool-pane-body min-h-0 flex-1">{children}</div>
     </div>
   )
 }
@@ -68,23 +71,35 @@ export function ToolEmptyState({
   )
 }
 
+export type ToolFieldTone = 'sky' | 'amber' | 'emerald' | 'violet' | 'rose' | 'neutral'
+
 interface ToolTextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
   label: string
+  tone?: ToolFieldTone
   containerClassName?: string
 }
 
-export function ToolTextarea({ label, className, containerClassName, ...props }: ToolTextareaProps) {
+export function ToolTextarea({
+  label,
+  tone = 'neutral',
+  className,
+  containerClassName,
+  ...props
+}: ToolTextareaProps) {
   return (
-    <label className={cn('flex h-full min-h-0 flex-col gap-1.5', containerClassName)}>
-      <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+    <label
+      className={cn(
+        'tool-field flex h-full min-h-0 flex-col gap-1.5',
+        `tool-field--${tone}`,
+        containerClassName,
+      )}
+    >
+      <span className="tool-field-label text-[11px] font-medium uppercase tracking-wide">
         {label}
       </span>
       <textarea
         spellCheck={false}
-        className={cn(
-          'min-h-0 flex-1 resize-none rounded-lg border bg-background px-3 py-2.5 text-sm leading-6 tracking-normal text-foreground shadow-sm outline-none transition-shadow placeholder:text-muted-foreground/70 focus:ring-2 focus:ring-ring',
-          className,
-        )}
+        className={cn('tool-field-input min-h-0 flex-1 resize-none px-3 py-2.5 text-sm leading-6', className)}
         {...props}
       />
     </label>

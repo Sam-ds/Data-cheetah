@@ -18,7 +18,7 @@ export function StatusBar() {
       : duckdbStatus === 'loading'
         ? seenEngine
           ? 'Starting SQL engine…'
-          : 'Downloading SQL engine…'
+          : 'Loading SQL engine…'
         : duckdbStatus === 'error'
           ? 'DuckDB failed'
           : 'DuckDB on demand'

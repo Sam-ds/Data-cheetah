@@ -1,0 +1,17 @@
+{
+  "id": "finance-executive",
+  "name": "Finance Executive",
+  "category": "finance",
+  "description": "P&L trend, category mix, and amount distribution.",
+  "version": "2.0.0",
+  "author": "DataCheetah",
+  "insights": [
+    "Amount over time — monthly P&L trend",
+    "Spend by category — bar leaders",
+    "Category mix — pie share",
+    "Amount histogram — distribution shape",
+    "Revenue vs other — category focus",
+    "Monthly totals — executive pulse"
+  ],
+  "publisher": "DataCheetah"
+}

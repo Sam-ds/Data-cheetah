@@ -1,0 +1,361 @@
+year,region,category,channel,revenue,orders,customers,margin
+2021,North America,Wearables,Direct,29216,586,441,22
+2021,North America,Wearables,Marketplace,34818,750,530,16.1
+2021,North America,Wearables,Retail,29776,299,254,23
+2021,North America,Audio,Direct,28096,304,231,17.6
+2021,North America,Audio,Marketplace,26441,272,238,28
+2021,North America,Audio,Retail,22268,405,301,16.7
+2021,North America,Home,Direct,26345,292,176,30.9
+2021,North America,Home,Marketplace,25511,528,295,21.7
+2021,North America,Home,Retail,20798,227,179,18.9
+2021,North America,Mobility,Direct,19288,232,185,28.9
+2021,North America,Mobility,Marketplace,25015,359,210,15.4
+2021,North America,Mobility,Retail,15019,289,237,22.7
+2021,Europe,Wearables,Direct,30321,457,286,22.9
+2021,Europe,Wearables,Marketplace,25674,426,284,29.9
+2021,Europe,Wearables,Retail,26025,468,400,24.5
+2021,Europe,Audio,Direct,21431,344,205,33.6
+2021,Europe,Audio,Marketplace,22177,232,193,19.8
+2021,Europe,Audio,Retail,20039,324,192,21.2
+2021,Europe,Home,Direct,16689,286,218,28.6
+2021,Europe,Home,Marketplace,21920,388,244,24.5
+2021,Europe,Home,Retail,18012,200,159,27.1
+2021,Europe,Mobility,Direct,15375,288,171,25.7
+2021,Europe,Mobility,Marketplace,19101,192,134,25.4
+2021,Europe,Mobility,Retail,12714,268,155,26.9
+2021,Asia Pacific,Wearables,Direct,34819,391,238,25
+2021,Asia Pacific,Wearables,Marketplace,31116,433,366,30.4
+2021,Asia Pacific,Wearables,Retail,21654,347,255,18.8
+2021,Asia Pacific,Audio,Direct,23893,523,406,22.6
+2021,Asia Pacific,Audio,Marketplace,27866,472,358,24.6
+2021,Asia Pacific,Audio,Retail,20635,264,167,18.8
+2021,Asia Pacific,Home,Direct,20419,212,134,32.6
+2021,Asia Pacific,Home,Marketplace,27779,363,317,12.5
+2021,Asia Pacific,Home,Retail,15696,210,152,29.1
+2021,Asia Pacific,Mobility,Direct,20318,242,202,21.6
+2021,Asia Pacific,Mobility,Marketplace,20141,244,138,18.1
+2021,Asia Pacific,Mobility,Retail,13968,160,142,12.7
+2021,Latin America,Wearables,Direct,18305,297,230,30
+2021,Latin America,Wearables,Marketplace,20015,339,272,23.1
+2021,Latin America,Wearables,Retail,12135,133,107,30.3
+2021,Latin America,Audio,Direct,16126,216,194,33.7
+2021,Latin America,Audio,Marketplace,17610,200,114,21.8
+2021,Latin America,Audio,Retail,12657,216,175,12.4
+2021,Latin America,Home,Direct,14624,210,141,26.4
+2021,Latin America,Home,Marketplace,14710,315,218,22.6
+2021,Latin America,Home,Retail,8727,166,98,16.6
+2021,Latin America,Mobility,Direct,9581,126,88,33.5
+2021,Latin America,Mobility,Marketplace,12529,161,109,24.6
+2021,Latin America,Mobility,Retail,7831,82,70,22
+2021,Middle East,Wearables,Direct,17562,204,154,23
+2021,Middle East,Wearables,Marketplace,16499,285,167,20.2
+2021,Middle East,Wearables,Retail,13321,152,118,28.9
+2021,Middle East,Audio,Direct,12820,154,108,22.4
+2021,Middle East,Audio,Marketplace,17057,231,188,24.3
+2021,Middle East,Audio,Retail,10415,117,104,26.3
+2021,Middle East,Home,Direct,13397,249,188,25.3
+2021,Middle East,Home,Marketplace,14340,315,221,12.9
+2021,Middle East,Home,Retail,10777,187,128,29.5
+2021,Middle East,Mobility,Direct,10298,132,78,25
+2021,Middle East,Mobility,Marketplace,11309,118,71,14.8
+2021,Middle East,Mobility,Retail,8842,90,74,14.1
+2021,Africa,Wearables,Direct,11769,133,114,33.7
+2021,Africa,Wearables,Marketplace,16761,335,264,30.7
+2021,Africa,Wearables,Retail,11160,146,126,27.7
+2021,Africa,Audio,Direct,11897,171,141,20.3
+2021,Africa,Audio,Marketplace,12374,159,101,14.8
+2021,Africa,Audio,Retail,8665,165,137,24.3
+2021,Africa,Home,Direct,8346,145,84,30.7
+2021,Africa,Home,Marketplace,12337,184,129,14.2
+2021,Africa,Home,Retail,6497,71,45,20.1
+2021,Africa,Mobility,Direct,7877,121,97,21.3
+2021,Africa,Mobility,Marketplace,7826,80,65,12.9
+2021,Africa,Mobility,Retail,7052,128,84,17.9
+2022,North America,Wearables,Direct,41373,464,330,18.9
+2022,North America,Wearables,Marketplace,45003,652,563,14.7
+2022,North America,Wearables,Retail,31439,628,507,19
+2022,North America,Audio,Direct,27339,296,235,17.1
+2022,North America,Audio,Marketplace,37953,691,438,25.3
+2022,North America,Audio,Retail,21649,326,291,25.7
+2022,North America,Home,Direct,24922,340,272,19.5
+2022,North America,Home,Marketplace,24356,333,260,29.9
+2022,North America,Home,Retail,18830,285,244,22.5
+2022,North America,Mobility,Direct,19232,200,177,27.9
+2022,North America,Mobility,Marketplace,25083,251,168,15.7
+2022,North America,Mobility,Retail,18804,250,145,13.4
+2022,Europe,Wearables,Direct,32901,354,275,31.9
+2022,Europe,Wearables,Marketplace,34154,394,234,16.6
+2022,Europe,Wearables,Retail,23927,327,211,18
+2022,Europe,Audio,Direct,21282,453,370,22.4
+2022,Europe,Audio,Marketplace,28685,414,348,19.1
+2022,Europe,Audio,Retail,21196,228,146,22.8
+2022,Europe,Home,Direct,19011,259,161,24.5
+2022,Europe,Home,Marketplace,22560,226,157,25.9
+2022,Europe,Home,Retail,20898,275,231,17.1
+2022,Europe,Mobility,Direct,17153,182,137,20
+2022,Europe,Mobility,Marketplace,20627,333,297,18.2
+2022,Europe,Mobility,Retail,12637,151,125,29.8
+2022,Asia Pacific,Wearables,Direct,33935,416,254,32.6
+2022,Asia Pacific,Wearables,Marketplace,36470,563,485,29.3
+2022,Asia Pacific,Wearables,Retail,29003,474,362,16.8
+2022,Asia Pacific,Audio,Direct,24224,507,410,19.6
+2022,Asia Pacific,Audio,Marketplace,34894,490,380,24.7
+2022,Asia Pacific,Audio,Retail,19582,411,306,25.1
+2022,Asia Pacific,Home,Direct,26581,419,287,33.9
+2022,Asia Pacific,Home,Marketplace,24706,279,174,28.7
+2022,Asia Pacific,Home,Retail,17896,286,186,27.7
+2022,Asia Pacific,Mobility,Direct,21405,349,272,22.7
+2022,Asia Pacific,Mobility,Marketplace,18629,393,337,21.4
+2022,Asia Pacific,Mobility,Retail,15629,165,113,27.5
+2022,Latin America,Wearables,Direct,17299,254,183,21.4
+2022,Latin America,Wearables,Marketplace,25937,422,379,20.1
+2022,Latin America,Wearables,Retail,16909,334,191,28.3
+2022,Latin America,Audio,Direct,14407,154,124,27.6
+2022,Latin America,Audio,Marketplace,18292,314,179,17.9
+2022,Latin America,Audio,Retail,14970,218,133,13.3
+2022,Latin America,Home,Direct,14431,189,127,17.1
+2022,Latin America,Home,Marketplace,18186,374,333,24.9
+2022,Latin America,Home,Retail,13175,150,96,22.3
+2022,Latin America,Mobility,Direct,10083,133,103,28.4
+2022,Latin America,Mobility,Marketplace,13036,233,178,22.5
+2022,Latin America,Mobility,Retail,10910,114,75,13.5
+2022,Middle East,Wearables,Direct,18494,201,173,29.1
+2022,Middle East,Wearables,Marketplace,21920,345,283,28.6
+2022,Middle East,Wearables,Retail,16767,194,130,22.2
+2022,Middle East,Audio,Direct,16633,253,170,19.2
+2022,Middle East,Audio,Marketplace,19918,275,184,19.2
+2022,Middle East,Audio,Retail,12013,160,142,18.6
+2022,Middle East,Home,Direct,13259,217,167,23.1
+2022,Middle East,Home,Marketplace,15000,283,178,23.4
+2022,Middle East,Home,Retail,12718,235,186,28
+2022,Middle East,Mobility,Direct,11300,168,128,23.2
+2022,Middle East,Mobility,Marketplace,13465,180,114,22.5
+2022,Middle East,Mobility,Retail,10212,225,175,14
+2022,Africa,Wearables,Direct,15838,305,242,34.6
+2022,Africa,Wearables,Marketplace,15116,165,104,30.3
+2022,Africa,Wearables,Retail,10798,207,166,22.3
+2022,Africa,Audio,Direct,11982,226,201,18.3
+2022,Africa,Audio,Marketplace,13014,152,132,29.9
+2022,Africa,Audio,Retail,9324,100,74,23.1
+2022,Africa,Home,Direct,11816,120,84,25.7
+2022,Africa,Home,Marketplace,10127,145,93,27.1
+2022,Africa,Home,Retail,7156,81,66,13.7
+2022,Africa,Mobility,Direct,8976,99,71,30.6
+2022,Africa,Mobility,Marketplace,9550,129,96,16.1
+2022,Africa,Mobility,Retail,8053,89,59,27.6
+2023,North America,Wearables,Direct,43414,507,368,26.8
+2023,North America,Wearables,Marketplace,42962,488,313,17
+2023,North America,Wearables,Retail,38291,715,460,25.2
+2023,North America,Audio,Direct,33519,450,380,18.2
+2023,North America,Audio,Marketplace,35411,666,473,22.2
+2023,North America,Audio,Retail,27133,317,229,21.5
+2023,North America,Home,Direct,27656,415,336,22.1
+2023,North America,Home,Marketplace,34700,499,334,22.7
+2023,North America,Home,Retail,22415,239,209,23.3
+2023,North America,Mobility,Direct,23453,503,307,29.3
+2023,North America,Mobility,Marketplace,24006,395,243,17.7
+2023,North America,Mobility,Retail,15969,236,157,15.4
+2023,Europe,Wearables,Direct,38575,530,348,30.7
+2023,Europe,Wearables,Marketplace,44430,570,475,22.1
+2023,Europe,Wearables,Retail,31139,373,332,25.5
+2023,Europe,Audio,Direct,26496,352,233,25.3
+2023,Europe,Audio,Marketplace,30765,421,256,18.7
+2023,Europe,Audio,Retail,25139,402,285,29
+2023,Europe,Home,Direct,21870,275,211,21.9
+2023,Europe,Home,Marketplace,24477,323,281,25
+2023,Europe,Home,Retail,22902,274,178,22.2
+2023,Europe,Mobility,Direct,17392,283,232,32.8
+2023,Europe,Mobility,Marketplace,23797,326,284,15.2
+2023,Europe,Mobility,Retail,17948,380,320,17.1
+2023,Asia Pacific,Wearables,Direct,37889,529,424,25
+2023,Asia Pacific,Wearables,Marketplace,35416,636,366,20.8
+2023,Asia Pacific,Wearables,Retail,35238,474,424,24
+2023,Asia Pacific,Audio,Direct,26974,305,172,31.2
+2023,Asia Pacific,Audio,Marketplace,37379,690,594,28.6
+2023,Asia Pacific,Audio,Retail,26049,350,247,17.2
+2023,Asia Pacific,Home,Direct,24553,252,164,19.9
+2023,Asia Pacific,Home,Marketplace,33863,642,518,12.1
+2023,Asia Pacific,Home,Retail,23921,395,300,12.8
+2023,Asia Pacific,Mobility,Direct,23185,503,408,26
+2023,Asia Pacific,Mobility,Marketplace,26762,393,319,13.9
+2023,Asia Pacific,Mobility,Retail,18892,323,228,14.6
+2023,Latin America,Wearables,Direct,19086,201,121,22.2
+2023,Latin America,Wearables,Marketplace,27517,301,239,27.8
+2023,Latin America,Wearables,Retail,19160,325,268,17.6
+2023,Latin America,Audio,Direct,21553,321,189,20.3
+2023,Latin America,Audio,Marketplace,23726,244,163,19.2
+2023,Latin America,Audio,Retail,12535,126,111,29.7
+2023,Latin America,Home,Direct,15080,170,116,21.2
+2023,Latin America,Home,Marketplace,16457,250,147,23.8
+2023,Latin America,Home,Retail,11163,154,117,24.2
+2023,Latin America,Mobility,Direct,12058,157,94,26.5
+2023,Latin America,Mobility,Marketplace,16514,199,119,26.4
+2023,Latin America,Mobility,Retail,8854,106,71,29.9
+2023,Middle East,Wearables,Direct,19136,374,335,22.3
+2023,Middle East,Wearables,Marketplace,23435,445,392,15.5
+2023,Middle East,Wearables,Retail,13895,241,163,25.1
+2023,Middle East,Audio,Direct,14107,141,92,31.7
+2023,Middle East,Audio,Marketplace,20031,388,253,14.2
+2023,Middle East,Audio,Retail,11911,123,74,28.4
+2023,Middle East,Home,Direct,14563,182,107,31.7
+2023,Middle East,Home,Marketplace,18354,309,178,25.4
+2023,Middle East,Home,Retail,12469,127,74,12.6
+2023,Middle East,Mobility,Direct,13104,212,172,20.6
+2023,Middle East,Mobility,Marketplace,11885,178,111,26.3
+2023,Middle East,Mobility,Retail,10067,177,129,25.2
+2023,Africa,Wearables,Direct,13877,191,158,20.8
+2023,Africa,Wearables,Marketplace,21581,224,194,29.4
+2023,Africa,Wearables,Retail,13542,180,126,22.8
+2023,Africa,Audio,Direct,13439,173,107,23.4
+2023,Africa,Audio,Marketplace,13824,226,183,29.3
+2023,Africa,Audio,Retail,11232,204,121,27.1
+2023,Africa,Home,Direct,12337,266,186,29.5
+2023,Africa,Home,Marketplace,12299,172,128,23.5
+2023,Africa,Home,Retail,8782,90,56,12.8
+2023,Africa,Mobility,Direct,8151,121,78,25.1
+2023,Africa,Mobility,Marketplace,10475,108,93,28.4
+2023,Africa,Mobility,Retail,6539,85,73,18.5
+2024,North America,Wearables,Direct,41989,599,438,34.4
+2024,North America,Wearables,Marketplace,54993,921,710,16.6
+2024,North America,Wearables,Retail,29774,309,229,24.8
+2024,North America,Audio,Direct,34315,447,317,23.8
+2024,North America,Audio,Marketplace,44366,662,388,26.2
+2024,North America,Audio,Retail,32145,686,609,27.6
+2024,North America,Home,Direct,34998,510,330,27
+2024,North America,Home,Marketplace,30345,449,335,19.5
+2024,North America,Home,Retail,23523,355,262,20.3
+2024,North America,Mobility,Direct,26095,276,208,23.4
+2024,North America,Mobility,Marketplace,32455,714,424,24.1
+2024,North America,Mobility,Retail,18714,239,178,19.5
+2024,Europe,Wearables,Direct,38849,636,486,19.1
+2024,Europe,Wearables,Marketplace,37182,598,416,30.8
+2024,Europe,Wearables,Retail,25207,305,211,18.9
+2024,Europe,Audio,Direct,34990,450,395,31.6
+2024,Europe,Audio,Marketplace,29119,374,260,28.3
+2024,Europe,Audio,Retail,21120,359,205,27.3
+2024,Europe,Home,Direct,23553,410,330,24.8
+2024,Europe,Home,Marketplace,27261,600,418,18.4
+2024,Europe,Home,Retail,20302,245,166,16.8
+2024,Europe,Mobility,Direct,25265,330,279,27.3
+2024,Europe,Mobility,Marketplace,24150,340,198,25.8
+2024,Europe,Mobility,Retail,15459,155,138,19.9
+2024,Asia Pacific,Wearables,Direct,40279,730,477,22.1
+2024,Asia Pacific,Wearables,Marketplace,46491,751,649,25.1
+2024,Asia Pacific,Wearables,Retail,34628,432,378,28
+2024,Asia Pacific,Audio,Direct,32179,431,373,24.1
+2024,Asia Pacific,Audio,Marketplace,45121,784,570,20.7
+2024,Asia Pacific,Audio,Retail,30028,305,191,27.1
+2024,Asia Pacific,Home,Direct,24120,302,184,19.3
+2024,Asia Pacific,Home,Marketplace,32158,367,317,17.7
+2024,Asia Pacific,Home,Retail,23965,266,224,14.4
+2024,Asia Pacific,Mobility,Direct,23874,254,203,30.9
+2024,Asia Pacific,Mobility,Marketplace,31545,484,321,20.6
+2024,Asia Pacific,Mobility,Retail,16919,278,164,18.6
+2024,Latin America,Wearables,Direct,25464,497,395,27.3
+2024,Latin America,Wearables,Marketplace,25890,358,233,21.3
+2024,Latin America,Wearables,Retail,17729,360,262,28.4
+2024,Latin America,Audio,Direct,23681,341,213,18.5
+2024,Latin America,Audio,Marketplace,26894,313,193,12.3
+2024,Latin America,Audio,Retail,17434,216,185,21.7
+2024,Latin America,Home,Direct,17565,222,163,29
+2024,Latin America,Home,Marketplace,21691,263,185,15.8
+2024,Latin America,Home,Retail,12514,239,141,27.6
+2024,Latin America,Mobility,Direct,14852,152,113,18
+2024,Latin America,Mobility,Marketplace,16570,185,164,13.8
+2024,Latin America,Mobility,Retail,11371,125,98,30
+2024,Middle East,Wearables,Direct,21419,242,139,35.5
+2024,Middle East,Wearables,Marketplace,26978,556,410,27.8
+2024,Middle East,Wearables,Retail,15196,184,112,29.4
+2024,Middle East,Audio,Direct,16685,237,174,26.1
+2024,Middle East,Audio,Marketplace,21337,263,187,25.1
+2024,Middle East,Audio,Retail,16783,168,109,24.7
+2024,Middle East,Home,Direct,14953,159,111,30.2
+2024,Middle East,Home,Marketplace,16969,331,219,19.9
+2024,Middle East,Home,Retail,11733,180,140,26.7
+2024,Middle East,Mobility,Direct,12646,183,138,24.8
+2024,Middle East,Mobility,Marketplace,14251,149,128,19.4
+2024,Middle East,Mobility,Retail,11813,141,91,19.9
+2024,Africa,Wearables,Direct,16041,203,178,18.3
+2024,Africa,Wearables,Marketplace,22823,463,342,29.9
+2024,Africa,Wearables,Retail,16558,232,191,27.5
+2024,Africa,Audio,Direct,15429,177,124,24.3
+2024,Africa,Audio,Marketplace,19569,280,219,12.9
+2024,Africa,Audio,Retail,13983,148,118,23.3
+2024,Africa,Home,Direct,10707,123,82,18.6
+2024,Africa,Home,Marketplace,15258,171,145,17.6
+2024,Africa,Home,Retail,8520,113,73,18.1
+2024,Africa,Mobility,Direct,9784,134,79,21.3
+2024,Africa,Mobility,Marketplace,10453,117,104,13.5
+2024,Africa,Mobility,Retail,7168,92,69,21.1
+2025,North America,Wearables,Direct,53996,690,462,33.8
+2025,North America,Wearables,Marketplace,52819,775,517,15.1
+2025,North America,Wearables,Retail,31903,372,231,32
+2025,North America,Audio,Direct,42740,586,470,17.9
+2025,North America,Audio,Marketplace,42599,563,447,12.1
+2025,North America,Audio,Retail,34556,513,384,21.8
+2025,North America,Home,Direct,33601,618,534,17.6
+2025,North America,Home,Marketplace,31536,360,269,20.8
+2025,North America,Home,Retail,24400,248,174,16
+2025,North America,Mobility,Direct,25133,285,224,27
+2025,North America,Mobility,Marketplace,29689,429,262,14.3
+2025,North America,Mobility,Retail,20944,227,171,15.7
+2025,Europe,Wearables,Direct,42137,682,609,18.5
+2025,Europe,Wearables,Marketplace,46436,545,347,17.3
+2025,Europe,Wearables,Retail,32937,336,248,18.9
+2025,Europe,Audio,Direct,32912,381,276,29.8
+2025,Europe,Audio,Marketplace,44409,750,463,24.6
+2025,Europe,Audio,Retail,30426,388,307,13.1
+2025,Europe,Home,Direct,30879,414,364,31.9
+2025,Europe,Home,Marketplace,31833,536,370,20.1
+2025,Europe,Home,Retail,19902,415,284,14.4
+2025,Europe,Mobility,Direct,24815,418,267,29.1
+2025,Europe,Mobility,Marketplace,24058,298,251,18.1
+2025,Europe,Mobility,Retail,22460,352,284,14.5
+2025,Asia Pacific,Wearables,Direct,38019,435,301,29.3
+2025,Asia Pacific,Wearables,Marketplace,53036,833,493,16.8
+2025,Asia Pacific,Wearables,Retail,31172,353,223,28.9
+2025,Asia Pacific,Audio,Direct,41433,610,426,18.1
+2025,Asia Pacific,Audio,Marketplace,47815,596,474,25.2
+2025,Asia Pacific,Audio,Retail,34829,444,314,23.5
+2025,Asia Pacific,Home,Direct,27005,310,255,19.5
+2025,Asia Pacific,Home,Marketplace,39693,485,418,27.8
+2025,Asia Pacific,Home,Retail,26301,400,272,12.5
+2025,Asia Pacific,Mobility,Direct,26868,456,325,26.4
+2025,Asia Pacific,Mobility,Marketplace,34154,738,610,25
+2025,Asia Pacific,Mobility,Retail,24011,366,220,29.1
+2025,Latin America,Wearables,Direct,23224,326,206,35.3
+2025,Latin America,Wearables,Marketplace,30026,532,381,19.9
+2025,Latin America,Wearables,Retail,18295,189,127,31.3
+2025,Latin America,Audio,Direct,25869,465,394,28.5
+2025,Latin America,Audio,Marketplace,21294,286,247,23.3
+2025,Latin America,Audio,Retail,18303,262,234,29.5
+2025,Latin America,Home,Direct,15642,294,199,25.5
+2025,Latin America,Home,Marketplace,21427,295,198,14.5
+2025,Latin America,Home,Retail,16898,224,186,23.5
+2025,Latin America,Mobility,Direct,15424,245,197,19
+2025,Latin America,Mobility,Marketplace,16124,175,132,29
+2025,Latin America,Mobility,Retail,14674,176,144,25.8
+2025,Middle East,Wearables,Direct,22558,377,247,33.5
+2025,Middle East,Wearables,Marketplace,27370,296,237,30.8
+2025,Middle East,Wearables,Retail,20257,379,303,21.5
+2025,Middle East,Audio,Direct,19437,267,153,22
+2025,Middle East,Audio,Marketplace,24357,351,283,17.3
+2025,Middle East,Audio,Retail,15545,321,217,20.6
+2025,Middle East,Home,Direct,16646,269,193,28.1
+2025,Middle East,Home,Marketplace,22890,372,213,24.7
+2025,Middle East,Home,Retail,15058,272,191,27.4
+2025,Middle East,Mobility,Direct,14173,243,173,16.1
+2025,Middle East,Mobility,Marketplace,18961,374,289,25.6
+2025,Middle East,Mobility,Retail,12354,183,138,23.4
+2025,Africa,Wearables,Direct,18579,306,262,21.1
+2025,Africa,Wearables,Marketplace,20780,328,216,23.7
+2025,Africa,Wearables,Retail,15028,286,166,29.5
+2025,Africa,Audio,Direct,17461,253,177,26.7
+2025,Africa,Audio,Marketplace,19456,272,212,20
+2025,Africa,Audio,Retail,15186,275,225,24.6
+2025,Africa,Home,Direct,12753,242,211,18.2
+2025,Africa,Home,Marketplace,14394,189,136,22.7
+2025,Africa,Home,Retail,12053,135,103,15.7
+2025,Africa,Mobility,Direct,10421,111,72,26.2
+2025,Africa,Mobility,Marketplace,13494,224,160,19.9
+2025,Africa,Mobility,Retail,10325,110,91,29.4

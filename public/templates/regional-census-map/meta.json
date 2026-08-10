@@ -1,0 +1,17 @@
+{
+  "id": "regional-census-map",
+  "name": "Regional Census Map",
+  "category": "demographics",
+  "description": "US state choropleth with demographics and density.",
+  "version": "1.0.0",
+  "author": "DataCheetah",
+  "insights": [
+    "US states map — population by state",
+    "Population treemap — relative state size",
+    "Median income by state — bar comparison",
+    "Age × state heatmap — demographic mix",
+    "Density by state — how crowded each is",
+    "Age band mix — share across sample states"
+  ],
+  "publisher": "DataCheetah"
+}

@@ -21,7 +21,7 @@ export interface Preferences {
   askProvider: AskProviderId
   /** OpenRouter (or legacy remote) model id when not using local WebLLM */
   askRemoteModelId: string
-  /** OpenRouter API key — stored on this device only (not encrypted) */
+  /** OpenRouter API key — IndexedDB only (never localStorage); in-memory copy for UI */
   openrouterApiKey: string
   updatedAt: Date
 }

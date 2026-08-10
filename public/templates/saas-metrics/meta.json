@@ -1,0 +1,17 @@
+{
+  "id": "saas-metrics",
+  "name": "SaaS Metrics",
+  "category": "product",
+  "description": "MRR by plan, stacked trends, and retention mix.",
+  "version": "2.0.0",
+  "author": "DataCheetah",
+  "insights": [
+    "MRR trend — monthly recurring revenue",
+    "Plan stacked area — MRR composition",
+    "Plan stacked bar — period mix",
+    "Plan pie — share of MRR",
+    "Customers over time — growth line",
+    "Churn by month — bar watchlist"
+  ],
+  "publisher": "DataCheetah"
+}

@@ -1,0 +1,15 @@
+{
+  "id": "product-line-race",
+  "name": "Product Line Race",
+  "category": "product",
+  "description": "Racing line chart in Three.js — product curves grow year by year so one line can cross and overtake another.",
+  "version": "1.0.0",
+  "author": "DataCheetah",
+  "publisher": "DataCheetah",
+  "insights": [
+    "Racing lines — each product draws its revenue path over years",
+    "Crossing curves — watch one product overtake another mid-timeline",
+    "Play / scrub — freeze any year and compare values",
+    "Same mapping as the bar race — year, product, revenue"
+  ]
+}

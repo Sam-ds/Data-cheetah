@@ -1,0 +1,96 @@
+{
+  "requiredColumns": [
+    {
+      "role": "date",
+      "aliases": [
+        "date",
+        "visit_date"
+      ],
+      "type": "date",
+      "kind": "dimension"
+    },
+    {
+      "role": "clinic",
+      "aliases": [
+        "clinic",
+        "site",
+        "location"
+      ],
+      "type": "string",
+      "kind": "dimension"
+    },
+    {
+      "role": "specialty",
+      "aliases": [
+        "specialty",
+        "dept",
+        "service"
+      ],
+      "type": "string",
+      "kind": "dimension"
+    },
+    {
+      "role": "visits",
+      "aliases": [
+        "visits",
+        "count",
+        "patients"
+      ],
+      "type": "integer",
+      "kind": "measure"
+    },
+    {
+      "role": "wait_min",
+      "aliases": [
+        "wait_min",
+        "wait",
+        "wait_time"
+      ],
+      "type": "number",
+      "kind": "measure"
+    }
+  ],
+  "charts": [
+    {
+      "type": "stacked_bar",
+      "title": "Clinic × specialty",
+      "x": "clinic",
+      "series": "specialty",
+      "y": "visits",
+      "agg": "sum"
+    },
+    {
+      "type": "area",
+      "title": "Visits over time",
+      "x": "date",
+      "y": "visits",
+      "agg": "sum"
+    },
+    {
+      "type": "pie",
+      "title": "Specialty mix",
+      "dimension": "specialty",
+      "measure": "visits",
+      "agg": "sum"
+    },
+    {
+      "type": "histogram",
+      "title": "Wait time distribution",
+      "x": "wait_min"
+    },
+    {
+      "type": "bar",
+      "title": "Visits by clinic",
+      "x": "clinic",
+      "y": "visits",
+      "agg": "sum"
+    },
+    {
+      "type": "bar",
+      "title": "Avg wait by specialty",
+      "x": "specialty",
+      "y": "wait_min",
+      "agg": "avg"
+    }
+  ]
+}

@@ -17,6 +17,13 @@ function extractTextFromChatCompletion(data: unknown): string {
   return ''
 }
 
+async function resolveApiKey(
+  getApiKey: () => string | undefined | Promise<string | undefined>,
+): Promise<string | undefined> {
+  const value = await getApiKey()
+  return value?.trim() || undefined
+}
+
 async function readSseOrJson(
   res: Response,
   onChunk?: (accumulated: string) => void,
@@ -69,10 +76,19 @@ async function readSseOrJson(
   return text
 }
 
+function openRouterHeaders(key: string): Record<string, string> {
+  return {
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${key}`,
+    'HTTP-Referer': typeof window !== 'undefined' ? window.location.origin : 'https://datacheetah.app',
+    'X-Title': 'DataCheetah',
+  }
+}
+
 /** OpenAI Chat Completions (OpenRouter and compatible gateways). */
 export function createOpenAiCompatibleProvider(opts: {
   id: string
-  getApiKey: () => string | undefined
+  getApiKey: () => string | undefined | Promise<string | undefined>
   getBaseUrl: () => string
   getModelId: () => string
 }): LlmProvider {
@@ -84,7 +100,7 @@ export function createOpenAiCompatibleProvider(opts: {
 
     async load(modelId: string, onProgress?: (p: LoadProgress) => void) {
       onProgress?.({ text: 'Checking API key…', progress: 0.2 })
-      const key = opts.getApiKey()?.trim()
+      const key = await resolveApiKey(opts.getApiKey)
       if (!key) {
         throw new Error('API key missing — paste your OpenRouter API key in Settings.')
       }
@@ -106,24 +122,23 @@ export function createOpenAiCompatibleProvider(opts: {
 
     async complete(messages: ChatMessage[], completeOpts?: { temperature?: number; onChunk?: (a: string) => void }) {
       if (!ready) throw new Error('Call Load / Connect first.')
-      const key = opts.getApiKey()?.trim()
+      const key = await resolveApiKey(opts.getApiKey)
       if (!key) throw new Error('API key missing — paste your OpenRouter API key in Settings.')
       const base = opts.getBaseUrl().replace(/\/$/, '')
       const model = loadedModel || opts.getModelId()
       const stream = !!completeOpts?.onChunk
 
+      const headers =
+        opts.id === 'openrouter'
+          ? openRouterHeaders(key)
+          : {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${key}`,
+            }
+
       const res = await fetch(`${base}/chat/completions`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${key}`,
-          ...(opts.id === 'openrouter'
-            ? {
-                'HTTP-Referer': typeof window !== 'undefined' ? window.location.origin : 'https://datacheetah.app',
-                'X-Title': 'DataCheetah',
-              }
-            : {}),
-        },
+        headers,
         body: JSON.stringify({
           model,
           messages,

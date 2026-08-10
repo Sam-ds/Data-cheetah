@@ -5,6 +5,7 @@ import { useAsk } from '../hooks/useAsk'
 import { TableScopePicker } from './TableScopePicker'
 import { useWorkspaceStore } from '@/features/workspace/store/workspaceStore'
 import type { AskQueryStep } from '../llm/types'
+import { sanitizeLlmText } from '@/lib/sanitizeLlmText'
 
 /** Recover step blocks from combined editor SQL when `steps` was dropped. */
 function stepsFromCombinedSql(sql: string): Pick<AskQueryStep, 'goal' | 'sql'>[] {
@@ -129,11 +130,11 @@ export function SqlAskBar() {
           }`}
         >
           {reply.error ? (
-            <p>{reply.error}</p>
+            <p>{sanitizeLlmText(reply.error)}</p>
           ) : (
             <p>
               <span className="font-medium text-muted-foreground">Answer · </span>
-              {reply.answer || 'See Results below.'}
+              {sanitizeLlmText(reply.answer) || 'See Results below.'}
             </p>
           )}
 

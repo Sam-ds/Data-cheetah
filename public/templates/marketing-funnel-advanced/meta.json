@@ -1,0 +1,17 @@
+{
+  "id": "marketing-funnel-advanced",
+  "name": "Marketing Funnel Advanced",
+  "category": "marketing",
+  "description": "Funnel, sankey flows, conversion rates, and volume trend.",
+  "version": "2.0.0",
+  "author": "DataCheetah",
+  "insights": [
+    "Conversion funnel — stage drop-off",
+    "Stage sankey — path from impression to purchase",
+    "Users over time — daily volume",
+    "Stage rates radar — conversion health",
+    "Users by stage — bar comparison",
+    "Channel share in flows — pie of volume"
+  ],
+  "publisher": "DataCheetah"
+}

@@ -1,0 +1,15 @@
+{
+  "id": "interactive-sales-studio",
+  "name": "Three.js Sales Landscape",
+  "category": "sales",
+  "description": "A custom Three.js data landscape with interactive 3D bars, mapped metrics, and hover details.",
+  "version": "1.0.0",
+  "author": "DataCheetah",
+  "publisher": "DataCheetah",
+  "insights": [
+    "Interactive 3D bars — rotate mapped regional performance",
+    "Data-driven height and color — compare revenue spatially",
+    "Hover details — inspect values directly in the scene",
+    "File and role mapping — reuse the scene with your own CSV"
+  ]
+}

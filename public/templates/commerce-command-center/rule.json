@@ -1,0 +1,78 @@
+{
+  "renderer": "dynamic",
+  "tables": [
+    {
+      "id": "commerce",
+      "file": "sample.csv",
+      "requiredColumns": [
+        {
+          "role": "year",
+          "aliases": ["year", "fiscal_year", "period"],
+          "type": "integer",
+          "kind": "dimension"
+        },
+        {
+          "role": "region",
+          "aliases": ["region", "market", "territory"],
+          "type": "string",
+          "kind": "dimension"
+        },
+        {
+          "role": "category",
+          "aliases": ["category", "product_line", "segment"],
+          "type": "string",
+          "kind": "dimension"
+        },
+        {
+          "role": "channel",
+          "aliases": ["channel", "source", "sales_channel"],
+          "type": "string",
+          "kind": "dimension"
+        },
+        {
+          "role": "revenue",
+          "aliases": ["revenue", "sales", "amount"],
+          "type": "number",
+          "kind": "measure"
+        },
+        {
+          "role": "orders",
+          "aliases": ["orders", "order_count", "count"],
+          "type": "integer",
+          "kind": "measure"
+        },
+        {
+          "role": "customers",
+          "aliases": ["customers", "buyers", "users"],
+          "type": "integer",
+          "kind": "measure"
+        },
+        {
+          "role": "margin",
+          "aliases": ["margin", "margin_pct", "profit_margin"],
+          "type": "number",
+          "kind": "measure"
+        }
+      ]
+    }
+  ],
+  "charts": [],
+  "dynamic": {
+    "visualizationId": "pack",
+    "entry": "visualization.js",
+    "title": "Commerce command center",
+    "table": "commerce",
+    "columns": ["year", "region", "category", "channel", "revenue", "orders", "customers", "margin"],
+    "maxRows": 2000,
+    "settings": {
+      "time": "year",
+      "region": "region",
+      "category": "category",
+      "channel": "channel",
+      "measure": "revenue",
+      "orders": "orders",
+      "customers": "customers",
+      "margin": "margin"
+    }
+  }
+}

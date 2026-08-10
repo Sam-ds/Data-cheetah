@@ -1,0 +1,17 @@
+{
+  "id": "workforce-diversity",
+  "name": "Workforce Diversity",
+  "category": "operations",
+  "description": "Headcount by dept, gender, and level with trends.",
+  "version": "2.0.0",
+  "author": "DataCheetah",
+  "insights": [
+    "Dept × gender heatmap — representation",
+    "Headcount treemap — org composition",
+    "Level radar — balance by seniority",
+    "Gender stacked area — trend over months",
+    "Dept bar chart — team sizes",
+    "Gender mix — overall share"
+  ],
+  "publisher": "DataCheetah"
+}

@@ -1,0 +1,139 @@
+{
+  "tables": [
+    {
+      "id": "age_bands",
+      "file": "age_bands",
+      "requiredColumns": [
+        {
+          "role": "age_band",
+          "aliases": [
+            "age_band",
+            "age",
+            "band"
+          ],
+          "type": "string",
+          "kind": "dimension"
+        },
+        {
+          "role": "male",
+          "aliases": [
+            "male",
+            "males",
+            "men"
+          ],
+          "type": "integer",
+          "kind": "measure"
+        },
+        {
+          "role": "female",
+          "aliases": [
+            "female",
+            "females",
+            "women"
+          ],
+          "type": "integer",
+          "kind": "measure"
+        },
+        {
+          "role": "region",
+          "aliases": [
+            "region",
+            "area",
+            "zone"
+          ],
+          "type": "string",
+          "kind": "dimension"
+        },
+        {
+          "role": "population",
+          "aliases": [
+            "population",
+            "pop",
+            "total"
+          ],
+          "type": "integer",
+          "kind": "measure"
+        }
+      ]
+    },
+    {
+      "id": "countries",
+      "file": "countries",
+      "requiredColumns": [
+        {
+          "role": "country",
+          "aliases": [
+            "country",
+            "nation",
+            "name"
+          ],
+          "type": "string",
+          "kind": "dimension"
+        },
+        {
+          "role": "population",
+          "aliases": [
+            "population",
+            "pop",
+            "total"
+          ],
+          "type": "integer",
+          "kind": "measure"
+        }
+      ]
+    }
+  ],
+  "charts": [
+    {
+      "type": "pyramid",
+      "title": "Age–sex pyramid",
+      "x": "age_band",
+      "y": "male",
+      "y2": "female",
+      "agg": "sum",
+      "table": "age_bands"
+    },
+    {
+      "type": "heatmap",
+      "title": "Age × region",
+      "x": "age_band",
+      "y": "region",
+      "measure": "population",
+      "agg": "sum",
+      "table": "age_bands"
+    },
+    {
+      "type": "map",
+      "title": "World population",
+      "x": "country",
+      "y": "population",
+      "agg": "sum",
+      "map": "world",
+      "table": "countries"
+    },
+    {
+      "type": "bar",
+      "title": "Population by region",
+      "x": "region",
+      "y": "population",
+      "agg": "sum",
+      "table": "age_bands"
+    },
+    {
+      "type": "pie",
+      "title": "Region mix",
+      "dimension": "region",
+      "measure": "population",
+      "agg": "sum",
+      "table": "age_bands"
+    },
+    {
+      "type": "bar",
+      "title": "Top countries",
+      "x": "country",
+      "y": "population",
+      "agg": "sum",
+      "table": "countries"
+    }
+  ]
+}

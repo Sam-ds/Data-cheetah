@@ -12,7 +12,11 @@ interface InfoPageShellProps {
 
 export function InfoPageShell({ title, subtitle, children }: InfoPageShellProps) {
   return (
-    <PageStage enterKey={title} contentClassName="mx-auto w-full max-w-3xl px-6 py-8 pb-16">
+    <PageStage
+      enterKey={title}
+      showArt={false}
+      contentClassName="mx-auto w-full max-w-3xl px-6 py-8 pb-16"
+    >
       <Button variant="ghost" size="sm" className="mb-6 -ml-2 gap-1.5" onClick={goHome}>
         <ArrowLeft className="h-3.5 w-3.5" />
         Back

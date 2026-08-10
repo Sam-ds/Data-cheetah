@@ -1,0 +1,16 @@
+{
+  "id": "market-scroll-voyage",
+  "name": "Market Scroll Voyage",
+  "category": "sales",
+  "description": "A very tall scrollable Three.js story — eight chapters plus data briefs across orbit, skyline, constellation, river, corridor, lattice, helix, and finale.",
+  "version": "1.0.0",
+  "author": "DataCheetah",
+  "publisher": "DataCheetah",
+  "insights": [
+    "Scroll the voyage — eight stacked Three.js chapters on one long page",
+    "Orbit, skyline, constellation, river — regions, categories, and channels in motion",
+    "Corridor, lattice, helix, finale — years and cross-tabs climb the page",
+    "Sticky HUD + chapter nav — jump between scenes while KPIs stay in view",
+    "Bring your own CSV — map year, region, category, channel, and measures"
+  ]
+}

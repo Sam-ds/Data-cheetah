@@ -57,7 +57,7 @@ src/
 | `datasetBlobs` | Cached dataset bytes + schema (scoped by `workspaceId`) |
 | `workspaces` | Local named workspaces (on-device profiles) |
 
-OpenRouter API keys are stored in `preferences` (plaintext on this device only).
+OpenRouter API keys are stored only in IndexedDB `preferences` (not localStorage), read at request time, and sent directly to OpenRouter.
 
 ## Chart Inference Rules
 

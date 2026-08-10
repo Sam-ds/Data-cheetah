@@ -1,0 +1,135 @@
+{
+  "tables": [
+    {
+      "id": "headcount",
+      "file": "headcount",
+      "requiredColumns": [
+        {
+          "role": "department",
+          "aliases": [
+            "department",
+            "dept",
+            "team"
+          ],
+          "type": "string",
+          "kind": "dimension"
+        },
+        {
+          "role": "gender",
+          "aliases": [
+            "gender",
+            "sex"
+          ],
+          "type": "string",
+          "kind": "dimension"
+        },
+        {
+          "role": "level",
+          "aliases": [
+            "level",
+            "band",
+            "seniority"
+          ],
+          "type": "string",
+          "kind": "dimension"
+        },
+        {
+          "role": "count",
+          "aliases": [
+            "count",
+            "headcount",
+            "employees"
+          ],
+          "type": "integer",
+          "kind": "measure"
+        }
+      ]
+    },
+    {
+      "id": "trend",
+      "file": "trend",
+      "requiredColumns": [
+        {
+          "role": "month",
+          "aliases": [
+            "month",
+            "date",
+            "period"
+          ],
+          "type": "string",
+          "kind": "dimension"
+        },
+        {
+          "role": "gender",
+          "aliases": [
+            "gender",
+            "sex"
+          ],
+          "type": "string",
+          "kind": "dimension"
+        },
+        {
+          "role": "count",
+          "aliases": [
+            "count",
+            "headcount"
+          ],
+          "type": "integer",
+          "kind": "measure"
+        }
+      ]
+    }
+  ],
+  "charts": [
+    {
+      "type": "heatmap",
+      "title": "Dept × gender",
+      "x": "department",
+      "y": "gender",
+      "measure": "count",
+      "agg": "sum",
+      "table": "headcount"
+    },
+    {
+      "type": "treemap",
+      "title": "Headcount by dept",
+      "x": "department",
+      "y": "count",
+      "agg": "sum",
+      "table": "headcount"
+    },
+    {
+      "type": "radar",
+      "title": "Count by level",
+      "x": "level",
+      "y": "count",
+      "agg": "sum",
+      "table": "headcount"
+    },
+    {
+      "type": "stacked_area",
+      "title": "Gender over time",
+      "x": "month",
+      "series": "gender",
+      "y": "count",
+      "agg": "sum",
+      "table": "trend"
+    },
+    {
+      "type": "bar",
+      "title": "Headcount by dept",
+      "x": "department",
+      "y": "count",
+      "agg": "sum",
+      "table": "headcount"
+    },
+    {
+      "type": "pie",
+      "title": "Gender mix",
+      "dimension": "gender",
+      "measure": "count",
+      "agg": "sum",
+      "table": "headcount"
+    }
+  ]
+}

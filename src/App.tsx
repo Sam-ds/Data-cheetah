@@ -3,8 +3,11 @@ import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts'
 import { useUiClickSound } from '@/hooks/useUiClickSound'
 import { useEffect, useRef } from 'react'
 import { usePreferencesStore } from '@/features/profiling/store/profileStore'
-import { loadPreferences } from '@/services/storageService'
-import { rehydratePersistedFiles } from '@/features/files/services/localDatasetService'
+import {
+  loadPreferences,
+  migrateOpenRouterKeyFromLocalStorage,
+} from '@/services/storageService'
+import { hydrateFileListFromIdb } from '@/features/files/services/localDatasetService'
 import { ensureDefaultWorkspace } from '@/features/workspace/services/workspaceService'
 import { useWorkspaceStore } from '@/features/workspace/store/workspaceStore'
 import { Toaster, toast } from 'sonner'
@@ -26,7 +29,9 @@ function App() {
     } catch {
       /* ignore */
     }
-    loadPreferences().then((prefs) => {
+    void (async () => {
+      await migrateOpenRouterKeyFromLocalStorage()
+      const prefs = await loadPreferences()
       setTheme(prefs.theme)
       hydrateFromPreferences({
         theme: prefs.theme,
@@ -36,7 +41,7 @@ function App() {
         askRemoteModelId: prefs.askRemoteModelId,
         openrouterApiKey: prefs.openrouterApiKey,
       })
-    })
+    })()
   }, [hydrateFromPreferences, setTheme])
 
   useEffect(() => {
@@ -50,10 +55,11 @@ function App() {
     void (async () => {
       try {
         await ensureDefaultWorkspace()
-        const n = await rehydratePersistedFiles()
+        // Metadata only — do not start DuckDB/WASM on every refresh.
+        const n = await hydrateFileListFromIdb()
         if (n > 0) {
           toast.success(
-            `Restored ${n} local dataset${n === 1 ? '' : 's'} — open Explore when you’re ready`,
+            `${n} local dataset${n === 1 ? '' : 's'} ready — SQL engine loads when you Explore or query`,
           )
         }
       } catch (err) {
