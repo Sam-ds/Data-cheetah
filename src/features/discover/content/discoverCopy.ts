@@ -8,7 +8,7 @@ export const DISCOVER_PACK_TIP = {
   title: 'Install more packs — or ship your own',
   body: [
     'Use Install template to add more Open Dashboard packs from a ZIP on this device.',
-    'If you are a developer, you can create your own dashboard pack and install it here — just follow DataCheetah’s Open Dashboard standards.',
+    'Want to author packs? Open For developers — start from a GitHub sample, then try it with your own data.',
   ],
   developersCta: 'For developers',
   dismissCta: 'Got it',

@@ -120,7 +120,8 @@ Same charts / Three.js scene for both`,
   {
     id: 'start',
     title: 'Start from a sample',
-    body: 'Fork finance-executive or ecommerce-growth for reusable charts; interactive-sales-studio, product-growth-race, product-line-race, or commerce-command-center for reusable Three.js. See the [Open Dashboard pack standard](app:open-dashboard) section below.',
+    body:
+      'For pack authors: clone or browse samples in the [DataCheetah GitHub repo](https://github.com/Sam-ds/Data-cheetah/tree/main/public/templates), copy a starter, then map your own CSV and ship a ZIP. See the [Open Dashboard pack standard](app:open-dashboard) below.',
   },
   {
     id: 'open-dashboard',
