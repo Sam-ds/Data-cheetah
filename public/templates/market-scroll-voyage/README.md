@@ -26,18 +26,20 @@ sample.csv / your CSV
   → scrollable multi-scene voyage
 ```
 
-## Roles
+Every chapter has **floating tags on the 3D canvas** (name + value stuck to towers, moons, stars, gates, etc.) plus a **How to read** legend under the stage.
+
+## Roles → visuals
 
 | Role | Used for |
 |------|----------|
-| `year` | Corridor, helix, year ledger |
-| `region` | Skyline, lattice, orbit moons |
-| `category` | Constellation, lattice, mix bars |
-| `channel` | River particle colors |
-| `revenue` | Heights / sizes |
-| `orders` | Particle density |
+| `year` | Corridor gates, helix turns, year ledger |
+| `region` | Skyline towers, lattice columns, orbit moons (size ∝ revenue) |
+| `category` | Constellation stars, lattice rows, mix bars |
+| `channel` | River lane colors + order-share speed |
+| `revenue` | Core / tower / star / gate / cell / helix sizes |
+| `orders` | River density, HUD + finale |
 | `customers` | HUD KPIs |
-| `margin` | Mix panel |
+| `margin` | Mix panel average |
 
 ## Files
 

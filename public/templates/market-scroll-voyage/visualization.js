@@ -94,7 +94,7 @@ window.DataCheetahVisualization = {
       .msv-kpi strong { display: block; margin-top: 2px; font-size: 14px; font-variant-numeric: tabular-nums; }
       .msv-nav {
         position: sticky; top: 88px; z-index: 7;
-        display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 28px;
+        display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 10px;
         padding: 8px; border-radius: 14px; border: 1px solid var(--border);
         background: color-mix(in srgb, var(--card) 88%, transparent); backdrop-filter: blur(10px);
       }
@@ -116,7 +116,90 @@ window.DataCheetahVisualization = {
       }
       .msv-chapter-head h2 { margin: 0 0 4px; font-size: 20px; }
       .msv-chapter-head p { margin: 0; color: var(--muted); font-size: 13px; max-width: 42rem; }
-      .msv-stage { width: 100%; height: clamp(420px, 72vh, 820px); }
+      .msv-chapter-head code, .msv-panel code {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 11px; color: var(--text);
+        background: var(--bg); border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px;
+      }
+      .msv-legend-list li strong { margin-left: 2px; font-variant-numeric: tabular-nums; }
+      .msv-stage { position: relative; width: 100%; height: clamp(420px, 72vh, 820px); overflow: hidden; }
+      .msv-hud { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 2; }
+      .msv-tag {
+        position: absolute; left: 0; top: 0;
+        display: flex; flex-direction: column; gap: 0;
+        max-width: 9rem; padding: 3px 7px;
+        border: 1px solid color-mix(in srgb, var(--chip, #888) 45%, var(--border));
+        border-radius: 8px;
+        background: color-mix(in srgb, var(--card) 92%, transparent);
+        box-shadow: 0 4px 14px rgba(0,0,0,.16);
+        color: var(--text); font-size: 10px; font-weight: 750;
+        white-space: nowrap; backdrop-filter: blur(6px);
+        will-change: transform;
+      }
+      .msv-tag em {
+        color: var(--muted); font-style: normal; font-weight: 650;
+        font-size: 9px; font-variant-numeric: tabular-nums;
+      }
+      .msv-tag.is-core { border-color: var(--accent); }
+      .msv-yearbar {
+        position: sticky; top: 148px; z-index: 6;
+        display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
+        margin: 0 0 20px; padding: 10px 12px;
+        border-radius: 14px; border: 1px solid var(--border);
+        background: color-mix(in srgb, var(--card) 92%, transparent);
+        backdrop-filter: blur(10px);
+      }
+      .msv-yearbar button {
+        height: 32px; min-width: 36px; padding: 0 10px; border-radius: 8px;
+        border: 1px solid var(--border); background: var(--bg); color: var(--text);
+        font-weight: 800; cursor: pointer;
+      }
+      .msv-yearbar button:disabled { opacity: .4; cursor: default; }
+      .msv-yearbar input[type="range"] { flex: 1; min-width: 140px; accent-color: var(--accent); }
+      .msv-year-current {
+        min-width: 4rem; font-size: 18px; font-weight: 800;
+        font-variant-numeric: tabular-nums; color: var(--accent);
+      }
+      .msv-year-hint { font-size: 11px; color: var(--muted); max-width: 22rem; }
+      .msv-year-badge {
+        position: absolute; top: 10px; left: 10px; z-index: 3;
+        padding: 5px 10px; border-radius: 999px;
+        border: 1px solid var(--border);
+        background: color-mix(in srgb, var(--card) 92%, transparent);
+        font-size: 12px; font-weight: 800; font-variant-numeric: tabular-nums;
+        backdrop-filter: blur(6px); pointer-events: none; color: var(--text);
+      }
+      .msv-year-badge i {
+        font-style: normal; color: var(--muted); font-weight: 700;
+        font-size: 9px; letter-spacing: .08em; text-transform: uppercase; margin-right: 6px;
+      }
+      .msv-legend {
+        margin: 0; padding: 12px 16px 16px; border-top: 1px solid var(--border);
+        background: color-mix(in srgb, var(--bg) 72%, var(--card));
+        font-size: 12px; color: var(--muted); line-height: 1.45;
+      }
+      .msv-legend-title {
+        display: block; margin-bottom: 6px; font-size: 10px; font-weight: 800;
+        letter-spacing: .08em; text-transform: uppercase; color: var(--accent);
+      }
+      .msv-legend-list {
+        display: flex; flex-wrap: wrap; gap: 6px 10px; margin: 0; padding: 0; list-style: none;
+      }
+      .msv-legend-list li {
+        display: inline-flex; align-items: center; gap: 6px;
+        padding: 4px 8px; border-radius: 8px; border: 1px solid var(--border); background: var(--card);
+        font-variant-numeric: tabular-nums; color: var(--text);
+      }
+      .msv-swatch {
+        width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0;
+        box-shadow: inset 0 0 0 1px rgb(0 0 0 / 18%);
+      }
+      .msv-formula { margin-top: 8px; font-size: 11px; color: var(--muted); }
+      .msv-formula code {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 10px; color: var(--text);
+        background: var(--bg); border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px;
+      }
       .msv-panel {
         margin: 0 0 36px; padding: 22px 20px; border-radius: 18px;
         border: 1px dashed color-mix(in srgb, var(--accent) 45%, var(--border));
@@ -154,48 +237,102 @@ window.DataCheetahVisualization = {
         .msv-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         .msv-stage { height: clamp(340px, 58vh, 560px); }
         .msv-nav { top: 120px; }
+        .msv-yearbar { top: 170px; }
         .msv-bar-row { grid-template-columns: 5rem 1fr 3rem; }
       }
     `
     document.head.appendChild(styles)
     cleanups.push(() => styles.remove())
 
-    const latestRows = rowsAt(latest)
-    const firstRows = rowsAt(earliest)
-    const totalRev = sum(latestRows, 'revenue')
-    const totalOrd = sum(latestRows, 'orders')
-    const totalCus = sum(latestRows, 'customers')
-    const avgMargin =
-      latestRows.reduce((a, r) => a + r.margin * r.revenue, 0) / Math.max(1, totalRev)
-    const firstRev = sum(firstRows, 'revenue')
-    const growthPct = firstRev > 0 ? ((totalRev - firstRev) / firstRev) * 100 : 0
+    const metricsFor = (year) => {
+      const rows = rowsAt(year)
+      const totalRev = sum(rows, 'revenue')
+      const totalOrd = sum(rows, 'orders')
+      const totalCus = sum(rows, 'customers')
+      const avgMargin = rows.reduce((a, r) => a + r.margin * r.revenue, 0) / Math.max(1, totalRev)
+      const regionRev = groupSum(rows, 'revenue', 'region')
+      const catRev = groupSum(rows, 'revenue', 'category')
+      const channelOrd = groupSum(rows, 'orders', 'channel')
+      const maxRegion = Math.max(1, ...regions.map((r) => regionRev.get(r) || 0))
+      const maxCat = Math.max(1, ...categories.map((c) => catRev.get(c) || 0))
+      return { year, rows, totalRev, totalOrd, totalCus, avgMargin, regionRev, catRev, channelOrd, maxRegion, maxCat }
+    }
 
-    const regionRev = groupSum(latestRows, 'revenue', 'region')
-    const catRev = groupSum(latestRows, 'revenue', 'category')
-    const channelOrd = groupSum(latestRows, 'orders', 'channel')
-    const maxRegion = Math.max(1, ...regions.map((r) => regionRev.get(r) || 0))
-    const maxCat = Math.max(1, ...categories.map((c) => catRev.get(c) || 0))
+    const firstRev = sum(rowsAt(earliest), 'revenue')
+    const yearListeners = []
+    let yearIndex = years.length - 1
+    let snap = metricsFor(years[yearIndex])
 
-    const regionCards = regions
-      .map((r) => {
-        const v = regionRev.get(r) || 0
-        return `<div class="msv-card"><span>${r}</span><strong>${format(v)}</strong><em>${((v / maxRegion) * 100).toFixed(0)}% of top region</em></div>`
-      })
-      .join('')
+    // One shared hex palette for legends, floating tags, and meshes (keyed by value, not sort rank)
+    const hexFromHsl = (h, s, l) => `#${new THREE.Color().setHSL(h, s, l).getHexString()}`
+    const accentHex = `#${new THREE.Color(accent).getHexString()}`
+    const colorOf = {
+      region: (name) => {
+        const i = Math.max(0, regions.indexOf(name))
+        return hexFromHsl(0.05 + (i % 10) * 0.08, 0.65, 0.52)
+      },
+      category: (name) => {
+        const i = Math.max(0, categories.indexOf(name))
+        return hexFromHsl(0.55 + (i % 8) * 0.07, 0.72, 0.55)
+      },
+      channel: (name) => {
+        const i = Math.max(0, channels.indexOf(name))
+        return hexFromHsl(0.48 + (i % 6) * 0.08, 0.7, 0.55)
+      },
+      year: (name) => {
+        const i = Math.max(0, years.indexOf(String(name)))
+        return hexFromHsl(0.08 + (i % Math.max(1, years.length)) * 0.06, 0.75, 0.55)
+      },
+      accent: accentHex,
+      orders: '#38bdf8',
+    }
+    const threeOf = (hex) => new THREE.Color(hex)
 
-    const catBars = [...categories]
-      .sort((a, b) => (catRev.get(b) || 0) - (catRev.get(a) || 0))
-      .map((c) => {
-        const v = catRev.get(c) || 0
-        const pct = (v / maxCat) * 100
-        return `<div class="msv-bar-row"><span>${c}</span><div class="msv-bar-track"><div class="msv-bar-fill" style="width:${pct}%"></div></div><strong>${format(v)}</strong></div>`
-      })
-      .join('')
+    const legendBlock = (title, formula, items) => `
+      <aside class="msv-legend">
+        <span class="msv-legend-title">${title}</span>
+        <ul class="msv-legend-list"></ul>
+        <p class="msv-formula">${formula}</p>
+      </aside>`
+
+    const fillLegend = (aside, items) => {
+      const ul = aside.querySelector('.msv-legend-list')
+      if (!ul) return
+      ul.innerHTML = items
+        .map(
+          (it) =>
+            `<li>${it.color ? `<i class="msv-swatch" style="background:${it.color}"></i>` : ''}<span>${it.label}</span>${
+              it.value != null ? `<strong>${it.value}</strong>` : ''
+            }</li>`,
+        )
+        .join('')
+    }
+
+    const regionCardsHtml = (m) =>
+      regions
+        .map((r) => {
+          const v = m.regionRev.get(r) || 0
+          const chip = colorOf.region(r)
+          return `<div class="msv-card"><span><i class="msv-swatch" style="background:${chip};display:inline-block;margin-right:6px;vertical-align:middle"></i>${r}</span><strong>${format(v)}</strong><em>${((v / m.maxRegion) * 100).toFixed(0)}% of top region · ${m.year}</em></div>`
+        })
+        .join('')
+
+    const catBarsHtml = (m) =>
+      [...categories]
+        .sort((a, b) => (m.catRev.get(b) || 0) - (m.catRev.get(a) || 0))
+        .map((c) => {
+          const v = m.catRev.get(c) || 0
+          const pct = (v / m.maxCat) * 100
+          const chip = colorOf.category(c)
+          return `<div class="msv-bar-row"><span><i class="msv-swatch" style="background:${chip};display:inline-block;margin-right:6px;vertical-align:middle"></i>${c}</span><div class="msv-bar-track"><div class="msv-bar-fill" style="width:${pct}%;background:${chip}"></div></div><strong>${format(v)}</strong></div>`
+        })
+        .join('')
 
     const yearCards = years
       .map((y) => {
         const v = sum(rowsAt(y), 'revenue')
-        return `<div class="msv-card"><span>${y}</span><strong>${format(v)}</strong><em>${format(sum(rowsAt(y), 'orders'))} orders</em></div>`
+        const chip = colorOf.year(y)
+        return `<div class="msv-card"><span><i class="msv-swatch" style="background:${chip};display:inline-block;margin-right:6px;vertical-align:middle"></i>${timeKey} ${y}</span><strong>${format(v)}</strong><em>${format(sum(rowsAt(y), 'orders'))} ${ordersKey}</em></div>`
       })
       .join('')
 
@@ -207,13 +344,13 @@ window.DataCheetahVisualization = {
         <div>
           <small>Long-form scroll voyage</small>
           <h1></h1>
-          <p>Eight Three.js chapters on one tall page — keep scrolling through orbit, skyline, constellation, river, corridor, lattice, helix, and finale.</p>
+          <p>Scrub <code>${timeKey}</code> below — orbit, skyline, stars, river, lattice, and finale redraw for that year. Corridor & helix keep the full timeline.</p>
         </div>
         <div class="msv-kpis">
-          <div class="msv-kpi"><span>Revenue · ${latest}</span><strong>${format(totalRev)}</strong></div>
-          <div class="msv-kpi"><span>Orders</span><strong>${format(totalOrd)}</strong></div>
-          <div class="msv-kpi"><span>Customers</span><strong>${format(totalCus)}</strong></div>
-          <div class="msv-kpi"><span>Growth ${earliest}→${latest}</span><strong>${growthPct >= 0 ? '+' : ''}${format(growthPct)}%</strong></div>
+          <div class="msv-kpi"><span>${measureKey} · <b class="msv-live-year">${snap.year}</b></span><strong class="msv-kpi-rev">${format(snap.totalRev)}</strong></div>
+          <div class="msv-kpi"><span>${ordersKey}</span><strong class="msv-kpi-ord">${format(snap.totalOrd)}</strong></div>
+          <div class="msv-kpi"><span>${customersKey}</span><strong class="msv-kpi-cus">${format(snap.totalCus)}</strong></div>
+          <div class="msv-kpi"><span>Growth ${earliest}→<b class="msv-live-year">${snap.year}</b></span><strong class="msv-kpi-growth"></strong></div>
         </div>
       </header>
       <nav class="msv-nav" aria-label="Chapters">
@@ -230,85 +367,108 @@ window.DataCheetahVisualization = {
         <a href="#msv-finale">08 Finale</a>
       </nav>
 
+      <div class="msv-yearbar" role="group" aria-label="${timeKey} scrubber">
+        <button type="button" class="msv-year-prev" aria-label="Previous ${timeKey}">‹</button>
+        <strong class="msv-year-current">${snap.year}</strong>
+        <input class="msv-year-scrub" type="range" min="0" max="${Math.max(0, years.length - 1)}" step="1" value="${yearIndex}" />
+        <button type="button" class="msv-year-next" aria-label="Next ${timeKey}">›</button>
+        <span class="msv-year-hint">Selected ${timeKey} drives snapshot chapters. Corridor / helix show every ${timeKey}.</span>
+      </div>
+
       <section class="msv-chapter" id="msv-orbit">
         <div class="msv-chapter-head">
           <em>Chapter 01</em>
           <h2>Global orbit</h2>
-          <p>A living core sized by latest-year revenue — moons mark active regions.</p>
+          <p>Core + moons for selected <code>${timeKey}</code> <b class="msv-live-year">${snap.year}</b>. Moon size ∝ that region’s <code>${measureKey}</code>.</p>
         </div>
         <div class="msv-stage" data-scene="orbit"></div>
+        ${legendBlock('How to read · Orbit', `Core / moons use selected <code>${timeKey}</code> (scrubber).`, [])}
       </section>
 
       <section class="msv-chapter" id="msv-skyline">
         <div class="msv-chapter-head">
           <em>Chapter 02</em>
           <h2>Region skyline</h2>
-          <p>Each tower is a region. Height follows mapped revenue for ${latest}. Drag sideways to orbit.</p>
+          <p>One tower per <code>${regionKey}</code> for <b class="msv-live-year">${snap.year}</b>. Height ∝ <code>${measureKey}</code>. Drag to orbit.</p>
         </div>
         <div class="msv-stage" data-scene="skyline"></div>
+        ${legendBlock('How to read · Skyline', `Tower height ∝ <code>${measureKey}</code> by <code>${regionKey}</code> for selected <code>${timeKey}</code>.`, [])}
       </section>
 
       <section class="msv-panel" id="msv-brief-regions">
-        <h3>Region brief · ${latest}</h3>
-        <p>Pause between scenes — these cards mirror the skyline towers with compact numbers from your mapped rows.</p>
-        <div class="msv-grid">${regionCards}</div>
+        <h3>${regionKey} brief · <b class="msv-live-year">${snap.year}</b></h3>
+        <p>Same numbers as the skyline for the selected ${timeKey}.</p>
+        <div class="msv-grid msv-region-grid">${regionCardsHtml(snap)}</div>
       </section>
 
       <section class="msv-chapter" id="msv-constellation">
         <div class="msv-chapter-head">
           <em>Chapter 03</em>
           <h2>Category constellation</h2>
-          <p>Product lines as orbiting stars — brighter, larger nodes carry more revenue.</p>
+          <p>One star per <code>${categoryKey}</code> for <b class="msv-live-year">${snap.year}</b>. Size ∝ <code>${measureKey}</code>.</p>
         </div>
         <div class="msv-stage" data-scene="constellation"></div>
+        ${legendBlock('How to read · Constellation', `Star size ∝ <code>${measureKey}</code> by <code>${categoryKey}</code> for selected <code>${timeKey}</code>.`, [])}
       </section>
 
       <section class="msv-chapter" id="msv-river">
         <div class="msv-chapter-head">
           <em>Chapter 04</em>
           <h2>Channel river</h2>
-          <p>Particle streams colored by channel; density and lift follow order share.</p>
+          <p>Lanes by <code>${channelKey}</code> for <b class="msv-live-year">${snap.year}</b>. Speed / lift ∝ <code>${ordersKey}</code> share.</p>
         </div>
         <div class="msv-stage" data-scene="river"></div>
+        ${legendBlock('How to read · River', `Each lane = one <code>${channelKey}</code> in selected <code>${timeKey}</code>.`, [])}
       </section>
 
       <section class="msv-panel" id="msv-brief-mix">
-        <h3>Category mix · ${latest}</h3>
-        <p>Horizontal share bars for the constellation chapter — same revenue roles, flat reading.</p>
-        <div class="msv-bars">${catBars}</div>
-        <p style="margin-top:16px;margin-bottom:8px">Avg margin across mapped rows: <strong style="color:var(--text)">${format(avgMargin)}%</strong></p>
+        <h3>${categoryKey} mix · <b class="msv-live-year">${snap.year}</b></h3>
+        <p>Same <code>${measureKey}</code> shares as the constellation for the selected ${timeKey}.</p>
+        <div class="msv-bars msv-cat-bars">${catBarsHtml(snap)}</div>
+        <p style="margin-top:16px;margin-bottom:8px">Avg <code>${marginKey}</code> (weighted): <strong class="msv-avg-margin" style="color:var(--text)">${format(snap.avgMargin)}%</strong></p>
       </section>
 
       <section class="msv-chapter" id="msv-corridor">
         <div class="msv-chapter-head">
           <em>Chapter 05</em>
           <h2>Timeline corridor</h2>
-          <p>Walk the years — gates light as the camera travels ${earliest} → ${latest}.</p>
+          <p>One gate per <code>${timeKey}</code> from ${earliest} → ${latest}. Highlighted gate = camera focus. Gate height ∝ that year’s <code>${measureKey}</code>.</p>
         </div>
         <div class="msv-stage" data-scene="corridor"></div>
+        ${legendBlock(
+          'How to read · Corridor',
+          `Full timeline — not controlled by the scrubber. Each gate = one <code>${timeKey}</code>.`,
+          years.map((y) => ({ label: String(y), value: format(sum(rowsAt(y), 'revenue')), color: '#f2a01f' })),
+        )}
       </section>
 
       <section class="msv-chapter" id="msv-lattice">
         <div class="msv-chapter-head">
           <em>Chapter 06</em>
           <h2>Region × category lattice</h2>
-          <p>A glowing grid of cells — each column a region, each row a category, height from revenue.</p>
+          <p>Grid for <b class="msv-live-year">${snap.year}</b>. Columns = <code>${regionKey}</code>, rows = <code>${categoryKey}</code>.</p>
         </div>
         <div class="msv-stage" data-scene="lattice"></div>
+        ${legendBlock('How to read · Lattice', `Cell height ∝ <code>${measureKey}</code> for selected <code>${timeKey}</code>.`, [])}
       </section>
 
       <section class="msv-chapter" id="msv-helix">
         <div class="msv-chapter-head">
           <em>Chapter 07</em>
           <h2>Growth helix</h2>
-          <p>Years climb a spiral — radius tracks revenue so growth years flare outward.</p>
+          <p>Each bead = one <code>${timeKey}</code>. Radius ∝ that year’s <code>${measureKey}</code>. Tags highlight the nearest bead.</p>
         </div>
         <div class="msv-stage" data-scene="helix"></div>
+        ${legendBlock(
+          'How to read · Helix',
+          `Full timeline spiral — not controlled by the scrubber.`,
+          years.map((y) => ({ label: String(y), value: format(sum(rowsAt(y), 'revenue')), color: '#38bdf8' })),
+        )}
       </section>
 
       <section class="msv-panel" id="msv-brief-years">
-        <h3>Year ledger</h3>
-        <p>Every mapped year as a card before the finale — useful when scrubbing the corridor mentally.</p>
+        <h3>Every ${timeKey}</h3>
+        <p>Full ledger — compare years side by side (same totals as corridor / helix).</p>
         <div class="msv-grid">${yearCards}</div>
       </section>
 
@@ -316,18 +476,126 @@ window.DataCheetahVisualization = {
         <div class="msv-chapter-head">
           <em>Chapter 08</em>
           <h2>Market finale</h2>
-          <p>All signals at once — core, rings, and spark field scaled by your latest totals.</p>
+          <p>Core / sparks for selected <code>${timeKey}</code> <b class="msv-live-year">${snap.year}</b>.</p>
         </div>
         <div class="msv-stage" data-scene="finale"></div>
+        ${legendBlock('How to read · Finale', `Scales with selected <code>${timeKey}</code> totals.`, [])}
       </section>
 
       <div class="msv-foot">
-        End of voyage · ${payload.rows.length} mapped rows · ${years.length} years · ${regions.length} regions · ${categories.length} categories · ${channels.length} channels
+        End of voyage · ${payload.rows.length} mapped rows · ${years.length} ${timeKey}s (${earliest}–${latest}) · ${regions.length} regions · ${categories.length} categories · ${channels.length} channels
       </div>
     `
     board.querySelector('h1').textContent = payload.title || 'Market scroll voyage'
     root.appendChild(board)
     cleanups.push(() => board.remove())
+
+    const scrub = board.querySelector('.msv-year-scrub')
+    const yearCurrent = board.querySelector('.msv-year-current')
+    const prevBtn = board.querySelector('.msv-year-prev')
+    const nextBtn = board.querySelector('.msv-year-next')
+    const kpiRev = board.querySelector('.msv-kpi-rev')
+    const kpiOrd = board.querySelector('.msv-kpi-ord')
+    const kpiCus = board.querySelector('.msv-kpi-cus')
+    const kpiGrowth = board.querySelector('.msv-kpi-growth')
+    const regionGrid = board.querySelector('.msv-region-grid')
+    const catBarsEl = board.querySelector('.msv-cat-bars')
+    const avgMarginEl = board.querySelector('.msv-avg-margin')
+
+    const orbitLegendEl = board.querySelector('#msv-orbit .msv-legend')
+    const skylineLegendEl = board.querySelector('#msv-skyline .msv-legend')
+    const constellationLegendEl = board.querySelector('#msv-constellation .msv-legend')
+    const riverLegendEl = board.querySelector('#msv-river .msv-legend')
+    const latticeLegendEl = board.querySelector('#msv-lattice .msv-legend')
+    const finaleLegendEl = board.querySelector('#msv-finale .msv-legend')
+    fillLegend(
+      board.querySelector('#msv-corridor .msv-legend'),
+      years.map((y) => ({ label: String(y), value: format(sum(rowsAt(y), 'revenue')), color: colorOf.year(y) })),
+    )
+    fillLegend(
+      board.querySelector('#msv-helix .msv-legend'),
+      years.map((y) => ({ label: String(y), value: format(sum(rowsAt(y), 'revenue')), color: colorOf.year(y) })),
+    )
+
+    const regListSafe = () => regions.slice(0, 6)
+    const catListSafe = () => categories.slice(0, 6)
+
+    const refreshSnapshotLegends = (m) => {
+      fillLegend(orbitLegendEl, [
+        { label: `Core · ${m.year} ${measureKey}`, value: format(m.totalRev), color: colorOf.accent },
+        ...regions.slice(0, 6).map((r) => ({
+          label: r,
+          value: format(m.regionRev.get(r) || 0),
+          color: colorOf.region(r),
+        })),
+      ])
+      fillLegend(
+        skylineLegendEl,
+        regions.map((r) => ({
+          label: r,
+          value: format(m.regionRev.get(r) || 0),
+          color: colorOf.region(r),
+        })),
+      )
+      fillLegend(
+        constellationLegendEl,
+        [...categories]
+          .sort((a, b) => (m.catRev.get(b) || 0) - (m.catRev.get(a) || 0))
+          .map((c) => ({
+            label: c,
+            value: format(m.catRev.get(c) || 0),
+            color: colorOf.category(c),
+          })),
+      )
+      fillLegend(
+        riverLegendEl,
+        channels.map((c) => ({
+          label: c,
+          value: format(m.channelOrd.get(c) || 0),
+          color: colorOf.channel(c),
+        })),
+      )
+      fillLegend(latticeLegendEl, [
+        ...regListSafe().map((r) => ({ label: `${regionKey}: ${r}`, color: colorOf.region(r) })),
+        ...catListSafe().map((c) => ({ label: `${categoryKey}: ${c}`, color: colorOf.category(c) })),
+        { label: `${timeKey}`, value: String(m.year), color: colorOf.year(m.year) },
+      ])
+      fillLegend(finaleLegendEl, [
+        { label: `${measureKey} · ${m.year}`, value: format(m.totalRev), color: colorOf.accent },
+        { label: ordersKey, value: format(m.totalOrd), color: colorOf.orders },
+        { label: `${regionKey}s`, value: String(regions.length), color: colorOf.region(regions[0]) },
+        { label: `${categoryKey}s`, value: String(categories.length), color: colorOf.category(categories[0]) },
+      ])
+    }
+
+    const setYearIndex = (idx) => {
+      yearIndex = Math.max(0, Math.min(years.length - 1, idx))
+      snap = metricsFor(years[yearIndex])
+      const g = firstRev > 0 ? ((snap.totalRev - firstRev) / firstRev) * 100 : 0
+      yearCurrent.textContent = snap.year
+      scrub.value = String(yearIndex)
+      prevBtn.disabled = yearIndex <= 0
+      nextBtn.disabled = yearIndex >= years.length - 1
+      board.querySelectorAll('.msv-live-year').forEach((el) => {
+        el.textContent = snap.year
+      })
+      kpiRev.textContent = format(snap.totalRev)
+      kpiOrd.textContent = format(snap.totalOrd)
+      kpiCus.textContent = format(snap.totalCus)
+      kpiGrowth.textContent = `${g >= 0 ? '+' : ''}${format(g)}%`
+      if (regionGrid) regionGrid.innerHTML = regionCardsHtml(snap)
+      if (catBarsEl) catBarsEl.innerHTML = catBarsHtml(snap)
+      if (avgMarginEl) avgMarginEl.textContent = `${format(snap.avgMargin)}%`
+      refreshSnapshotLegends(snap)
+      for (const fn of yearListeners) fn(snap)
+    }
+
+    scrub.addEventListener('input', () => setYearIndex(Number(scrub.value)))
+    prevBtn.addEventListener('click', () => setYearIndex(yearIndex - 1))
+    nextBtn.addEventListener('click', () => setYearIndex(yearIndex + 1))
+    cleanups.push(() => {
+      scrub.replaceWith(scrub.cloneNode(true))
+    })
 
     const progressFill = board.querySelector('.msv-progress > i')
     const navLinks = [...board.querySelectorAll('.msv-nav a')]
@@ -350,7 +618,24 @@ window.DataCheetahVisualization = {
     document.addEventListener('scroll', onScroll, { passive: true })
     cleanups.push(() => document.removeEventListener('scroll', onScroll))
 
-    const makeRenderer = (stage) => {
+    const makeRenderer = (stage, { badgeMode = 'snap' } = {}) => {
+      stage.replaceChildren()
+      const labelsLayer = document.createElement('div')
+      labelsLayer.className = 'msv-hud'
+      labelsLayer.setAttribute('aria-hidden', 'true')
+      stage.appendChild(labelsLayer)
+
+      const yearBadge = document.createElement('div')
+      yearBadge.className = 'msv-year-badge'
+      yearBadge.innerHTML = '<i></i><b></b>'
+      stage.appendChild(yearBadge)
+      const setBadge = (label, value) => {
+        yearBadge.querySelector('i').textContent = label
+        yearBadge.querySelector('b').textContent = value
+      }
+      if (badgeMode === 'snap') setBadge(`Showing ${timeKey}`, snap.year)
+      else if (badgeMode === 'all') setBadge(`All ${timeKey}s`, `${earliest}–${latest}`)
+
       const scene = new THREE.Scene()
       scene.background = new THREE.Color(dark ? 0x070d18 : 0xeef3f8)
       scene.fog = new THREE.Fog(scene.background.getHex(), 18, 48)
@@ -358,7 +643,7 @@ window.DataCheetahVisualization = {
       const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false })
       renderer.setPixelRatio(Math.min(devicePixelRatio, 2))
       renderer.setSize(stage.clientWidth, stage.clientHeight)
-      stage.appendChild(renderer.domElement)
+      stage.insertBefore(renderer.domElement, labelsLayer)
       scene.add(new THREE.HemisphereLight(0xffffff, dark ? 0x0b1220 : 0x94a3b8, 1.35))
       const key = new THREE.DirectionalLight(0xffffff, 2.1)
       key.position.set(5, 12, 8)
@@ -366,7 +651,38 @@ window.DataCheetahVisualization = {
       const point = new THREE.PointLight(accent, 1.2, 50)
       point.position.set(-3, 5, -4)
       scene.add(point)
-      return { scene, camera, renderer, point }
+
+      const tmp = new THREE.Vector3()
+      const makeTag = (title, value, colorHex) => {
+        const el = document.createElement('div')
+        el.className = 'msv-tag'
+        if (colorHex) el.style.setProperty('--chip', colorHex)
+        el.innerHTML = '<b></b><em></em>'
+        el.querySelector('b').textContent = title
+        el.querySelector('em').textContent = value == null ? '' : String(value)
+        labelsLayer.appendChild(el)
+        return el
+      }
+      const setTag = (el, title, value) => {
+        el.querySelector('b').textContent = title
+        el.querySelector('em').textContent = value == null ? '' : String(value)
+      }
+      const projectTag = (el, world, dy = -120) => {
+        tmp.copy(world).project(camera)
+        const x = (tmp.x * 0.5 + 0.5) * stage.clientWidth
+        const y = (-tmp.y * 0.5 + 0.5) * stage.clientHeight
+        const on =
+          tmp.z > -1 &&
+          tmp.z < 1 &&
+          x > -48 &&
+          x < stage.clientWidth + 48 &&
+          y > -48 &&
+          y < stage.clientHeight + 48
+        el.style.display = on ? 'flex' : 'none'
+        el.style.transform = `translate(${x}px, ${y}px) translate(-50%, ${dy}%)`
+      }
+
+      return { scene, camera, renderer, point, makeTag, setTag, projectTag, setBadge, yearBadge }
     }
 
     const bindResize = (stage, camera, renderer) => {
@@ -383,10 +699,12 @@ window.DataCheetahVisualization = {
       cleanups.push(() => ro.disconnect())
     }
 
+    const anchor = new THREE.Vector3()
+
     // —— Orbit ——
     {
       const stage = board.querySelector('[data-scene="orbit"]')
-      const { scene, camera, renderer, point } = makeRenderer(stage)
+      const { scene, camera, renderer, point, makeTag, setTag, projectTag, setBadge } = makeRenderer(stage)
       camera.position.set(0, 3.2, 9)
       camera.lookAt(0, 0.4, 0)
       const core = new THREE.Mesh(
@@ -400,6 +718,8 @@ window.DataCheetahVisualization = {
         }),
       )
       scene.add(core)
+      const coreTag = makeTag(`${measureKey}`, format(snap.totalRev), colorOf.accent)
+      coreTag.classList.add('is-core')
       const ring = new THREE.Mesh(
         new THREE.TorusGeometry(2.6, 0.05, 10, 80),
         new THREE.MeshStandardMaterial({ color: dark ? 0x64748b : 0x94a3b8, emissive: new THREE.Color(accent).multiplyScalar(0.15) }),
@@ -413,17 +733,48 @@ window.DataCheetahVisualization = {
       ring2.rotation.x = Math.PI / 3
       scene.add(ring2)
       const moons = []
-      regions.slice(0, 6).forEach((_, i) => {
+      const orbitRegions = regions.slice(0, 6)
+      orbitRegions.forEach((region, i) => {
+        const hex = colorOf.region(region)
+        const color = threeOf(hex)
         const moon = new THREE.Mesh(
-          new THREE.SphereGeometry(0.18, 16, 16),
+          new THREE.SphereGeometry(0.2, 16, 16),
           new THREE.MeshStandardMaterial({
-            color: new THREE.Color().setHSL(0.08 + i * 0.1, 0.7, 0.55),
-            emissive: new THREE.Color().setHSL(0.08 + i * 0.1, 0.7, 0.25),
+            color,
+            emissive: color.clone().multiplyScalar(0.35),
           }),
         )
         scene.add(moon)
-        moons.push({ mesh: moon, angle: (i / 6) * Math.PI * 2, radius: 3.1 + (i % 3) * 0.25, speed: 0.25 + i * 0.04 })
+        moons.push({
+          mesh: moon,
+          region,
+          tag: makeTag(region, format(snap.regionRev.get(region) || 0), hex),
+          angle: (i / Math.max(1, orbitRegions.length)) * Math.PI * 2,
+          radius: 3.1 + (i % 3) * 0.25,
+          speed: 0.25,
+          weight: 0.5,
+        })
       })
+      let coreScale = 1
+      const apply = (m) => {
+        setBadge(`Showing ${timeKey}`, m.year)
+        coreScale = 0.85 + Math.min(1.35, Math.log10(Math.max(10, m.totalRev)) / 6)
+        core.scale.setScalar(coreScale)
+        ring.scale.setScalar(coreScale)
+        ring2.scale.setScalar(coreScale)
+        setTag(coreTag, `${measureKey} · ${m.year}`, format(m.totalRev))
+        for (const moon of moons) {
+          moon.weight = (m.regionRev.get(moon.region) || 0) / m.maxRegion
+          const r = 0.12 + moon.weight * 0.28
+          moon.mesh.geometry.dispose()
+          moon.mesh.geometry = new THREE.SphereGeometry(r, 16, 16)
+          moon.radius = (3.1 + (moons.indexOf(moon) % 3) * 0.25) * coreScale
+          moon.speed = 0.22 + moon.weight * 0.2
+          setTag(moon.tag, moon.region, `${format(m.regionRev.get(moon.region) || 0)} · ${m.year}`)
+        }
+      }
+      yearListeners.push(apply)
+      apply(snap)
       bindResize(stage, camera, renderer)
       frames.push((t) => {
         core.rotation.y = t * 0.35
@@ -431,9 +782,11 @@ window.DataCheetahVisualization = {
         ring.rotation.z = t * 0.2
         ring2.rotation.z = -t * 0.12
         point.intensity = 1 + Math.sin(t * 2) * 0.25
+        projectTag(coreTag, anchor.set(0, 1.8 * coreScale, 0), -100)
         for (const m of moons) {
           const a = m.angle + t * m.speed
           m.mesh.position.set(Math.cos(a) * m.radius, Math.sin(a * 1.4) * 0.45, Math.sin(a) * m.radius)
+          projectTag(m.tag, anchor.copy(m.mesh.position).setY(m.mesh.position.y + 0.35))
         }
         renderer.render(scene, camera)
       })
@@ -446,7 +799,7 @@ window.DataCheetahVisualization = {
     // —— Skyline ——
     {
       const stage = board.querySelector('[data-scene="skyline"]')
-      const { scene, camera, renderer } = makeRenderer(stage)
+      const { scene, camera, renderer, makeTag, setTag, projectTag, setBadge } = makeRenderer(stage)
       camera.position.set(0, 8, 16)
       camera.lookAt(0, 2, 0)
       const ground = new THREE.Mesh(
@@ -457,21 +810,37 @@ window.DataCheetahVisualization = {
       scene.add(ground)
       const towers = []
       regions.forEach((region, i) => {
-        const h = 0.4 + ((regionRev.get(region) || 0) / maxRegion) * 6.5
+        const hex = colorOf.region(region)
+        const color = threeOf(hex)
         const mesh = new THREE.Mesh(
           new THREE.BoxGeometry(0.9, 1, 0.9),
           new THREE.MeshStandardMaterial({
-            color: new THREE.Color().setHSL(0.05 + i * 0.08, 0.65, 0.5),
+            color,
             emissive: new THREE.Color(accent).multiplyScalar(0.08),
             roughness: 0.4,
           }),
         )
         const x = (i - (regions.length - 1) / 2) * 1.35
-        mesh.position.set(x, h / 2, 0)
-        mesh.scale.y = h
+        mesh.position.set(x, 0.5, 0)
         scene.add(mesh)
-        towers.push(mesh)
+        towers.push({
+          mesh,
+          region,
+          h: 1,
+          tag: makeTag(region, format(snap.regionRev.get(region) || 0), hex),
+        })
       })
+      const apply = (m) => {
+        setBadge(`Showing ${timeKey}`, m.year)
+        for (const tower of towers) {
+          tower.h = 0.4 + ((m.regionRev.get(tower.region) || 0) / m.maxRegion) * 6.5
+          tower.mesh.scale.y = tower.h
+          tower.mesh.position.y = tower.h / 2
+          setTag(tower.tag, tower.region, `${format(m.regionRev.get(tower.region) || 0)} · ${m.year}`)
+        }
+      }
+      yearListeners.push(apply)
+      apply(snap)
       let drag = false
       let prevX = 0
       let rot = 0.2
@@ -494,9 +863,10 @@ window.DataCheetahVisualization = {
       bindResize(stage, camera, renderer)
       frames.push((t) => {
         const groupY = rot + Math.sin(t * 0.2) * 0.03
-        for (const mesh of towers) {
-          mesh.rotation.y = groupY
-          mesh.position.z = Math.sin(groupY + mesh.position.x * 0.2) * 0.15
+        for (const tower of towers) {
+          tower.mesh.rotation.y = groupY
+          tower.mesh.position.z = Math.sin(groupY + tower.mesh.position.x * 0.2) * 0.15
+          projectTag(tower.tag, anchor.set(tower.mesh.position.x, tower.h + 0.35, tower.mesh.position.z))
         }
         renderer.render(scene, camera)
       })
@@ -512,26 +882,30 @@ window.DataCheetahVisualization = {
     // —— Constellation ——
     {
       const stage = board.querySelector('[data-scene="constellation"]')
-      const { scene, camera, renderer } = makeRenderer(stage)
+      const { scene, camera, renderer, makeTag, setTag, projectTag, setBadge } = makeRenderer(stage)
       camera.position.set(0, 0, 11)
       camera.lookAt(0, 0, 0)
       const stars = []
       categories.forEach((cat, i) => {
-        const weight = (catRev.get(cat) || 0) / maxCat
+        const hex = colorOf.category(cat)
+        const color = threeOf(hex)
         const mesh = new THREE.Mesh(
-          new THREE.SphereGeometry(0.2 + weight * 0.55, 20, 20),
+          new THREE.SphereGeometry(0.35, 20, 20),
           new THREE.MeshStandardMaterial({
-            color: new THREE.Color().setHSL(0.55 + i * 0.07, 0.7, 0.55),
-            emissive: new THREE.Color().setHSL(0.55 + i * 0.07, 0.8, 0.25),
+            color,
+            emissive: color.clone().multiplyScalar(0.4),
             roughness: 0.3,
           }),
         )
         scene.add(mesh)
         stars.push({
           mesh,
+          cat,
+          weight: 0.5,
+          tag: makeTag(cat, format(snap.catRev.get(cat) || 0), hex),
           angle: (i / Math.max(1, categories.length)) * Math.PI * 2,
-          radius: 2.2 + weight * 1.8,
-          speed: 0.15 + weight * 0.25,
+          radius: 2.8,
+          speed: 0.2,
           bob: i * 0.7,
         })
       })
@@ -544,6 +918,19 @@ window.DataCheetahVisualization = {
         a.link = line
         a.linkTo = b
       }
+      const apply = (m) => {
+        setBadge(`Showing ${timeKey}`, m.year)
+        for (const s of stars) {
+          s.weight = (m.catRev.get(s.cat) || 0) / m.maxCat
+          s.mesh.geometry.dispose()
+          s.mesh.geometry = new THREE.SphereGeometry(0.2 + s.weight * 0.55, 20, 20)
+          s.radius = 2.2 + s.weight * 1.8
+          s.speed = 0.15 + s.weight * 0.25
+          setTag(s.tag, s.cat, `${format(m.catRev.get(s.cat) || 0)} · ${m.year}`)
+        }
+      }
+      yearListeners.push(apply)
+      apply(snap)
       bindResize(stage, camera, renderer)
       frames.push((t) => {
         for (const s of stars) {
@@ -552,6 +939,7 @@ window.DataCheetahVisualization = {
           if (s.link && s.linkTo) {
             s.link.geometry.setFromPoints([s.mesh.position.clone(), s.linkTo.mesh.position.clone()])
           }
+          projectTag(s.tag, anchor.copy(s.mesh.position).setY(s.mesh.position.y + 0.45))
         }
         renderer.render(scene, camera)
       })
@@ -564,10 +952,19 @@ window.DataCheetahVisualization = {
     // —— River ——
     {
       const stage = board.querySelector('[data-scene="river"]')
-      const { scene, camera, renderer } = makeRenderer(stage)
+      const { scene, camera, renderer, makeTag, setTag, projectTag, setBadge } = makeRenderer(stage)
       camera.position.set(0, 7, 14)
       camera.lookAt(0, 0, 0)
-      const colors = channels.map((_, i) => new THREE.Color().setHSL(0.5 + i * 0.08, 0.7, 0.55))
+      const colors = channels.map((ch) => threeOf(colorOf.channel(ch)))
+      const laneTags = channels.map((ch, i) => {
+        const hex = colorOf.channel(ch)
+        return {
+          channel: ch,
+          lane: (i - (channels.length - 1) / 2) * 1.1,
+          tag: makeTag(ch, format(snap.channelOrd.get(ch) || 0), hex),
+        }
+      })
+      let liveChannelOrd = snap.channelOrd
       const COUNT = 900
       const pos = new Float32Array(COUNT * 3)
       const col = new Float32Array(COUNT * 3)
@@ -600,12 +997,20 @@ window.DataCheetahVisualization = {
       )
       bed.position.y = -0.2
       scene.add(bed)
+      yearListeners.push((m) => {
+        setBadge(`Showing ${timeKey}`, m.year)
+        liveChannelOrd = m.channelOrd
+        for (const lane of laneTags) {
+          setTag(lane.tag, lane.channel, `${format(m.channelOrd.get(lane.channel) || 0)} · ${m.year}`)
+        }
+      })
+      setBadge(`Showing ${timeKey}`, snap.year)
       bindResize(stage, camera, renderer)
       frames.push((t, dt) => {
-        const orderSum = Math.max(1, [...channelOrd.values()].reduce((a, b) => a + b, 0))
+        const orderSum = Math.max(1, [...liveChannelOrd.values()].reduce((a, b) => a + b, 0))
         for (let i = 0; i < COUNT; i++) {
           const m = meta[i]
-          const share = (channelOrd.get(channels[m.channelIndex]) || 1) / orderSum
+          const share = (liveChannelOrd.get(channels[m.channelIndex]) || 1) / orderSum
           m.t = (m.t + (m.speed + share * 0.6) * dt) % 1
           const x = -7 + m.t * 14
           const z = m.lane + Math.sin(m.t * 8 + m.wobble) * 0.35
@@ -616,6 +1021,9 @@ window.DataCheetahVisualization = {
         }
         geo.attributes.position.needsUpdate = true
         camera.position.x = Math.sin(t * 0.15) * 1.5
+        for (const lane of laneTags) {
+          projectTag(lane.tag, anchor.set(0, 1.6, lane.lane), -50)
+        }
         renderer.render(scene, camera)
       })
       cleanups.push(() => {
@@ -624,10 +1032,10 @@ window.DataCheetahVisualization = {
       })
     }
 
-    // —— Corridor ——
+    // —— Corridor (all years) ——
     {
       const stage = board.querySelector('[data-scene="corridor"]')
-      const { scene, camera, renderer } = makeRenderer(stage)
+      const { scene, camera, renderer, makeTag, projectTag, setBadge } = makeRenderer(stage, { badgeMode: 'all' })
       camera.position.set(0, 3.5, 10)
       camera.lookAt(0, 1.2, -4)
       const yearTotals = years.map((y) => sum(rowsAt(y), 'revenue'))
@@ -635,22 +1043,36 @@ window.DataCheetahVisualization = {
       const gates = []
       years.forEach((year, i) => {
         const h = 0.5 + (yearTotals[i] / maxY) * 4.2
+        const yearHex = colorOf.year(year)
+        const yearColor = threeOf(yearHex)
         const group = new THREE.Group()
         const left = new THREE.Mesh(
           new THREE.BoxGeometry(0.25, h, 0.25),
-          new THREE.MeshStandardMaterial({ color: dark ? 0x1e293b : 0xffffff, emissive: new THREE.Color(accent).multiplyScalar(0.12) }),
+          new THREE.MeshStandardMaterial({
+            color: dark ? 0x1e293b : 0xffffff,
+            emissive: yearColor.clone().multiplyScalar(0.2),
+          }),
         )
         const right = left.clone()
         left.position.set(-1.4, h / 2, -i * 2.4)
         right.position.set(1.4, h / 2, -i * 2.4)
         const lintel = new THREE.Mesh(
           new THREE.BoxGeometry(3.1, 0.18, 0.25),
-          new THREE.MeshStandardMaterial({ color: accent, emissive: new THREE.Color(accent).multiplyScalar(0.25) }),
+          new THREE.MeshStandardMaterial({
+            color: yearColor,
+            emissive: yearColor.clone().multiplyScalar(0.35),
+          }),
         )
         lintel.position.set(0, h + 0.1, -i * 2.4)
         group.add(left, right, lintel)
         scene.add(group)
-        gates.push({ group, year, h })
+        gates.push({
+          group,
+          h,
+          z: -i * 2.4,
+          year,
+          tag: makeTag(`${timeKey} ${year}`, format(yearTotals[i]), yearHex),
+        })
       })
       const floor = new THREE.Mesh(
         new THREE.PlaneGeometry(8, years.length * 2.6 + 4),
@@ -661,14 +1083,21 @@ window.DataCheetahVisualization = {
       scene.add(floor)
       bindResize(stage, camera, renderer)
       frames.push((t) => {
-        const travel = (Math.sin(t * 0.25) * 0.5 + 0.5) * (years.length - 1)
+        const travel = (Math.sin(t * 0.25) * 0.5 + 0.5) * Math.max(0, years.length - 1)
         camera.position.z = 10 - travel * 2.1
         camera.lookAt(0, 1.4, camera.position.z - 8)
+        const focus = Math.round(travel)
+        setBadge(`Focus ${timeKey}`, String(years[focus] ?? latest))
         gates.forEach((g, i) => {
-          const lit = Math.abs(i - travel) < 0.65
+          const dist = Math.abs(i - travel)
+          const lit = dist < 0.65
           g.group.children.forEach((child) => {
             if (child.material?.emissive) child.material.emissiveIntensity = lit ? 0.85 : 0.15
           })
+          const near = dist < 1.25
+          g.tag.style.opacity = near ? String(1 - dist * 0.35) : '0'
+          if (near) projectTag(g.tag, anchor.set(0, g.h + 0.55, g.z))
+          else g.tag.style.display = 'none'
         })
         renderer.render(scene, camera)
       })
@@ -681,42 +1110,82 @@ window.DataCheetahVisualization = {
     // —— Lattice ——
     {
       const stage = board.querySelector('[data-scene="lattice"]')
-      const { scene, camera, renderer } = makeRenderer(stage)
+      const { scene, camera, renderer, makeTag, setTag, projectTag, setBadge } = makeRenderer(stage)
       camera.position.set(10, 12, 14)
       camera.lookAt(0, 0, 0)
-      const cells = []
       const catList = categories.slice(0, 6)
       const regList = regions.slice(0, 6)
-      const cellMap = new Map()
-      for (const r of latestRows) {
-        const key = `${r.region}||${r.category}`
-        cellMap.set(key, (cellMap.get(key) || 0) + r.revenue)
-      }
-      const maxCell = Math.max(1, ...cellMap.values())
+      const cells = []
+      const axisTags = []
+      regList.forEach((region, xi) => {
+        const x = (xi - (regList.length - 1) / 2) * 1.15
+        axisTags.push({
+          tag: makeTag(region, null, colorOf.region(region)),
+          pos: new THREE.Vector3(x, 0.2, (catList.length / 2) * 1.15 + 0.6),
+        })
+      })
+      catList.forEach((category, zi) => {
+        const z = (zi - (catList.length - 1) / 2) * 1.15
+        axisTags.push({
+          tag: makeTag(category, null, colorOf.category(category)),
+          pos: new THREE.Vector3(-(regList.length / 2) * 1.15 - 0.7, 0.2, z),
+        })
+      })
       regList.forEach((region, xi) => {
         catList.forEach((category, zi) => {
-          const v = cellMap.get(`${region}||${category}`) || 0
-          const h = 0.15 + (v / maxCell) * 4.5
+          const hex = colorOf.category(category)
           const mesh = new THREE.Mesh(
             new THREE.BoxGeometry(0.7, 1, 0.7),
             new THREE.MeshStandardMaterial({
-              color: new THREE.Color().setHSL(0.08 + zi * 0.08, 0.65, 0.45 + (v / maxCell) * 0.2),
-              emissive: new THREE.Color(accent).multiplyScalar(0.05 + (v / maxCell) * 0.2),
+              color: threeOf(hex),
+              emissive: new THREE.Color(accent).multiplyScalar(0.1),
               roughness: 0.45,
             }),
           )
-          mesh.position.set((xi - (regList.length - 1) / 2) * 1.15, h / 2, (zi - (catList.length - 1) / 2) * 1.15)
-          mesh.scale.y = h
+          const x = (xi - (regList.length - 1) / 2) * 1.15
+          const z = (zi - (catList.length - 1) / 2) * 1.15
+          mesh.position.set(x, 0.5, z)
           scene.add(mesh)
-          cells.push({ mesh, base: h, phase: xi * 0.4 + zi * 0.3 })
+          cells.push({ mesh, region, category, base: 1, phase: xi * 0.4 + zi * 0.3, x, z })
         })
       })
+      const peakTag = makeTag('peak', '', colorOf.accent)
+      peakTag.classList.add('is-core')
+      let peakAnchor = { x: 0, h: 1, z: 0 }
       const plate = new THREE.Mesh(
         new THREE.BoxGeometry(regList.length * 1.3, 0.08, catList.length * 1.3),
         new THREE.MeshStandardMaterial({ color: dark ? 0x111827 : 0xdbe4ef, roughness: 1 }),
       )
       plate.position.y = -0.04
       scene.add(plate)
+      const apply = (m) => {
+        setBadge(`Showing ${timeKey}`, m.year)
+        const cellMap = new Map()
+        for (const r of m.rows) {
+          const key = `${r.region}||${r.category}`
+          cellMap.set(key, (cellMap.get(key) || 0) + r.revenue)
+        }
+        const maxCell = Math.max(1, ...cellMap.values(), 1)
+        let best = null
+        let bestVal = -1
+        for (const c of cells) {
+          const v = cellMap.get(`${c.region}||${c.category}`) || 0
+          c.base = 0.15 + (v / maxCell) * 4.5
+          c.mesh.material.color.copy(threeOf(colorOf.category(c.category)))
+          c.mesh.material.color.offsetHSL(0, 0, (v / maxCell) * 0.12 - 0.06)
+          c.mesh.material.emissive = new THREE.Color(accent).multiplyScalar(0.05 + (v / maxCell) * 0.2)
+          if (v > bestVal) {
+            bestVal = v
+            best = c
+          }
+        }
+        if (best) {
+          setTag(peakTag, `${best.region} · ${best.category}`, `${format(bestVal)} · ${m.year}`)
+          peakAnchor = { x: best.x, h: best.base, z: best.z }
+        }
+      }
+      yearListeners.push(apply)
+      apply(snap)
       bindResize(stage, camera, renderer)
       frames.push((t) => {
         camera.position.x = 10 * Math.cos(t * 0.18)
@@ -727,6 +1196,8 @@ window.DataCheetahVisualization = {
           c.mesh.scale.y = c.base * pulse
           c.mesh.position.y = (c.base * pulse) / 2
         }
+        for (const a of axisTags) projectTag(a.tag, a.pos, -40)
+        projectTag(peakTag, anchor.set(peakAnchor.x, peakAnchor.h + 0.4, peakAnchor.z))
         renderer.render(scene, camera)
       })
       cleanups.push(() => {
@@ -735,10 +1206,10 @@ window.DataCheetahVisualization = {
       })
     }
 
-    // —— Helix ——
+    // —— Helix (all years) ——
     {
       const stage = board.querySelector('[data-scene="helix"]')
-      const { scene, camera, renderer } = makeRenderer(stage)
+      const { scene, camera, renderer, makeTag, projectTag, setBadge } = makeRenderer(stage, { badgeMode: 'all' })
       camera.position.set(0, 4, 14)
       camera.lookAt(0, 3, 0)
       const yearTotals = years.map((y) => sum(rowsAt(y), 'revenue'))
@@ -746,16 +1217,24 @@ window.DataCheetahVisualization = {
       const beads = []
       years.forEach((year, i) => {
         const weight = yearTotals[i] / maxY
+        const hex = colorOf.year(year)
+        const color = threeOf(hex)
         const mesh = new THREE.Mesh(
           new THREE.SphereGeometry(0.28 + weight * 0.45, 18, 18),
           new THREE.MeshStandardMaterial({
-            color: new THREE.Color().setHSL(0.08 + i * 0.06, 0.75, 0.55),
-            emissive: new THREE.Color(accent).multiplyScalar(0.15 + weight * 0.25),
+            color,
+            emissive: color.clone().multiplyScalar(0.25 + weight * 0.25),
             roughness: 0.3,
           }),
         )
         scene.add(mesh)
-        beads.push({ mesh, i, weight, year })
+        beads.push({
+          mesh,
+          i,
+          weight,
+          year,
+          tag: makeTag(`${timeKey} ${year}`, format(yearTotals[i]), hex),
+        })
       })
       const curvePts = []
       for (let i = 0; i < years.length; i++) {
@@ -772,10 +1251,27 @@ window.DataCheetahVisualization = {
       }
       bindResize(stage, camera, renderer)
       frames.push((t) => {
+        let nearest = 0
+        let nearestD = Infinity
         for (const b of beads) {
           const a = (b.i / Math.max(1, years.length - 1)) * Math.PI * 3.2 + t * 0.35
           const r = 1.2 + b.weight * 2.8
           b.mesh.position.set(Math.cos(a) * r, b.i * 1.15, Math.sin(a) * r)
+          const d = b.mesh.position.distanceTo(camera.position)
+          if (d < nearestD) {
+            nearestD = d
+            nearest = b.i
+          }
+        }
+        setBadge(`Focus ${timeKey}`, String(years[nearest] ?? latest))
+        for (const b of beads) {
+          const near = Math.abs(b.i - nearest) <= 1
+          b.tag.style.opacity = near ? '1' : '0.25'
+          if (near || years.length <= 4) {
+            projectTag(b.tag, anchor.copy(b.mesh.position).setY(b.mesh.position.y + 0.45))
+          } else {
+            b.tag.style.display = 'none'
+          }
         }
         camera.position.x = Math.sin(t * 0.2) * 3
         camera.lookAt(0, years.length * 0.45, 0)
@@ -790,7 +1286,7 @@ window.DataCheetahVisualization = {
     // —— Finale ——
     {
       const stage = board.querySelector('[data-scene="finale"]')
-      const { scene, camera, renderer, point } = makeRenderer(stage)
+      const { scene, camera, renderer, point, makeTag, setTag, projectTag, setBadge } = makeRenderer(stage)
       camera.position.set(0, 5, 16)
       camera.lookAt(0, 1, 0)
       const core = new THREE.Mesh(
@@ -804,6 +1300,14 @@ window.DataCheetahVisualization = {
         }),
       )
       scene.add(core)
+      const revTag = makeTag(`${measureKey}`, format(snap.totalRev), colorOf.accent)
+      revTag.classList.add('is-core')
+      const ordTag = makeTag(ordersKey, format(snap.totalOrd), colorOf.orders)
+      const dimTag = makeTag(
+        `${regions.length} ${regionKey}s · ${categories.length} ${categoryKey}s`,
+        `${channels.length} ${channelKey}s`,
+        colorOf.region(regions[0]),
+      )
       for (let i = 0; i < 3; i++) {
         const ring = new THREE.Mesh(
           new THREE.TorusGeometry(2.2 + i * 0.7, 0.04, 8, 80),
@@ -840,7 +1344,17 @@ window.DataCheetahVisualization = {
         }),
       )
       scene.add(sparks)
-      const scale = 0.85 + Math.min(1.4, totalRev / Math.max(1, firstRev || totalRev))
+      let scale = 1
+      yearListeners.push((m) => {
+        setBadge(`Showing ${timeKey}`, m.year)
+        scale = 0.85 + Math.min(1.4, m.totalRev / Math.max(1, firstRev || m.totalRev))
+        core.scale.setScalar(scale)
+        setTag(revTag, `${measureKey} · ${m.year}`, format(m.totalRev))
+        setTag(ordTag, `${ordersKey} · ${m.year}`, format(m.totalOrd))
+        setTag(dimTag, `${regions.length} ${regionKey}s · ${categories.length} ${categoryKey}s`, `${channels.length} ${channelKey}s`)
+      })
+      setBadge(`Showing ${timeKey}`, snap.year)
+      scale = 0.85 + Math.min(1.4, snap.totalRev / Math.max(1, firstRev || snap.totalRev))
       core.scale.setScalar(scale)
       bindResize(stage, camera, renderer)
       frames.push((t) => {
@@ -850,6 +1364,9 @@ window.DataCheetahVisualization = {
         point.intensity = 1.2 + Math.sin(t * 2.2) * 0.35
         camera.position.x = Math.sin(t * 0.15) * 2
         camera.lookAt(0, 1, 0)
+        projectTag(revTag, anchor.set(0, 2.1 * scale, 0))
+        projectTag(ordTag, anchor.set(2.8, 0.4, 0), -40)
+        projectTag(dimTag, anchor.set(-2.8, -0.2, 0), -40)
         renderer.render(scene, camera)
       })
       cleanups.push(() => {
@@ -880,6 +1397,8 @@ window.DataCheetahVisualization = {
       a.addEventListener('click', onClick)
       cleanups.push(() => a.removeEventListener('click', onClick))
     })
+
+    setYearIndex(years.length - 1)
 
     const syncViewport = () => reportHeight(VIEWPORT)
     requestAnimationFrame(() => {
