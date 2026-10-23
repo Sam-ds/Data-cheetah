@@ -1,22 +1,23 @@
+import { useEffect, useRef, useState } from 'react'
 import {
   ArrowRight,
   Braces,
+  ChevronLeft,
+  ChevronRight,
   Compass,
   Database,
   FileDiff,
   GitCompare,
+  LayoutDashboard,
   Minimize2,
+  Package,
+  PawPrint,
   Scale,
+  Shield,
+  Sparkles,
   Wand2,
   type LucideIcon,
 } from 'lucide-react'
-import hero from '@/assets/illustrations/datacheetah-suite-logo.png'
-import dataPipeline from '@/assets/illustrations/data-pipeline.png'
-import inspect from '@/assets/illustrations/inspect.png'
-import security from '@/assets/illustrations/security.png'
-import collabDashboard from '@/assets/illustrations/collab-dashboard.png'
-import team from '@/assets/illustrations/team.png'
-import cloudSync from '@/assets/illustrations/cloud-sync.png'
 import mascotVisualize from '@/assets/illustrations/mascot-visualize.png'
 import mascotGenerate from '@/assets/illustrations/mascot-generate.png'
 import mascotFormatters from '@/assets/illustrations/mascot-formatters.png'
@@ -134,44 +135,157 @@ const TOOLS: Extract<HomeItem, { kind: 'tool' }>[] = [
   },
 ]
 
-const FEATURES = [
+const FEATURES: {
+  title: string
+  blurb: string
+  icon: LucideIcon
+}[] = [
   {
     title: 'Connect & explore',
     blurb: 'Load CSV, Parquet, JSON, and Excel — query it and visualize with preset rules.',
-    image: dataPipeline,
-    alt: 'Data sources flowing into a dashboard',
+    icon: Database,
   },
   {
     title: 'Templates & live packs',
     blurb: 'Discover ready-made dashboards and interactive packs — map your columns and run them on your data.',
-    image: collabDashboard,
-    alt: 'Dashboard templates and interactive packs',
+    icon: LayoutDashboard,
   },
   {
     title: 'Ask your data',
     blurb: 'Natural-language Insights with local WebLLM or a remote model you configure.',
-    image: inspect,
-    alt: 'Inspecting charts with a magnifying glass',
+    icon: Sparkles,
   },
   {
     title: 'Private by design',
     blurb: 'Files and queries stay on-device unless you opt into a remote model for Ask.',
-    image: security,
-    alt: 'Security checklist and shield',
+    icon: Shield,
   },
   {
     title: 'Everyday data tools',
     blurb: 'Format and diff JSON or text, and generate synthetic rows with faker.js.',
-    image: cloudSync,
-    alt: 'Local tools syncing data workflows',
+    icon: Braces,
   },
   {
     title: 'Build & share packs',
     blurb: 'Publish portable dashboard ZIPs — others install them and run on their own data.',
-    image: team,
-    alt: 'Small team collaborating with laptops',
+    icon: Package,
   },
-] as const
+]
+
+function CapabilitiesCarousel() {
+  const count = FEATURES.length
+  const [index, setIndex] = useState(0)
+  const [paused, setPaused] = useState(false)
+  const dragX = useRef<number | null>(null)
+
+  const go = (delta: number) => {
+    setIndex((i) => (i + delta + count) % count)
+  }
+
+  useEffect(() => {
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    if (reduce || paused) return
+    const id = window.setInterval(() => {
+      setIndex((i) => (i + 1) % count)
+    }, 5200)
+    return () => window.clearInterval(id)
+  }, [paused, count])
+
+  return (
+    <div
+      className="home-cap-carousel"
+      role="region"
+      aria-roledescription="carousel"
+      aria-label="Capabilities"
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
+      onFocusCapture={() => setPaused(true)}
+      onBlurCapture={(e) => {
+        const next = e.relatedTarget
+        if (!(next instanceof Node) || !e.currentTarget.contains(next)) setPaused(false)
+      }}
+    >
+      <div
+        className="home-cap-viewport"
+        onPointerDown={(e) => {
+          dragX.current = e.clientX
+        }}
+        onPointerUp={(e) => {
+          if (dragX.current == null) return
+          const dx = e.clientX - dragX.current
+          dragX.current = null
+          if (dx > 48) go(-1)
+          else if (dx < -48) go(1)
+        }}
+        onPointerCancel={() => {
+          dragX.current = null
+        }}
+      >
+        <div
+          className="home-cap-track"
+          style={{ transform: `translate3d(-${index * 100}%, 0, 0)` }}
+        >
+          {FEATURES.map((f, i) => {
+            const Icon = f.icon
+            return (
+              <article
+                key={f.title}
+                className="home-cap-slide"
+                aria-hidden={i !== index}
+                aria-label={`${i + 1} of ${count}`}
+              >
+                <div className="home-cap-card">
+                  <span className="home-cap-icon" aria-hidden>
+                    <Icon className="h-5 w-5" strokeWidth={1.75} />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="home-cap-index">{String(i + 1).padStart(2, '0')}</p>
+                    <h3 className="mt-1 text-base font-semibold tracking-tight text-foreground">
+                      {f.title}
+                    </h3>
+                    <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">{f.blurb}</p>
+                  </div>
+                </div>
+              </article>
+            )
+          })}
+        </div>
+      </div>
+
+      <div className="home-cap-controls">
+        <button
+          type="button"
+          className="home-cap-nav"
+          onClick={() => go(-1)}
+          aria-label="Previous capability"
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </button>
+        <div className="home-cap-dots" role="tablist" aria-label="Capability slides">
+          {FEATURES.map((f, i) => (
+            <button
+              key={f.title}
+              type="button"
+              role="tab"
+              aria-selected={i === index}
+              aria-label={f.title}
+              className={i === index ? 'home-cap-dot home-cap-dot--active' : 'home-cap-dot'}
+              onClick={() => setIndex(i)}
+            />
+          ))}
+        </div>
+        <button
+          type="button"
+          className="home-cap-nav"
+          onClick={() => go(1)}
+          aria-label="Next capability"
+        >
+          <ChevronRight className="h-4 w-4" />
+        </button>
+      </div>
+    </div>
+  )
+}
 
 function HomeRow({
   item,
@@ -223,18 +337,18 @@ export function HomeHub() {
     >
       <header className="home-hero-header w-full pt-2">
         <div className="home-hero-stage">
-          <div className="home-hero-track home-hero-track--suite">
-            <div className="home-hero-frame home-hero-frame--suite">
-              <img
-                src={hero}
-                alt="DataCheetah Suite"
-                className="home-hero home-hero--suite"
-                width={1024}
-                height={390}
-                decoding="async"
-              />
-            </div>
-          </div>
+          <h1 className="home-brand-name" aria-label="DataCheetah">
+            <span className="home-brand-data">data</span>
+            <span className="home-brand-cheetah">
+              <span className="cheetah-word">cheetah</span>
+              <PawPrint className="cheetah-paw cheetah-paw--hero" aria-hidden strokeWidth={2.2} />
+              <span className="cheetah-paw-trail" aria-hidden>
+                <PawPrint className="cheetah-paw-print cheetah-paw-print--1" strokeWidth={2} />
+                <PawPrint className="cheetah-paw-print cheetah-paw-print--2" strokeWidth={2} />
+                <PawPrint className="cheetah-paw-print cheetah-paw-print--3" strokeWidth={2} />
+              </span>
+            </span>
+          </h1>
         </div>
         <p className="home-tagline mx-auto mt-2 px-6 text-center sm:px-8">
           <span className="home-tagline-text">A suite of data tools</span>
@@ -328,25 +442,11 @@ export function HomeHub() {
       >
         <h2
           id="home-capabilities"
-          className="page-eyebrow mb-6"
+          className="page-eyebrow mb-5"
         >
           Capabilities
         </h2>
-        <div className="home-cap-grid">
-          {FEATURES.map((f, i) => (
-            <article
-              key={f.title}
-              className="home-cap"
-              style={{ animationDelay: `${0.08 * i + 0.15}s` }}
-            >
-              <img src={f.image} alt={f.alt} className="home-illu home-illu--cap" />
-              <h3 className="mt-3 text-sm font-semibold tracking-tight text-foreground">
-                {f.title}
-              </h3>
-              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{f.blurb}</p>
-            </article>
-          ))}
-        </div>
+        <CapabilitiesCarousel />
       </section>
 
       <section className="home-community home-fade-up px-6 sm:px-8" aria-labelledby="home-community">

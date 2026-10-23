@@ -266,8 +266,8 @@ export function SettingsPage() {
               placeholder={hasSavedKey ? '•••• saved on this device' : 'sk-or-…'}
             />
             <p className="text-[11px] leading-relaxed text-muted-foreground">
-              Your key is stored locally in your browser and sent directly to OpenRouter. We never see
-              or store your key.
+              The key is encrypted in this browser with Web Crypto (AES-GCM) and sent only to
+              OpenRouter. Other websites cannot read it. Use Clear key if this device is shared.
             </p>
             <label className="block text-xs text-muted-foreground">Model id</label>
             <input
@@ -277,7 +277,7 @@ export function SettingsPage() {
               placeholder="openai/gpt-4o"
             />
             <p className="text-[11px] text-muted-foreground">
-              Key stays in this browser&apos;s IndexedDB only (not synced). Get a key at{' '}
+              Key is encrypted at rest in IndexedDB (not localStorage, not synced). Get a key at{' '}
               <a
                 className="brand-link underline underline-offset-2"
                 href="https://openrouter.ai/keys"

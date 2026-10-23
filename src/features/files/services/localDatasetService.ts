@@ -4,6 +4,7 @@ import {
   clearPersistedDatasetsForWorkspace,
   countPersistedDatasets,
   listPersistedDatasets,
+  unwrapDatasetBuffer,
 } from '@/features/files/services/datasetPersistenceService'
 import { useFilesStore } from '@/features/files/store/filesStore'
 import { useSqlStore, useQueryStore, DEFAULT_SQL } from '@/features/sql/store/sqlStore'
@@ -144,7 +145,7 @@ export async function syncPersistedTablesToDuckDB(options?: {
 
       for (const record of records) {
         try {
-          const buffer = record.buffer.slice(0)
+          const buffer = (await unwrapDatasetBuffer(record)).slice(0)
           await duckdbClient.registerFile(
             record.registerName,
             buffer,

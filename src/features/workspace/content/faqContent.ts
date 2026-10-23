@@ -30,7 +30,7 @@ export const FAQ_ITEMS: FaqItem[] = [
   },
   {
     q: 'How do API keys work?',
-    a: 'For OpenRouter, paste your API key and model id (for example openai/gpt-4o) in Settings. The key is stored only in this browser’s IndexedDB and sent directly to OpenRouter — never to a DataCheetah server. Use Clear Key in Settings to wipe it.',
+    a: 'For OpenRouter, paste your API key and model id (for example openai/gpt-4o) in Settings. The key is encrypted at rest with Web Crypto (AES-GCM) in this origin’s IndexedDB — never localStorage, never a DataCheetah server. Cached datasets are encrypted the same way. Other sites cannot read them. Malware that already controls this device or browser profile can still access anything this app can. Use Clear Key / Clear local if the device is shared.',
   },
   {
     q: 'Why does local Ask / Generate Data LLM seed fail on my PC?',

@@ -16,8 +16,8 @@ import {
   Compass,
   ArrowLeft,
   Code2,
+  PawPrint,
 } from 'lucide-react'
-import logo from '@/assets/hero.png'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import {
@@ -112,11 +112,13 @@ export function TopToolbar() {
           title="Home"
           aria-label="DataCheetah home"
         >
-          <img
-            src={logo}
-            alt="DataCheetah"
-            className="h-9 w-auto max-w-[2.75rem] rounded-md object-contain"
-          />
+          <span className="app-toolbar-brand" aria-hidden>
+            <span className="app-toolbar-brand-data">data</span>
+            <span className="app-toolbar-brand-cheetah">
+              <span className="cheetah-word">cheetah</span>
+              <PawPrint className="cheetah-paw cheetah-paw--toolbar" strokeWidth={2.4} />
+            </span>
+          </span>
         </button>
 
         {/* Explore: no Home / Tools nav — logo returns home */}

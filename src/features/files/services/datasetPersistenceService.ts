@@ -1,4 +1,5 @@
 import { db } from '@/lib/db/dexie'
+import { decryptBytes, encryptBytes } from '@/lib/crypto/originVault'
 import type { PersistedDataset } from '@/types/persistedDataset'
 import type { TableSchemaDoc } from '@/types/schemaDoc'
 
@@ -10,10 +11,25 @@ function normalize(row: PersistedDataset): PersistedDataset {
 }
 
 export async function savePersistedDataset(record: PersistedDataset): Promise<void> {
+  const { iv, ciphertext } = await encryptBytes(record.buffer, 'dataset-blob', record.id)
   await db.datasetBlobs.put({
     ...record,
+    buffer: ciphertext,
+    crypto: { v: 1, iv },
     savedAt: record.savedAt instanceof Date ? record.savedAt : new Date(record.savedAt),
   })
+}
+
+/** Decrypt persisted bytes for DuckDB. Re-encrypts leftover plaintext on first read. */
+export async function unwrapDatasetBuffer(row: PersistedDataset): Promise<ArrayBuffer> {
+  if (row.crypto?.v === 1 && row.crypto.iv) {
+    return decryptBytes(row.crypto.iv, row.buffer, 'dataset-blob', row.id)
+  }
+  const plain = row.buffer
+  void savePersistedDataset({ ...row, buffer: plain }).catch(() => {
+    /* keep plaintext until the next successful save */
+  })
+  return plain
 }
 
 export async function listPersistedDatasets(workspaceId?: string): Promise<PersistedDataset[]> {

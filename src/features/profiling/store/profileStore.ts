@@ -19,7 +19,7 @@ interface PreferencesState {
   duckdbMemoryLimit: DuckDbMemoryLimit
   askProvider: AskProviderId
   askRemoteModelId: string
-  /** In-memory only — never written to localStorage; source of truth is IndexedDB. */
+  /** In-memory only — never written to localStorage; ciphertext is in the IndexedDB vault. */
   openrouterApiKey: string
   duckdbReady: boolean
   duckdbStatus: 'idle' | 'loading' | 'ready' | 'error'

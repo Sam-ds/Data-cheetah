@@ -1293,10 +1293,8 @@ export function DiscoverTool() {
             type="button"
             onClick={() => setCategory(c)}
             className={cn(
-              'rounded-full border px-2.5 py-1 text-[11px] capitalize',
-              category === c
-                ? 'border-[var(--brand)] bg-[var(--brand)]/10 text-foreground'
-                : 'border-border/60 text-muted-foreground hover:border-border',
+              'discover-filter-chip',
+              category === c && 'discover-filter-chip--active',
             )}
           >
             {c}
@@ -1321,7 +1319,7 @@ export function DiscoverTool() {
               )}
             >
               <span className="discover-template-card-glow" aria-hidden />
-              <div className="relative flex items-start justify-between gap-3">
+              <div className="discover-template-head">
                 <span className="discover-template-icon">
                   {loadingTemplateId === t.id ? (
                     <Loader2 className="h-5 w-5 animate-spin" aria-hidden />
@@ -1329,29 +1327,23 @@ export function DiscoverTool() {
                     <TemplateIcon id={t.id} category={t.category} />
                   )}
                 </span>
-                <span className="flex shrink-0 items-center gap-1.5">
-                  <span className={cn('discover-category-tag capitalize', `discover-category-tag--${t.category}`)}>
-                    {t.category}
-                  </span>
-                  <span className="discover-template-free">
-                    FREE
-                  </span>
-                  {t.renderer === 'dynamic' && (
-                    <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-1.5 py-0.5 text-[9px] font-bold text-emerald-700 dark:text-emerald-300">
-                      <ShieldCheck className="h-2.5 w-2.5" aria-hidden />
-                      VERIFIED
+                <div className="min-w-0 flex-1">
+                  <h3 className="discover-template-title">{t.name}</h3>
+                  <div className="discover-template-badges">
+                    <span className={cn('discover-category-tag capitalize', `discover-category-tag--${t.category}`)}>
+                      {t.category}
                     </span>
-                  )}
-                </span>
+                    <span className="discover-template-free">Free</span>
+                    {t.renderer === 'dynamic' && (
+                      <span className="discover-template-verified">
+                        <ShieldCheck className="h-2.5 w-2.5" aria-hidden />
+                        Verified
+                      </span>
+                    )}
+                  </div>
+                </div>
               </div>
-              <div className="relative mt-3">
-                <h3 className="text-[15px] font-semibold tracking-tight text-foreground">
-                  {t.name}
-                </h3>
-                <p className="mt-1.5 min-h-8 text-[11px] leading-relaxed text-muted-foreground">
-                  {t.description}
-                </p>
-              </div>
+              <p className="discover-template-blurb">{t.description}</p>
               {t.insights[0] && (
                 <p className="discover-template-insight">
                   <BarChart3 className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />

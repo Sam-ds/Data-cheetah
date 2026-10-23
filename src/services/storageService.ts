@@ -3,43 +3,80 @@ import { DEFAULT_PREFERENCES, type Preferences } from '@/types/preferences'
 import { coerceAskProvider } from '@/types/askSettings'
 import type { RecentFileMeta } from '@/types/dataset'
 import type { SavedQuery } from '@/types/query'
+import { deleteSecret, getSecret, putSecret } from '@/lib/crypto/originVault'
 
 const ZUSTAND_PREFS_KEY = 'datacheetah-preferences'
+const OPENROUTER_SECRET = 'openrouter-api-key' as const
 
-export async function loadPreferences(): Promise<Preferences> {
+function withoutPersistedKey(prefs: Preferences): Preferences {
+  return { ...prefs, openrouterApiKey: '' }
+}
+
+async function loadPreferenceRow(): Promise<Preferences> {
   const stored = await db.preferences.get('default')
   if (!stored) return { ...DEFAULT_PREFERENCES }
   return {
     ...DEFAULT_PREFERENCES,
     ...stored,
     askProvider: coerceAskProvider(stored.askProvider),
-    openrouterApiKey: stored.openrouterApiKey ?? '',
+    openrouterApiKey: '',
     layout: { ...DEFAULT_PREFERENCES.layout, ...stored.layout },
     editorSettings: { ...DEFAULT_PREFERENCES.editorSettings, ...stored.editorSettings },
   }
 }
 
-export async function savePreferences(prefs: Partial<Preferences>): Promise<void> {
-  const current = await loadPreferences()
+/** Move any leftover plaintext key into the encrypted vault and wipe the preferences field. */
+async function migratePlaintextKeyIntoVault(): Promise<void> {
+  const stored = await db.preferences.get('default')
+  const legacy = stored?.openrouterApiKey?.trim() ?? ''
+  if (!legacy) return
+  const existing = await getSecret(OPENROUTER_SECRET)
+  if (!existing) await putSecret(OPENROUTER_SECRET, legacy)
+  const storedInVault = await getSecret(OPENROUTER_SECRET)
+  if (!storedInVault || !stored) return
   await db.preferences.put({
-    ...current,
-    ...prefs,
-    layout: { ...current.layout, ...prefs.layout },
-    editorSettings: { ...current.editorSettings, ...prefs.editorSettings },
+    ...stored,
     id: 'default',
+    openrouterApiKey: '',
     updatedAt: new Date(),
   })
 }
 
-/** Read OpenRouter key from IndexedDB immediately before a network request. */
+export async function loadPreferences(): Promise<Preferences> {
+  await migratePlaintextKeyIntoVault()
+  const stored = await loadPreferenceRow()
+  const openrouterApiKey = await getSecret(OPENROUTER_SECRET)
+  return { ...stored, openrouterApiKey }
+}
+
+export async function savePreferences(prefs: Partial<Preferences>): Promise<void> {
+  const current = await loadPreferenceRow()
+  if ('openrouterApiKey' in prefs) {
+    await putSecret(OPENROUTER_SECRET, prefs.openrouterApiKey ?? '')
+  }
+  const { openrouterApiKey: _neverPersist, ...rest } = prefs
+  await db.preferences.put(
+    withoutPersistedKey({
+      ...current,
+      ...rest,
+      layout: { ...current.layout, ...prefs.layout },
+      editorSettings: { ...current.editorSettings, ...prefs.editorSettings },
+      id: 'default',
+      updatedAt: new Date(),
+    }),
+  )
+}
+
+/** Read OpenRouter key from the encrypted vault immediately before a network request. */
 export async function getOpenRouterApiKey(): Promise<string | undefined> {
-  const prefs = await loadPreferences()
-  const key = prefs.openrouterApiKey?.trim()
+  await migratePlaintextKeyIntoVault()
+  const key = (await getSecret(OPENROUTER_SECRET)).trim()
   return key || undefined
 }
 
-/** Wipe only the API key from IndexedDB (does not delete datasets/workspaces). */
+/** Wipe only the API key from the vault (does not delete datasets/workspaces). */
 export async function clearOpenRouterApiKey(): Promise<void> {
+  await deleteSecret(OPENROUTER_SECRET)
   await savePreferences({ openrouterApiKey: '' })
   scrubOpenRouterKeyFromLocalStorage()
 }
@@ -84,15 +121,16 @@ export function scrubOpenRouterKeyFromLocalStorage(): void {
 }
 
 /**
- * One-time migrate: copy key from localStorage → IndexedDB if IDB is empty,
- * then scrub localStorage so the key is IndexedDB-only.
+ * One-time migrate: copy key from localStorage → encrypted vault if empty,
+ * then scrub localStorage so the key is never left in plaintext.
  */
 export async function migrateOpenRouterKeyFromLocalStorage(): Promise<void> {
   const legacy = readLegacyKeyFromLocalStorage()
-  const current = await loadPreferences()
-  if (legacy && !current.openrouterApiKey?.trim()) {
-    await savePreferences({ openrouterApiKey: legacy })
+  if (legacy) {
+    const current = await getSecret(OPENROUTER_SECRET)
+    if (!current) await putSecret(OPENROUTER_SECRET, legacy)
   }
+  await migratePlaintextKeyIntoVault()
   scrubOpenRouterKeyFromLocalStorage()
 }
 
